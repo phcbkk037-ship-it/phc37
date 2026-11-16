@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15703A">
+  <meta name="description" content="ระบบงาน ศูนย์บริการสาธารณสุข 37 ประสงค์ - สุดสาคร ตู้จินดา">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="PHC37">
+  <title>PHC37 ระบบงาน ศบส.37</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <div id="offline" class="banner banner-warn" hidden>ไม่มีการเชื่อมต่ออินเทอร์เน็ต — ใช้งานได้เมื่อกลับมาออนไลน์</div>
+
+  <!-- แถบหัว (หลังเข้าระบบ) -->
+  <header id="topbar" class="topbar" hidden>
+    <div class="brand">
+      <img src="icons/icon-192.png" alt="" class="brand-logo">
+      <div>
+        <div class="brand-title">PHC37</div>
+        <div class="brand-sub">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div>
+      </div>
+    </div>
+    <button id="btn-account" class="btn btn-ghost btn-account" aria-haspopup="true" aria-expanded="false">
+      <span id="acc-initial" class="avatar"></span><span id="acc-name" class="acc-name"></span>
+    </button>
+    <div id="account-menu" class="account-menu" hidden>
+      <div class="acc-head">
+        <div id="acc-full" class="acc-full"></div>
+        <div id="acc-meta" class="muted"></div>
+      </div>
+      <button id="btn-open-change" class="menu-item">🔑 เปลี่ยนรหัสผ่าน</button>
+      <button id="btn-install-menu" class="menu-item" hidden>📲 ติดตั้งแอพ</button>
+      <button id="btn-logout" class="menu-item danger">↩️ ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- เข้าสู่ระบบ -->
+    <section id="view-login" class="view center" hidden>
+      <form id="form-login" class="card auth-card" novalidate>
+        <div class="auth-brand">
+          <img src="icons/icon-192.png" alt="" class="auth-logo">
+          <h1>เข้าสู่ระบบ</h1>
+          <p class="muted">ระบบงาน ศูนย์บริการสาธารณสุข 37<br>ประสงค์ - สุดสาคร ตู้จินดา</p>
+        </div>
+        <div id="login-alert" class="alert" role="alert" hidden></div>
+        <label class="field">
+          <span>ชื่อผู้ใช้</span>
+          <input id="login-username" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        </label>
+        <label class="field">
+          <span>รหัสผ่าน</span>
+          <span class="pw-wrap">
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" data-target="login-password" aria-label="แสดงรหัสผ่าน">👁️</button>
+          </span>
+        </label>
+        <button id="btn-login" class="btn btn-primary btn-block" type="submit">เข้าสู่ระบบ</button>
+        <p class="hint">ลืมรหัสผ่านหรือยังไม่ได้รับรหัสสำหรับระบบใหม่ กรุณาติดต่อผู้ดูแลระบบ</p>
+        <button id="btn-install-login" type="button" class="btn btn-add btn-block" hidden>📲 ติดตั้งเป็นแอพบนเครื่องนี้</button>
+        <p id="ios-hint" class="hint" hidden>iPhone/iPad: เปิดใน Safari แล้วแตะ <b>แชร์</b> → <b>เพิ่มไปยังหน้าจอโฮม</b> เพื่อติดตั้งเป็นแอพ</p>
+      </form>
+    </section>
+
+    <!-- ตั้งรหัสผ่านใหม่ (ครั้งแรก) -->
+    <section id="view-setpw" class="view center" hidden>
+      <form id="form-setpw" class="card auth-card" novalidate>
+        <div class="auth-brand">
+          <img src="icons/icon-192.png" alt="" class="auth-logo">
+          <h1>ตั้งรหัสผ่านใหม่</h1>
+          <p class="muted">สวัสดี <b id="setpw-name"></b><br>กรุณาตั้งรหัสผ่านของคุณเองก่อนเริ่มใช้งาน</p>
+        </div>
+        <div id="setpw-alert" class="alert" role="alert" hidden></div>
+        <label class="field">
+          <span>รหัสผ่านใหม่</span>
+          <span class="pw-wrap">
+            <input id="setpw-new" type="password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-target="setpw-new" aria-label="แสดงรหัสผ่าน">👁️</button>
+          </span>
+        </label>
+        <ul class="rules" data-for="setpw-new">
+          <li data-rule="len">อย่างน้อย 8 ตัวอักษร</li>
+          <li data-rule="alpha">มีตัวอักษรภาษาอังกฤษ</li>
+          <li data-rule="digit">มีตัวเลข</li>
+        </ul>
+        <label class="field">
+          <span>ยืนยันรหัสผ่านใหม่</span>
+          <input id="setpw-confirm" type="password" autocomplete="new-password" required>
+        </label>
+        <button id="btn-setpw" class="btn btn-primary btn-block" type="submit">บันทึกรหัสผ่านและเข้าใช้งาน</button>
+        <button id="btn-setpw-cancel" class="btn btn-ghost btn-block" type="button">ยกเลิก กลับหน้าเข้าสู่ระบบ</button>
+      </form>
+    </section>
+
+    <!-- หน้าหลัก -->
+    <section id="view-home" class="view" hidden>
+      <div class="home-head">
+        <div>
+          <h1 id="home-greet">สวัสดี</h1>
+          <p id="home-sub" class="muted"></p>
+        </div>
+        <label class="search">
+          <span aria-hidden="true">🔎</span>
+          <input id="menu-search" type="search" placeholder="ค้นหาระบบงาน" autocomplete="off">
+        </label>
+      </div>
+      <div id="menu-groups"></div>
+      <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
+    </section>
+  </main>
+
+  <!-- เปลี่ยนรหัสผ่าน -->
+  <dialog id="dlg-change" class="dialog">
+    <form id="form-change" method="dialog" novalidate>
+      <h2>🔑 เปลี่ยนรหัสผ่าน</h2>
+      <div id="change-alert" class="alert" role="alert" hidden></div>
+      <label class="field">
+        <span>รหัสผ่านปัจจุบัน</span>
+        <input id="change-current" type="password" autocomplete="current-password" required>
+      </label>
+      <label class="field">
+        <span>รหัสผ่านใหม่</span>
+        <span class="pw-wrap">
+          <input id="change-new" type="password" autocomplete="new-password" required>
+          <button type="button" class="pw-toggle" data-target="change-new" aria-label="แสดงรหัสผ่าน">👁️</button>
+        </span>
+      </label>
+      <ul class="rules" data-for="change-new">
+        <li data-rule="len">อย่างน้อย 8 ตัวอักษร</li>
+        <li data-rule="alpha">มีตัวอักษรภาษาอังกฤษ</li>
+        <li data-rule="digit">มีตัวเลข</li>
+      </ul>
+      <label class="field">
+        <span>ยืนยันรหัสผ่านใหม่</span>
+        <input id="change-confirm" type="password" autocomplete="new-password" required>
+      </label>
+      <div class="dialog-actions">
+        <button id="btn-change-cancel" type="button" class="btn btn-ghost">ปิด</button>
+        <button id="btn-change" type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="loading" class="loading" hidden><div class="spinner"></div><div id="loading-text">กำลังโหลด...</div></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

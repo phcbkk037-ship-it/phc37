@@ -1,0 +1,147 @@
+/* PHC37 PWA — สีและขนาดตาม UI Kit 1.2.0 */
+:root {
+  --primary: #15703A; --primary-hover: #0E5A2E; --primary-soft: #EAF6EC; --brand: #3DA852;
+  --text: #17201A; --text-2: #4A5550; --line: #D8DED9; --bg: #F4F6F4; --white: #fff;
+  --info: #1D5FBF; --warn: #8A4B00; --danger: #B42318; --danger-soft: #FDECEA; --warn-soft: #FFF4E5;
+  --edit-soft: #FFF1E2; --radius: 12px; --shadow: 0 1px 2px rgba(23,32,26,.06), 0 4px 16px rgba(23,32,26,.06);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: 'Sarabun', system-ui, sans-serif; font-size: 16px; line-height: 1.55;
+  color: var(--text); background: var(--bg); min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+[hidden] { display: none !important; }
+h1 { font-size: 24px; margin: 0 0 4px; font-weight: 700; }
+h2 { font-size: 19px; margin: 0 0 12px; font-weight: 700; }
+.muted { color: var(--text-2); margin: 0; font-size: 14px; }
+.hint { color: var(--text-2); font-size: 14px; margin: 12px 0 0; text-align: center; }
+
+/* แถบหัว */
+.topbar {
+  position: sticky; top: 0; z-index: 20; background: var(--white);
+  border-top: 4px solid var(--brand); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top));
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-logo { width: 40px; height: 40px; border-radius: 10px; }
+.brand-title { font-weight: 700; color: var(--primary); font-size: 17px; line-height: 1.2; }
+.brand-sub { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn-account { display: flex; align-items: center; gap: 8px; padding: 6px 10px; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.acc-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu {
+  position: absolute; right: 12px; top: 64px; width: 280px; background: var(--white);
+  border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px; z-index: 30;
+}
+.acc-head { padding: 10px 12px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.acc-full { font-weight: 600; }
+.menu-item {
+  display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px;
+  padding: 10px 12px; font: inherit; color: var(--text); cursor: pointer;
+}
+.menu-item:hover { background: var(--primary-soft); }
+.menu-item.danger { color: var(--danger); }
+.menu-item.danger:hover { background: var(--danger-soft); }
+
+/* เนื้อหา */
+main { padding: 16px; padding-bottom: max(24px, env(safe-area-inset-bottom)); max-width: 1100px; margin: 0 auto; }
+.view.center { min-height: calc(100vh - 32px); display: flex; align-items: center; justify-content: center; }
+.card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.auth-card { width: 100%; max-width: 400px; padding: 28px 24px; border-top: 4px solid var(--brand); }
+.auth-brand { text-align: center; margin-bottom: 18px; }
+.auth-logo { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 10px; }
+
+.field { display: block; margin-bottom: 14px; }
+.field > span:first-child { display: block; font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+input[type=text], input[type=password], input[type=search], input:not([type]) {
+  width: 100%; font: inherit; font-size: 16px; color: var(--text); background: var(--white);
+  border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; outline: none;
+}
+input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(21,112,58,.15); }
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { padding-right: 46px; }
+.pw-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%); border: 0; background: none;
+  font-size: 18px; padding: 6px 8px; cursor: pointer; opacity: .7;
+}
+.rules { list-style: none; padding: 0; margin: -6px 0 14px; font-size: 14px; color: var(--text-2); }
+.rules li::before { content: '○ '; }
+.rules li.ok { color: var(--primary); }
+.rules li.ok::before { content: '✓ '; }
+
+.btn {
+  font: inherit; font-weight: 600; border-radius: 10px; padding: 11px 16px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--white); color: var(--text); min-height: 44px;
+}
+.btn:disabled { opacity: .6; cursor: progress; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--white); }
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+.btn-ghost { background: var(--white); }
+.btn-ghost:hover { background: var(--bg); }
+.btn-add { color: var(--primary); }
+.btn-block { width: 100%; margin-top: 6px; }
+
+.alert { border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 15px; background: var(--danger-soft); color: var(--danger); }
+.alert.info { background: var(--primary-soft); color: var(--primary); }
+.banner { padding: 8px 16px; font-size: 14px; text-align: center; }
+.banner-warn { background: var(--warn-soft); color: var(--warn); }
+
+/* หน้าหลัก */
+.home-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin: 8px 0 18px; }
+.search {
+  display: flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid var(--line);
+  border-radius: 10px; padding: 0 12px; flex: 1 1 260px; max-width: 380px;
+}
+.search input { border: 0; padding: 11px 0; box-shadow: none !important; }
+.group { margin-bottom: 22px; }
+.group-title { font-size: 15px; font-weight: 700; color: var(--text-2); margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+.group-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: var(--brand); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.tile {
+  display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+  font: inherit; color: var(--text); cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .05s;
+}
+.tile:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+.tile:active { transform: scale(.99); }
+.tile-icon { font-size: 26px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--primary-soft); border-radius: 10px; flex: none; }
+.tile-name { font-weight: 600; line-height: 1.35; }
+.tile-note { font-size: 13px; color: var(--text-2); }
+.tile.pending .tile-note { color: var(--warn); }
+.empty { text-align: center; color: var(--text-2); padding: 32px 0; }
+
+/* กล่องโต้ตอบ */
+.dialog { border: 0; border-radius: var(--radius); padding: 0; width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow); }
+.dialog::backdrop { background: rgba(23,32,26,.45); }
+.dialog form { padding: 22px; border-top: 4px solid var(--brand); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+/* โหลด / แจ้งเตือน */
+.loading {
+  position: fixed; inset: 0; background: rgba(244,246,244,.85); z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-2);
+}
+.spinner { width: 40px; height: 40px; border-radius: 50%; border: 4px solid var(--primary-soft); border-top-color: var(--primary); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast {
+  position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--text); color: var(--white); padding: 12px 18px; border-radius: 10px; z-index: 60;
+  max-width: calc(100vw - 32px); box-shadow: var(--shadow); font-size: 15px;
+}
+.toast.ok { background: var(--primary); }
+.toast.err { background: var(--danger); }
+
+@media (max-width: 560px) {
+  .brand-sub { display: none; }
+  .acc-name { display: none; }
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .tile { flex-direction: column; text-align: center; gap: 8px; padding: 14px 10px; }
+  .home-head h1 { font-size: 21px; }
+  .search { max-width: none; }
+}
