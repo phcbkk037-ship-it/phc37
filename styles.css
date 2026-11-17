@@ -1,4 +1,4 @@
-/* PHC37 PWA 1.4.0 — สีและขนาดตาม UI Kit 1.2.0 */
+/* PHC37 PWA 1.4.1 — สีและขนาดตาม UI Kit 1.2.0 */
 :root {
   --primary: #15703A; --primary-hover: #0E5A2E; --primary-soft: #EAF6EC; --brand: #3DA852;
   --text: #17201A; --text-2: #4A5550; --line: #D8DED9; --bg: #F4F6F4; --white: #fff;
@@ -321,3 +321,31 @@ textarea { width: 100%; font: inherit; border: 1px solid var(--line); border-rad
 @media (max-width: 560px) {
   .menu-row.child { margin-left: 14px; width: calc(100% - 14px); }
 }
+
+/* ---------- ปฏิทินไทย พ.ศ. (1.4.1) ---------- */
+.th-date-wrap { position: relative; display: block; }
+.th-date-wrap input.th-date { cursor: pointer; padding-right: 64px; background: var(--white); }
+.th-date-ic { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 16px; }
+.th-date-clear { position: absolute; right: 36px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: var(--text-2);
+  font-size: 14px; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; }
+.th-date-clear:hover { background: var(--bg); color: var(--danger); }
+.field.inline .th-date-wrap { min-width: 190px; }
+.dp { position: fixed; z-index: 1000; width: 300px; background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15); padding: 10px; font-size: 15px; }
+.dp-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.dp-head select { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); color: var(--text); }
+.dp-nav { width: 32px; height: 32px; border: 1px solid var(--line); background: var(--white); border-radius: 8px; font-size: 18px; cursor: pointer; color: var(--primary); }
+.dp-nav:hover { background: var(--primary-soft); }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.dp-wd { font-size: 13px; color: var(--text-2); padding: 4px 0; }
+.dp-wd:first-child { color: var(--danger); }
+.dp-day { height: 36px; border: 0; background: transparent; border-radius: 8px; font: inherit; font-size: 15px; cursor: pointer; color: var(--text); }
+.dp-day:hover:not(:disabled) { background: var(--primary-soft); }
+.dp-day.today { box-shadow: inset 0 0 0 1px var(--primary); font-weight: 700; }
+.dp-day.sel { background: var(--primary); color: #fff; font-weight: 700; }
+.dp-day:disabled { color: #C4CBC6; cursor: not-allowed; }
+.dp-time { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.dp-time select { font: inherit; font-size: 15px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); color: var(--text); }
+.dp-time > span:first-child { margin-right: auto; color: var(--text-2); }
+.dp-acts { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.dp-acts .btn-primary { min-width: 70px; }

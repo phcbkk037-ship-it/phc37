@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.2.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.2.1) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -20,7 +20,7 @@
   function fmtDate(iso) {
     if (!iso) return '';
     try {
-      return new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok' });
+      return P.fmtTime(iso) || iso;
     } catch (e) { return iso; }
   }
   function openDlg(d) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
@@ -530,6 +530,8 @@
     REGISTER_APPROVE: 'อนุมัติคำขอสมัคร', REGISTER_REJECT: 'ไม่อนุมัติคำขอสมัคร', USER_CREATE: 'เพิ่มผู้ใช้', USER_UPDATE: 'แก้ไขผู้ใช้',
     USER_STATUS: 'เปลี่ยนสถานะผู้ใช้', USER_UNLOCK: 'ปลดล็อกบัญชี', TEMP_PASSWORD_ISSUED: 'ออกรหัสชั่วคราว',
     TEMP_PASSWORD_EMAILED: 'ส่งรหัสชั่วคราวทางอีเมล', ROLE_PERMISSION_UPDATE: 'แก้สิทธิ์เมนูราย Role',
+    MENU_CREATE: 'เพิ่มเมนู', MENU_UPDATE: 'แก้ไขเมนู', MENU_MOVE: 'เลื่อนลำดับเมนู',
+    MAINTENANCE_ON: 'ปิดปรับปรุงระบบ', MAINTENANCE_OFF: 'เปิดระบบหลังปรับปรุง', SETTINGS_UPDATE: 'แก้ตั้งค่าระบบ', CHILD_APP_STATUS: 'เปลี่ยนสถานะแอพลูก',
     FORGOT_PASSWORD_CODE_SENT: 'ขอรหัสยืนยัน (ลืมรหัส)', FORGOT_PASSWORD_NOMATCH: 'ลืมรหัส: ข้อมูลไม่ตรง',
     FORGOT_PASSWORD_BAD_CODE: 'ลืมรหัส: รหัสยืนยันผิด', PASSWORD_RESET_BY_EMAIL: 'ตั้งรหัสใหม่ทางอีเมล', MIGRATION_RUN: 'ย้ายข้อมูล'
   };
@@ -542,7 +544,7 @@
       var o0 = el('option', null, 'ทั้งหมด'); o0.value = ''; sel.appendChild(o0);
       Object.keys(ACTION_LABEL).forEach(function (k) { var o = el('option', null, ACTION_LABEL[k]); o.value = k; sel.appendChild(o); });
       var to = new Date(), from = new Date(Date.now() - 6 * 86400000);
-      $('log-from').value = dateStr(from); $('log-to').value = dateStr(to);
+      P.dateSet($('log-from'), dateStr(from)); P.dateSet($('log-to'), dateStr(to));
     }
     $('log-user').closest('label').hidden = !isAdminRole();
     loadLogs(false);
@@ -557,7 +559,7 @@
     }
   }
   function logQuery() {
-    var from = $('log-from').value, to = $('log-to').value;
+    var from = P.dateGet($('log-from')), to = P.dateGet($('log-to'));
     return {
       from: from ? from + 'T00:00:00+07:00' : '',
       to: to ? new Date(new Date(to + 'T00:00:00+07:00').getTime() + 86400000).toISOString() : '',
@@ -631,7 +633,7 @@
       var flags = $('st-maint-state'); flags.textContent = '';
       flags.appendChild(m.on ? chip('🔧 กำลังปิดปรับปรุง' + (m.until ? ' · เปิดอัตโนมัติ ' + fmtDate(m.until) : ''), 'warn') : chip('✅ เปิดใช้งานปกติ', 'ok'));
       $('st-maint-on').checked = m.on;
-      $('st-maint-until').value = m.on ? toLocalInput(m.until) : '';
+      P.dateSet($('st-maint-until'), m.on ? toLocalInput(m.until) : '');
       $('st-maint-msg').value = m.on ? (m.message || '') : '';
       $('st-maint-open').hidden = !m.on;
       $('st-ttl').value = res.sessionHours;
@@ -658,7 +660,7 @@
       b.type = 'button';
       b.addEventListener('click', function () {
         if (a.status === 'maintenance') setApp(a, 'active', '', b);
-        else { A.app = a; $('app-name').textContent = a.name; $('app-until').value = ''; P.setAlert('app-alert', ''); openDlg($('dlg-app')); }
+        else { A.app = a; $('app-name').textContent = a.name; P.dateSet($('app-until'), ''); P.setAlert('app-alert', ''); openDlg($('dlg-app')); }
       });
       acts.appendChild(b); row.appendChild(acts);
       wrap.appendChild(row);
@@ -675,8 +677,8 @@
   }
   $('form-app').addEventListener('submit', function (e) {
     e.preventDefault();
-    var until = fromLocalInput($('app-until').value);
-    if ($('app-until').value && new Date(until).getTime() <= Date.now()) return P.setAlert('app-alert', 'เวลาเปิดอัตโนมัติต้องอยู่ในอนาคต');
+    var until = fromLocalInput(P.dateGet($('app-until')));
+    if (until && new Date(until).getTime() <= Date.now()) return P.setAlert('app-alert', 'เวลาเปิดอัตโนมัติต้องอยู่ในอนาคต');
     var btn = $('app-ok'); P.busy(btn, true, 'กำลังบันทึก...');
     setApp(A.app, 'maintenance', until).then(function (res) {
       P.busy(btn, false);
@@ -686,8 +688,8 @@
   $('app-cancel').addEventListener('click', function () { $('dlg-app').close(); });
 
   function saveMaint(on) {
-    var until = fromLocalInput($('st-maint-until').value);
-    if (on && $('st-maint-until').value && new Date(until).getTime() <= Date.now()) return P.toast('เวลาเปิดอัตโนมัติต้องอยู่ในอนาคต', 'err');
+    var until = fromLocalInput(P.dateGet($('st-maint-until')));
+    if (on && until && new Date(until).getTime() <= Date.now()) return P.toast('เวลาเปิดอัตโนมัติต้องอยู่ในอนาคต', 'err');
     var go = function () {
       var btn = $('st-maint-save'); P.busy(btn, true, 'กำลังบันทึก...');
       return call('admin.settingsSave', { maintenance: { on: on, until: on ? until : '', message: on ? $('st-maint-msg').value.trim() : '' } })

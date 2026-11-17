@@ -1,5 +1,5 @@
 /* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
-var PHC37_APP_VERSION = '1.4.0';
+var PHC37_APP_VERSION = '1.4.1';
 (function () {
   'use strict';
 
@@ -114,14 +114,167 @@ var PHC37_APP_VERSION = '1.4.0';
       else box.hidden = true;
     });
   }
-  function fmtTime(iso) {
-    try {
-      var d = new Date(iso), o = { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' };
-      if (d.getFullYear() !== new Date().getFullYear()) o.year = '2-digit';
-      return d.toLocaleString('th-TH', o) + ' น.';
-    }
-    catch (e) { return ''; }
+  // ---------- วันเวลาแบบไทย: 17 พ.ย. 2569 14:30 น. (พ.ศ. · 24 ชม. · เวลาไทย) ----------
+  var TH_MONTH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  var TH_MONTH_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+  function pad2(n) { return ('0' + n).slice(-2); }
+  function thParts(y, m, d, hh, mm) {
+    return d + ' ' + TH_MONTH[m] + ' ' + (y + 543) + (hh === undefined ? '' : ' ' + pad2(hh) + ':' + pad2(mm) + ' น.');
   }
+  /** ISO (เวลาใดก็ได้) → "17 พ.ย. 2569 14:30 น." ตามเวลาประเทศไทย; dateOnly = ไม่แสดงเวลา */
+  function fmtTime(iso, dateOnly) {
+    if (!iso) return '';
+    var t = new Date(iso).getTime(); if (isNaN(t)) return '';
+    var b = new Date(t + 7 * 3600000);               // ประเทศไทย UTC+7 ไม่มีเวลาออมแสง
+    return dateOnly ? thParts(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate())
+      : thParts(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate(), b.getUTCHours(), b.getUTCMinutes());
+  }
+
+  // ---------- ปฏิทินไทย (แทนตัวเลือกวันที่ของเบราว์เซอร์) ----------
+  // <input class="th-date" data-time="1" data-future="1"> ค่าเก็บใน dataset.v รูปแบบ YYYY-MM-DD หรือ YYYY-MM-DDTHH:mm (เวลาเครื่อง)
+  function parseV(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(v || '');
+    return m ? { y: +m[1], m: +m[2] - 1, d: +m[3], hh: m[4] === undefined ? undefined : +m[4], mm: m[5] === undefined ? undefined : +m[5] } : null;
+  }
+  function dateGet(inp) { return inp.dataset.v || ''; }
+  function dateSet(inp, v) {
+    var p = parseV(v);
+    inp.dataset.v = p ? v : '';
+    inp.value = p ? thParts(p.y, p.m, p.d, inp.dataset.time ? p.hh || 0 : undefined, p.mm || 0) : '';
+    var clr = inp.parentNode.querySelector('.th-date-clear'); if (clr) clr.hidden = !p;
+  }
+  var DP = { box: null, inp: null, y: 0, m: 0, sel: null };
+  function dpClose() {
+    if (DP.box) { DP.box.remove(); DP.box = null; }
+    document.removeEventListener('mousedown', dpOutside, true);
+    window.removeEventListener('resize', dpClose);
+    DP.inp = null;
+  }
+  function dpOutside(e) { if (DP.box && !DP.box.contains(e.target) && e.target !== DP.inp) dpClose(); }
+  function dpOpen(inp) {
+    if (DP.inp === inp) return dpClose();
+    dpClose();
+    var now = new Date(), p = parseV(dateGet(inp));
+    DP.inp = inp;
+    DP.sel = p ? { y: p.y, m: p.m, d: p.d } : null;
+    DP.y = p ? p.y : now.getFullYear(); DP.m = p ? p.m : now.getMonth();
+    DP.hh = p && p.hh !== undefined ? p.hh : 8; DP.mm = p && p.mm !== undefined ? p.mm : 0;
+    var box = document.createElement('div'); box.className = 'dp'; box.setAttribute('role', 'dialog');
+    DP.box = box;
+    (inp.closest('dialog') || document.body).appendChild(box);
+    dpRender();
+    var r = inp.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    var top = r.bottom + 6 + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 6) : r.bottom + 6;
+    box.style.left = left + 'px'; box.style.top = top + 'px';
+    setTimeout(function () { document.addEventListener('mousedown', dpOutside, true); window.addEventListener('resize', dpClose); }, 0);
+  }
+  function dpEl(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function dpRender() {
+    var box = DP.box, inp = DP.inp, withTime = !!inp.dataset.time, future = !!inp.dataset.future;
+    box.textContent = '';
+    var today = new Date(), t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    // หัว: ‹ เดือน ปี ›
+    var head = dpEl('div', 'dp-head');
+    var prev = dpEl('button', 'dp-nav', '‹'); prev.type = 'button'; prev.title = 'เดือนก่อน';
+    var next = dpEl('button', 'dp-nav', '›'); next.type = 'button'; next.title = 'เดือนถัดไป';
+    var ms = dpEl('select', 'dp-month'); TH_MONTH_FULL.forEach(function (n, i) { var o = dpEl('option', null, n); o.value = i; ms.appendChild(o); }); ms.value = DP.m;
+    var ys = dpEl('select', 'dp-year');
+    for (var y = today.getFullYear() - 5; y <= today.getFullYear() + 5; y++) { var o = dpEl('option', null, 'พ.ศ. ' + (y + 543)); o.value = y; ys.appendChild(o); }
+    if (!ys.querySelector('option[value="' + DP.y + '"]')) { var oy = dpEl('option', null, 'พ.ศ. ' + (DP.y + 543)); oy.value = DP.y; ys.appendChild(oy); }
+    ys.value = DP.y;
+    prev.addEventListener('click', function () { if (--DP.m < 0) { DP.m = 11; DP.y--; } dpRender(); });
+    next.addEventListener('click', function () { if (++DP.m > 11) { DP.m = 0; DP.y++; } dpRender(); });
+    ms.addEventListener('change', function () { DP.m = +ms.value; dpRender(); });
+    ys.addEventListener('change', function () { DP.y = +ys.value; dpRender(); });
+    head.appendChild(prev); head.appendChild(ms); head.appendChild(ys); head.appendChild(next);
+    box.appendChild(head);
+    // ตารางวัน
+    var grid = dpEl('div', 'dp-grid');
+    ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].forEach(function (d) { grid.appendChild(dpEl('span', 'dp-wd', d)); });
+    var first = new Date(DP.y, DP.m, 1).getDay(), days = new Date(DP.y, DP.m + 1, 0).getDate();
+    for (var i = 0; i < first; i++) grid.appendChild(dpEl('span'));
+    for (var d = 1; d <= days; d++) {
+      (function (d) {
+        var b = dpEl('button', 'dp-day', String(d)); b.type = 'button';
+        var t = new Date(DP.y, DP.m, d).getTime();
+        if (t === t0) b.classList.add('today');
+        if (DP.sel && DP.sel.y === DP.y && DP.sel.m === DP.m && DP.sel.d === d) b.classList.add('sel');
+        if (future && t < t0) b.disabled = true;
+        b.addEventListener('click', function () {
+          DP.sel = { y: DP.y, m: DP.m, d: d };
+          if (!withTime) { dpApply(); return; }
+          dpRender();
+        });
+        grid.appendChild(b);
+      })(d);
+    }
+    box.appendChild(grid);
+    // เวลา 24 ชม.
+    if (withTime) {
+      var tr = dpEl('div', 'dp-time');
+      tr.appendChild(dpEl('span', null, 'เวลา'));
+      var hs = dpEl('select'); for (var h = 0; h < 24; h++) { var oh = dpEl('option', null, pad2(h)); oh.value = h; hs.appendChild(oh); } hs.value = DP.hh;
+      var mn = dpEl('select'); var mins = []; for (var m = 0; m < 60; m += 5) mins.push(m);
+      if (mins.indexOf(DP.mm) < 0) { mins.push(DP.mm); mins.sort(function (a, b) { return a - b; }); }
+      mins.forEach(function (m) { var om = dpEl('option', null, pad2(m)); om.value = m; mn.appendChild(om); }); mn.value = DP.mm;
+      hs.addEventListener('change', function () { DP.hh = +hs.value; });
+      mn.addEventListener('change', function () { DP.mm = +mn.value; });
+      tr.appendChild(hs); tr.appendChild(dpEl('b', null, ':')); tr.appendChild(mn); tr.appendChild(dpEl('span', null, 'น.'));
+      box.appendChild(tr);
+    }
+    // ปุ่ม
+    var acts = dpEl('div', 'dp-acts');
+    var bToday = dpEl('button', 'btn btn-ghost btn-sm', 'วันนี้'); bToday.type = 'button';
+    bToday.addEventListener('click', function () {
+      DP.y = today.getFullYear(); DP.m = today.getMonth(); DP.sel = { y: DP.y, m: DP.m, d: today.getDate() };
+      if (!withTime) dpApply(); else dpRender();
+    });
+    acts.appendChild(bToday);
+    if (!inp.required) {
+      var bClr = dpEl('button', 'btn btn-ghost btn-sm', 'ล้าง'); bClr.type = 'button';
+      bClr.addEventListener('click', function () { dateSet(inp, ''); inp.dispatchEvent(new Event('change', { bubbles: true })); dpClose(); });
+      acts.appendChild(bClr);
+    }
+    if (withTime) {
+      var bOk = dpEl('button', 'btn btn-primary btn-sm', 'ตกลง'); bOk.type = 'button'; bOk.disabled = !DP.sel;
+      bOk.addEventListener('click', dpApply);
+      acts.appendChild(bOk);
+    }
+    box.appendChild(acts);
+  }
+  function dpApply() {
+    if (!DP.sel) return;
+    var s = DP.sel, v = s.y + '-' + pad2(s.m + 1) + '-' + pad2(s.d);
+    if (DP.inp.dataset.time) v += 'T' + pad2(DP.hh) + ':' + pad2(DP.mm);
+    var inp = DP.inp;
+    dateSet(inp, v); inp.dispatchEvent(new Event('change', { bubbles: true }));
+    dpClose(); inp.focus();
+  }
+  function initDatePickers(root) {
+    Array.prototype.forEach.call((root || document).querySelectorAll('input.th-date'), function (inp) {
+      if (inp.dataset.dpInit) return;
+      inp.dataset.dpInit = '1'; inp.readOnly = true; inp.autocomplete = 'off';
+      inp.placeholder = inp.placeholder || (inp.dataset.time ? 'เลือกวันและเวลา' : 'เลือกวันที่');
+      var wrap = document.createElement('span'); wrap.className = 'th-date-wrap';
+      inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+      var ic = document.createElement('span'); ic.className = 'th-date-ic'; ic.textContent = '📅'; ic.setAttribute('aria-hidden', 'true'); wrap.appendChild(ic);
+      if (!inp.required) {
+        var clr = document.createElement('button'); clr.type = 'button'; clr.className = 'th-date-clear'; clr.textContent = '✕'; clr.title = 'ล้าง'; clr.hidden = true;
+        clr.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); dateSet(inp, ''); inp.dispatchEvent(new Event('change', { bubbles: true })); });
+        wrap.appendChild(clr);
+      }
+      inp.addEventListener('click', function (e) { e.preventDefault(); dpOpen(inp); });
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); dpOpen(inp); }
+        else if (e.key === 'Escape') dpClose();
+        else if ((e.key === 'Backspace' || e.key === 'Delete') && !inp.required) { dateSet(inp, ''); inp.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+      var dlg = inp.closest('dialog'); if (dlg) dlg.addEventListener('close', dpClose);
+    });
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && DP.box) { e.preventDefault(); dpClose(); } }, true);
+  initDatePickers();
 
   $('form-login').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -589,7 +742,7 @@ var PHC37_APP_VERSION = '1.4.0';
         return res;
       });
     },
-    fmtTime: fmtTime,
+    fmtTime: fmtTime, dateGet: dateGet, dateSet: dateSet, initDatePickers: initDatePickers,
     groupLabel: function (g) { return GROUP_LABEL[g] || g; },
     roleLabel: function (r) { return ROLE_LABEL[r] || r; }
   };

@@ -1,9 +1,9 @@
-/* PHC37 PWA — Service Worker (PHC37-PWA-1.4.0)
+/* PHC37 PWA — Service Worker (PHC37-PWA-1.4.1)
  * - ไฟล์ของแอพ: ดึงจากเน็ตก่อนและตรวจกับเซิร์ฟเวอร์ทุกครั้ง (ได้เวอร์ชันล่าสุดเสมอ) ถ้าออฟไลน์ใช้ของที่เก็บไว้
  * - ฟอนต์ Google: ใช้ของที่เก็บไว้ก่อน
  * - API (script.google.com) และข้อมูลอื่น: ไม่เก็บเลย
  */
-var CACHE = 'phc37-shell-v1.4.0';
+var CACHE = 'phc37-shell-v1.4.1';
 var FONT_CACHE = 'phc37-fonts-v1';
 var SHELL = [
   './', './index.html', './styles.css', './app.js', './admin.js', './public.js', './config.js', './manifest.webmanifest',
