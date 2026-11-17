@@ -4,6 +4,6 @@
  * ใส่ได้ปลอดภัย — ไม่ใช่ความลับ (ทุกคำขอต้องเข้าสู่ระบบก่อน)
  */
 window.PHC37_CONFIG = {
-  API_URL: 'https://zduwjkwyabjhguxkhstd.supabase.co/functions/v1/phc37-api',
+  API_URL: 'https://zduwjkwyabjhguxkhstd.supabase.co/functions/v1/hyper-task',
   APP_VERSION: 'PHC37-PWA-1.8.0'
 };
