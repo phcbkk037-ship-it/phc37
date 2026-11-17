@@ -356,6 +356,24 @@
       <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
     </section>
 
+    <!-- เวชระเบียนกลาง -->
+    <section id="view-patients" class="view" hidden>
+      <div class="admin-head">
+        <button id="pt-back" type="button" class="btn btn-ghost">↩️ กลับหน้าหลัก</button>
+        <h1>🗂️ เวชระเบียนกลาง</h1>
+      </div>
+      <div id="pt-notice" class="alert info" role="status"></div>
+      <div id="pt-overview" class="row-flags pt-overview"></div>
+      <form id="pt-form" class="pt-search" role="search" novalidate>
+        <label class="search"><span aria-hidden="true">🔎</span>
+          <input id="pt-q" type="search" placeholder="ค้นหา HN / เลขบัตร / ชื่อ-สกุล / เบอร์โทร" autocomplete="off" enterkeyhint="search"></label>
+        <button id="pt-go" type="submit" class="btn btn-primary">ค้นหา</button>
+      </form>
+      <label class="check pt-inactive"><input id="pt-inactive" type="checkbox"><span>รวมรายที่ปิดใช้งาน</span></label>
+      <p id="pt-count" class="muted"></p>
+      <div id="pt-list"><p class="empty">พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา</p></div>
+    </section>
+
     <!-- งานบุคคล -->
     <section id="view-tasks" class="view" hidden>
       <div class="admin-head">
@@ -587,6 +605,17 @@
     </form>
   </dialog>
 
+  <!-- เวชระเบียนกลาง: แฟ้มผู้ป่วย -->
+  <dialog id="dlg-patient" class="dialog dialog-wide">
+    <div class="dlg-pad">
+      <div class="tk-dlg-head">
+        <h2 id="pt-title">แฟ้มผู้ป่วย</h2>
+        <button id="pt-close" type="button" class="btn btn-ghost btn-sm" aria-label="ปิด">✕</button>
+      </div>
+      <div id="pt-body"></div>
+    </div>
+  </dialog>
+
   <!-- แจ้งเตือน -->
   <dialog id="dlg-notif" class="dialog">
     <div class="dlg-pad">
@@ -637,5 +666,6 @@
   <script src="public.js"></script>
   <script src="admin.js"></script>
   <script src="tasks.js"></script>
+  <script src="patients.js"></script>
 </body>
 </html>

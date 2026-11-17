@@ -1,4 +1,4 @@
-/* PHC37 PWA 1.7.0 — สีและขนาดตาม UI Kit 1.2.0 */
+/* PHC37 PWA 1.8.0 — สีและขนาดตาม UI Kit 1.2.0 */
 :root {
   --primary: #15703A; --primary-hover: #0E5A2E; --primary-soft: #EAF6EC; --brand: #3DA852;
   --text: #17201A; --text-2: #4A5550; --line: #D8DED9; --bg: #F4F6F4; --white: #fff;
@@ -487,4 +487,22 @@ button.file-chip:hover { border-color: var(--primary); }
   .task-strip { padding: 10px 12px; }
   .dlg-pad { padding: 14px 14px 18px; }
   .tk-new { width: 100%; margin: 6px 0 0; }
+}
+
+/* ============ เวชระเบียนกลาง (1.8.0) ============ */
+.pt-overview { margin: 0 0 12px; }
+.pt-search { display: flex; gap: 8px; margin-bottom: 6px; }
+.pt-search .search { flex: 1; max-width: none; }
+.pt-inactive { margin: 0 0 6px; }
+.pt-row .row-sub { font-variant-numeric: tabular-nums; }
+.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 18px; margin: 0; }
+.pt-f { min-width: 0; }
+.pt-f dt { font-size: 13px; color: var(--text-2); }
+.pt-f dd { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+.pt-cid { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.pt-phones { display: flex; flex-wrap: wrap; gap: 6px; }
+a.pt-phone { text-decoration: none; }
+@media (max-width: 560px) {
+  .pt-grid { grid-template-columns: 1fr; }
+  .pt-search .btn { padding: 0 14px; }
 }

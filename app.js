@@ -1,5 +1,5 @@
 /* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
-var PHC37_APP_VERSION = '1.7.0';
+var PHC37_APP_VERSION = '1.8.0';
 (function () {
   'use strict';
 
@@ -144,8 +144,8 @@ var PHC37_APP_VERSION = '1.7.0';
   // ---------- UI helpers ----------
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
-    $('topbar').hidden = view !== 'view-home' && view !== 'view-admin' && view !== 'view-tasks';
+    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    $('topbar').hidden = ['view-home', 'view-admin', 'view-tasks', 'view-patients'].indexOf(view) < 0;
     closeAccountMenu();
   }
   function setAlert(id, msg, info) {
@@ -545,6 +545,10 @@ var PHC37_APP_VERSION = '1.7.0';
   function isLogsMenu(m) {
     return String(m.key || '').toLowerCase() === 'logs' || String(m.url || '').trim().toLowerCase() === '#logs';
   }
+  function isPatientMenu(m) {
+    var k = String(m.key || '').toLowerCase(), u = String(m.url || '').trim().toLowerCase();
+    return ['medical_records', 'patient_master', 'patients'].indexOf(k) >= 0 || u === '#patient_master' || u === '#medical_records';
+  }
   function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
   function canManage() {
     var r = state.profile && state.profile.user && state.profile.user.role;
@@ -624,6 +628,10 @@ var PHC37_APP_VERSION = '1.7.0';
         'pending', function () {
           toast('"' + m.name + '" ปิดปรับปรุงชั่วคราว' + (m.maintenance.until ? ' จะเปิดประมาณ ' + fmtTime(m.maintenance.until) : ''));
         });
+    } else if (isPatientMenu(m)) {
+      el = makeTile(iconOf(m, '🗂️'), m.name, 'ค้นหา · เปิดแฟ้ม', '', function () {
+        if (window.PHC37Patients) window.PHC37Patients.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else if (isRealUrl(m.url)) {
       var ready = !m.requireGateway;
       el = makeTile(iconOf(m, '📌'), m.name, ready ? (m.description || '') : 'กำลังย้ายมาระบบใหม่',

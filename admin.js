@@ -538,6 +538,7 @@
     REGISTER_APPROVE: 'อนุมัติคำขอสมัคร', REGISTER_REJECT: 'ไม่อนุมัติคำขอสมัคร', USER_CREATE: 'เพิ่มผู้ใช้', USER_UPDATE: 'แก้ไขผู้ใช้',
     USER_STATUS: 'เปลี่ยนสถานะผู้ใช้', USER_UNLOCK: 'ปลดล็อกบัญชี', TEMP_PASSWORD_ISSUED: 'ออกรหัสชั่วคราว',
     TEMP_PASSWORD_EMAILED: 'ส่งรหัสชั่วคราวทางอีเมล', ROLE_PERMISSION_UPDATE: 'แก้สิทธิ์เมนูราย Role',
+    PATIENT_SEARCH: 'ค้นหาผู้ป่วย', PATIENT_VIEW: 'เปิดแฟ้มผู้ป่วย', PATIENT_VIEW_CID: 'ดูเลขบัตรผู้ป่วย',
     TASK_CREATE: 'มอบหมายงาน', TASK_APPROVE: 'ตรวจรับงาน', TASK_RETURN: 'ส่งงานกลับแก้ไข', TASK_CANCEL: 'ยกเลิกงาน',
     MENU_CREATE: 'เพิ่มเมนู', MENU_UPDATE: 'แก้ไขเมนู', MENU_MOVE: 'เลื่อนลำดับเมนู',
     MAINTENANCE_ON: 'ปิดปรับปรุงระบบ', MAINTENANCE_OFF: 'เปิดระบบหลังปรับปรุง', SETTINGS_UPDATE: 'แก้ตั้งค่าระบบ', CHILD_APP_STATUS: 'เปลี่ยนสถานะแอพลูก',
