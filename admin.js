@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.3.1) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.4.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -42,12 +42,20 @@
     document.querySelector('#view-admin .tabs').hidden = !admin;
     if (!admin || mode === 'logs') { switchTab('logs'); if (!admin) return; }
     else switchTab('users');
-    P.loading(true, 'กำลังโหลดข้อมูลผู้ใช้...');
+    // แสดงรายชื่อที่จำไว้ทันที แล้วค่อยอัปเดต
+    var cb = P.cacheGet('adm.boot'), cu = P.cacheGet('adm.users');
+    if (cb && cu) { A.boot = cb; A.users = cu; fillOptions(); setBadge(cb.pendingRequests); renderUsers(); }
+    else P.loading(true, 'กำลังโหลดข้อมูลผู้ใช้...');
     Promise.all([call('admin.bootstrap'), call('admin.listUsers')]).then(function (r) {
       P.loading(false);
-      if (!r[0].ok) { P.toast(r[0].message, 'err'); if (r[0].code === 'forbidden') P.goHome(); return; }
-      A.boot = r[0];
-      A.users = r[1].ok ? r[1].users : [];
+      if (!r[0].ok) {
+        if (r[0].code === 'network' && cb) return P.toast('เชื่อมต่อไม่สำเร็จ — แสดงข้อมูลล่าสุดที่บันทึกไว้', 'err');
+        P.toast(r[0].message, 'err'); if (r[0].code === 'forbidden') P.goHome(); return;
+      }
+      var users = r[1].ok ? r[1].users : [];
+      P.cacheSet('adm.boot', r[0]); P.cacheSet('adm.users', users);
+      if (cb && cu && JSON.stringify(cb) === JSON.stringify(r[0]) && JSON.stringify(cu) === JSON.stringify(users)) return;
+      A.boot = r[0]; A.users = users;
       fillOptions();
       setBadge(A.boot.pendingRequests);
       renderUsers();
@@ -229,7 +237,7 @@
       upsertLocal(res.user);
       if (A.mode === 'approve') {
         P.toast(res.message || 'อนุมัติคำขอแล้ว', 'ok');
-        loadRequests();
+        loadRequests(true);
         if (res.temp && res.temp.ok && !res.temp.emailed) showTemp(res.temp);
       } else {
         P.toast(res.message || 'บันทึกแล้ว', 'ok');
@@ -243,10 +251,11 @@
     if (!u) return;
     var i = A.users.findIndex(function (x) { return x.id === u.id; });
     if (i >= 0) A.users[i] = u; else A.users.push(u);
+    P.cacheSet('adm.users', A.users);
     renderUsers();
   }
   function refreshUsers() {
-    return call('admin.listUsers').then(function (r) { if (r.ok) { A.users = r.users; renderUsers(); } });
+    return call('admin.listUsers').then(function (r) { if (r.ok) { A.users = r.users; P.cacheSet('adm.users', A.users); renderUsers(); } });
   }
 
   // ---------- ออกรหัส / ปลดล็อก ----------
@@ -328,9 +337,9 @@
   $('confirm-alt').addEventListener('click', function () { if (A.confirmAlt) runConfirm(A.confirmAlt.fn, $('confirm-alt')); });
 
   // ---------- คำขอสมัคร ----------
-  function loadRequests() {
-    var wrap = $('adm-requests'); P.skeleton(wrap, 3);
-    call('admin.listRequests').then(function (res) {
+  function loadRequests(fresh) {
+    var wrap = $('adm-requests');
+    P.swr('adm.requests', function () { return call('admin.listRequests'); }, function (res) {
       wrap.textContent = '';
       if (!res.ok) { wrap.appendChild(el('p', 'empty', res.message)); return; }
       A.requests = res.requests;
@@ -358,7 +367,7 @@
           no.addEventListener('click', function () {
             confirmBox('ไม่อนุมัติคำขอ', 'ไม่อนุมัติคำขอของ "' + r.fullName + '"', true, function (reason) {
               return call('admin.rejectRequest', { requestId: r.id, reason: reason }).then(function (res2) {
-                if (res2.ok) { P.toast(res2.message, 'ok'); loadRequests(); }
+                if (res2.ok) { P.toast(res2.message, 'ok'); loadRequests(true); }
                 return res2;
               });
             }, 'ยืนยันไม่อนุมัติ');
@@ -367,7 +376,7 @@
         }
         wrap.appendChild(card);
       });
-    });
+    }, function () { P.skeleton(wrap, 3); }, fresh === true);
   }
 
   // ---------- ออกรหัสชุด ----------
@@ -720,13 +729,12 @@
   // ---------- จัดการเมนู (superadmin) ----------
   var MN = { menus: [], wg: [] };
   var ICON_PICKS = ['🏠', '📊', '📈', '👤', '👥', '📅', '🔁', '📋', '📌', '🗂️', '💊', '🧪', '🩺', '🦷', '🧠', '🏥', '🏘️', '📦', '🖥️', '📄', '🧾', '⚙️', '📁', '🔔'];
-  function loadMenus() {
-    P.skeleton($('mn-list'), 6);
-    call('admin.menusList').then(function (res) {
+  function loadMenus(fresh) {
+    P.swr('adm.menus', function () { return call('admin.menusList'); }, function (res) {
       if (!res.ok) { $('mn-list').textContent = res.message; return; }
       MN.menus = res.menus; MN.wg = res.workgroups;
       renderMenusAdmin();
-    });
+    }, function () { P.skeleton($('mn-list'), 6); }, fresh === true);
   }
   function groupName(g) { return g === 'all' || !g ? 'ทั่วไป (ทุกกลุ่ม)' : ((MN.wg.filter(function (w) { return w.key === g; })[0] || {}).label || P.groupLabel(g)); }
   function renderMenusAdmin() {
@@ -767,7 +775,7 @@
         b.disabled = true;
         call('admin.menuMove', { key: m.key, dir: x[1] }).then(function (res) {
           if (!res.ok) return P.toast(res.message, 'err');
-          loadMenus(); P.refreshProfile();
+          loadMenus(true); P.refreshProfile();
         });
       });
       acts.appendChild(b);
@@ -847,7 +855,7 @@
       if (!res.ok) return P.setAlert('mn-alert', res.message);
       $('dlg-menu').close();
       P.toast(res.message, 'ok');
-      loadMenus(); P.refreshProfile();
+      loadMenus(true); P.refreshProfile();
     });
   });
 

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PHC37 วัดความเร็ว API</title>
+  <style>
+    body { font-family: Sarabun, system-ui, sans-serif; background: #F4F6F4; color: #17201A; margin: 0; padding: 16px; }
+    .card { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid #DCE3DD; border-top: 4px solid #3DA852; border-radius: 14px; padding: 18px; }
+    h1 { font-size: 20px; margin: 0 0 6px; color: #15703A; }
+    p { margin: 6px 0; color: #4A5A4F; }
+    label { display: block; font-weight: 600; margin: 12px 0 4px; }
+    input { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border: 1px solid #DCE3DD; border-radius: 10px; }
+    button { font: inherit; font-weight: 600; background: #15703A; color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; margin-top: 14px; cursor: pointer; }
+    button:disabled { opacity: .6; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 15px; }
+    th, td { border-bottom: 1px solid #E7ECE8; padding: 8px 6px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .fast { color: #15703A; font-weight: 700; }
+    .muted { color: #6B7A70; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>⏱️ วัดความเร็ว API (เดิม vs ใหม่)</h1>
+    <p class="muted">เข้าสู่ระบบ PWA ในเบราว์เซอร์นี้ก่อน แล้วเปิดหน้านี้ · วัดเฉพาะคำสั่งอ่าน ไม่เขียนข้อมูล · เวลารวมตั้งแต่กดจนได้คำตอบ</p>
+    <label for="old">API เดิม (Apps Script …/exec)</label>
+    <input id="old" placeholder="https://script.google.com/macros/s/…/exec">
+    <label for="neu">API ใหม่ (Supabase Edge Function)</label>
+    <input id="neu" placeholder="https://xxxx.supabase.co/functions/v1/phc37-api">
+    <button id="go" type="button">เริ่มวัด (คำสั่งละ 5 ครั้ง)</button>
+    <div id="out"></div>
+  </div>
+  <script src="config.js"></script>
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      var cfg = window.PHC37_CONFIG || {};
+      try { $('old').value = localStorage.getItem('phc37.speed.old') || ''; } catch (e) {}
+      $('neu').value = /supabase\.co/.test(cfg.API_URL || '') ? cfg.API_URL : (localStorage.getItem('phc37.speed.new') || '');
+      if (/script\.google/.test(cfg.API_URL || '') && !$('old').value) $('old').value = cfg.API_URL;
+      var token = localStorage.getItem('phc37.token') || '';
+      var tests = [
+        ['สถานะระบบ (ไม่ต้องเข้าสู่ระบบ)', 'public.status', {}],
+        ['ข้อมูลผู้ใช้ + เมนู (หน้าหลัก)', 'auth.me', { token: token }],
+        ['ตัวเลขงานของฉัน', 'task.summary', { token: token }],
+        ['รายการงานต้องทำ', 'task.list', { token: token, box: 'todo' }],
+        ['การแจ้งเตือน', 'notif.list', { token: token }]
+      ];
+      function one(url, action, data) {
+        var t = performance.now();
+        return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, data: data }), redirect: 'follow' })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { return { ms: performance.now() - t, ok: j.ok !== false || j.code === 'forbidden' }; })
+          .catch(function () { return { ms: NaN, ok: false }; });
+      }
+      async function series(url, action, data) {
+        if (!url) return null;
+        var arr = [];
+        for (var i = 0; i < 5; i++) { var r = await one(url, action, data); if (!r.ok) return { err: true }; arr.push(r.ms); }
+        arr.sort(function (a, b) { return a - b; });
+        return { median: arr[2], first: arr[0] };
+      }
+      $('go').addEventListener('click', async function () {
+        var oldU = $('old').value.trim(), newU = $('neu').value.trim();
+        try { localStorage.setItem('phc37.speed.old', oldU); localStorage.setItem('phc37.speed.new', newU); } catch (e) {}
+        if (!token) { $('out').innerHTML = '<p>ยังไม่ได้เข้าสู่ระบบ PWA ในเบราว์เซอร์นี้ — วัดได้เฉพาะสถานะระบบ</p>'; }
+        this.disabled = true; this.textContent = 'กำลังวัด...';
+        var rows = '<table><tr><th>คำสั่ง</th><th>เดิม (ms)</th><th>ใหม่ (ms)</th><th>เร็วขึ้น</th></tr>';
+        var so = 0, sn = 0;
+        for (var i = 0; i < tests.length; i++) {
+          var t = tests[i];
+          if (!token && i > 0) break;
+          var a = await series(oldU, t[1], t[2]), b = await series(newU, t[1], t[2]);
+          var fa = a ? (a.err ? 'ผิดพลาด' : Math.round(a.median)) : '-', fb = b ? (b.err ? 'ผิดพลาด' : Math.round(b.median)) : '-';
+          var x = (a && b && !a.err && !b.err) ? (a.median / b.median).toFixed(1) + '×' : '';
+          if (a && !a.err) so += a.median; if (b && !b.err) sn += b.median;
+          rows += '<tr><td>' + t[0] + '</td><td>' + fa + '</td><td class="fast">' + fb + '</td><td>' + x + '</td></tr>';
+          $('out').innerHTML = rows + '</table><p class="muted">กำลังวัด...</p>';
+        }
+        rows += '</table><p class="muted">ค่ากลาง (median) จาก 5 ครั้งต่อคำสั่ง' + (so && sn ? ' · รวมเร็วขึ้น ' + (so / sn).toFixed(1) + ' เท่า' : '') + '</p>';
+        $('out').innerHTML = rows;
+        this.disabled = false; this.textContent = 'วัดอีกครั้ง';
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
-var PHC37_APP_VERSION = '1.6.0';
+var PHC37_APP_VERSION = '1.7.0';
 (function () {
   'use strict';
 
@@ -21,7 +21,45 @@ var PHC37_APP_VERSION = '1.6.0';
   function sget(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function sdel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  // ---------- แคชข้อมูลในเครื่อง (แสดงทันที แล้วค่อยอัปเดตจากเซิร์ฟเวอร์) — แยกตามผู้ใช้ · ล้างเมื่อออกจากระบบ ----------
+  var KEY_CACHE = 'phc37.c.';
+  function cacheKey(k) { var u = state.profile && state.profile.user && state.profile.user.username; return u ? KEY_CACHE + u + '.' + k : null; }
+  function cacheGet(k) {
+    var key = cacheKey(k); if (!key) return null;
+    try { var x = JSON.parse(sget(key) || 'null'); return x ? x.v : null; } catch (e) { return null; }
+  }
+  function cacheSet(k, v) {
+    var key = cacheKey(k); if (!key) return;
+    var s = JSON.stringify({ t: Date.now(), v: v });
+    if (s.length < 400000) sset(key, s);
+  }
+  function cacheClear() {
+    try {
+      var ks = [];
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(KEY_CACHE) === 0) ks.push(k); }
+      ks.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+  /**
+   * stale-while-revalidate: มีข้อมูลเดิม → แสดงทันที (render(res, true)) แล้วเรียกเซิร์ฟเวอร์
+   * ได้ข้อมูลใหม่และต่างจากเดิม → แสดงใหม่ · เชื่อมต่อไม่ได้ → คงข้อมูลเดิมไว้และแจ้งเตือน
+   * fresh = true → ไม่ใช้ข้อมูลเดิม (ใช้หลังบันทึก/แก้ไข)
+   */
+  function swr(key, fetcher, render, onWait, fresh) {
+    var c = fresh ? null : cacheGet(key);
+    if (c) render(c, true); else if (onWait) onWait();
+    return fetcher().then(function (res) {
+      if (res && res.ok) {
+        cacheSet(key, res);
+        if (!c || JSON.stringify(c) !== JSON.stringify(res)) render(res, false);
+      } else if (!c || (res && res.code !== 'network')) render(res, false);
+      else toast('เชื่อมต่อไม่สำเร็จ — แสดงข้อมูลล่าสุดที่บันทึกไว้', 'err');
+      return res;
+    });
+  }
+
   function clearSession() {
+    cacheClear();
     sdel(KEY_TOKEN); sdel(KEY_EXP); sdel(KEY_PROFILE); state.profile = null;
     if (window.PHC37Tasks) window.PHC37Tasks.reset();
   }
@@ -840,6 +878,7 @@ var PHC37_APP_VERSION = '1.6.0';
         return res;
       });
     },
+    cacheGet: cacheGet, cacheSet: cacheSet, swr: swr,
     fmtTime: fmtTime, dateGet: dateGet, dateSet: dateSet, initDatePickers: initDatePickers,
     groupLabel: function (g) { return GROUP_LABEL[g] || g; },
     roleLabel: function (r) { return ROLE_LABEL[r] || r; }

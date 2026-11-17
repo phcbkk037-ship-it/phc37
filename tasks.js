@@ -1,4 +1,4 @@
-/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.0.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน */
+/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.1.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -50,11 +50,12 @@
   // ---------- ตัวเลขสรุป (หน้าหลัก · กระดิ่ง · แท็บ) ----------
   function refreshSummary(force) {
     if (!P.token()) return Promise.resolve(null);
+    if (!S.summary) { var cs = P.cacheGet('task.summary'); if (cs) { S.summary = cs; renderSummary(); } }
     if (!force && Date.now() - S.sumAt < 30000 && S.summary) { renderSummary(); return Promise.resolve(S.summary); }
     S.sumAt = Date.now();
     return quiet('task.summary').then(function (r) {
       if (!r.ok) return null;
-      S.summary = r; renderSummary(); return r;
+      S.summary = r; P.cacheSet('task.summary', r); renderSummary(); return r;
     });
   }
   function renderSummary() {
@@ -97,10 +98,9 @@
     renderSummary();
     loadList();
   }
-  function loadList() {
-    var wrap = $('tk-list'), box = S.box;
-    P.skeleton(wrap, 4);
-    call('task.list', { box: box, all: $('tk-all').checked }).then(function (r) {
+  function loadList(fresh) {
+    var wrap = $('tk-list'), box = S.box, all = $('tk-all').checked;
+    P.swr('task.list.' + box + (all ? '.all' : ''), function () { return call('task.list', { box: box, all: all }); }, function (r) {
       if (box !== S.box) return;
       wrap.textContent = '';
       if (!guard(r)) return;
@@ -113,7 +113,7 @@
         return;
       }
       r.items.forEach(function (it) { wrap.appendChild(ASSIGNEE_BOX[box] ? rowMine(it) : rowAssigned(it)); });
-    });
+    }, function () { P.skeleton(wrap, 4); }, fresh === true);
   }
   function rowBase(it, closed) {
     var row = el('button', 'row tk-row'); row.type = 'button';
@@ -313,7 +313,7 @@
   function afterChange(msg) {
     P.toast(msg, 'ok');
     refreshSummary(true);
-    if (!$('view-tasks').hidden) loadList();
+    if (!$('view-tasks').hidden) loadList(true);
     if (S.cur) openTask(S.cur);
   }
   function act(btn, data, msgFallback) {
@@ -620,7 +620,7 @@
   Array.prototype.forEach.call(document.querySelectorAll('#view-tasks .tab'), function (t) {
     t.addEventListener('click', function () { switchBox(t.dataset.box); });
   });
-  $('tk-all').addEventListener('change', loadList);
+  $('tk-all').addEventListener('change', function () { loadList(); });
   $('tk-new').addEventListener('click', openNew);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && !$('topbar').hidden) refreshSummary(false);
