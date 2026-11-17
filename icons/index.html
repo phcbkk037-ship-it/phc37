@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15703A">
+  <meta name="description" content="ระบบงาน ศูนย์บริการสาธารณสุข 37 ประสงค์ - สุดสาคร ตู้จินดา">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="PHC37">
+  <title>PHC37 ระบบงาน ศบส.37</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <div id="offline" class="banner banner-warn" hidden>ไม่มีการเชื่อมต่ออินเทอร์เน็ต — ใช้งานได้เมื่อกลับมาออนไลน์</div>
+
+  <!-- แถบหัว (หลังเข้าระบบ) -->
+  <header id="topbar" class="topbar" hidden>
+    <div class="brand">
+      <span class="logo brand-logo" role="img" aria-label="ตรา ศบส.37"></span>
+      <div>
+        <div class="brand-title">PHC37</div>
+        <div class="brand-sub">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div>
+      </div>
+    </div>
+    <button id="btn-account" class="btn btn-ghost btn-account" aria-haspopup="true" aria-expanded="false">
+      <span id="acc-initial" class="avatar"></span><span id="acc-name" class="acc-name"></span>
+    </button>
+    <div id="account-menu" class="account-menu" hidden>
+      <div class="acc-head">
+        <div id="acc-full" class="acc-full"></div>
+        <div id="acc-meta" class="muted"></div>
+      </div>
+      <button id="btn-open-change" class="menu-item">🔑 เปลี่ยนรหัสผ่าน</button>
+      <button id="btn-install-menu" class="menu-item" hidden>📲 ติดตั้งแอพ</button>
+      <button id="btn-logout" class="menu-item danger">↩️ ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- เข้าสู่ระบบ (หน้าตาแบบ Gateway เดิม) -->
+    <section id="view-login" class="view login-split" hidden>
+      <aside class="login-hero">
+        <div class="hero-brand">
+          <span class="logo hero-logo" role="img" aria-label="ตรา ศบส.37"></span>
+          <div>
+            <div class="hero-title">PHC37 Webapp</div>
+            <div class="hero-sub">ศูนย์บริการสาธารณสุข 37 ประสงค์ สุดสาคร ตู้จินดา</div>
+          </div>
+        </div>
+        <div class="hero-big">ระบบงาน<br>ของ ศบส.37</div>
+        <div></div>
+      </aside>
+      <div class="login-main">
+        <form id="form-login" class="card auth-card" novalidate>
+          <div class="auth-brand">
+            <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
+            <h1>เข้าสู่ระบบ</h1>
+            <p class="auth-sub">ระบบ Web App ศบส.37</p>
+          </div>
+          <div id="login-alert" class="alert" role="alert" hidden></div>
+          <label class="field">
+            <span>ชื่อผู้ใช้</span>
+            <input id="login-username" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="กรอกชื่อผู้ใช้" required>
+          </label>
+          <label class="field">
+            <span>รหัสผ่าน</span>
+            <span class="pw-wrap">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="กรอกรหัสผ่าน" required>
+              <button type="button" class="pw-toggle" data-target="login-password" aria-label="แสดงรหัสผ่าน">👁️</button>
+            </span>
+          </label>
+          <button id="btn-login" class="btn btn-primary btn-block" type="submit">เข้าสู่ระบบ</button>
+          <div class="auth-row">
+            <button id="btn-go-register" type="button" class="btn btn-soft">สมัครใช้งาน</button>
+            <button id="btn-go-forgot" type="button" class="btn btn-orange">ลืมรหัสผ่าน</button>
+          </div>
+          <button id="btn-install-login" type="button" class="btn btn-add btn-block" hidden>📲 ติดตั้งเป็นแอพบนเครื่องนี้</button>
+          <p id="ios-hint" class="hint" hidden>iPhone/iPad: เปิดใน Safari แล้วแตะ <b>แชร์</b> → <b>เพิ่มไปยังหน้าจอโฮม</b> เพื่อติดตั้งเป็นแอพ</p>
+        </form>
+      </div>
+    </section>
+
+    <!-- สมัครใช้งาน -->
+    <section id="view-register" class="view center" hidden>
+      <form id="form-register" class="card auth-card wide" novalidate>
+        <div class="auth-brand">
+          <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
+          <h1>สมัครใช้งาน</h1>
+          <p class="auth-sub">ส่งคำขอให้ผู้ดูแลระบบอนุมัติ</p>
+        </div>
+        <div id="reg-alert" class="alert" role="alert" hidden></div>
+        <div id="reg-fields">
+          <div class="grid2">
+            <label class="field"><span>ชื่อ-สกุล *</span><input id="reg-fullname" autocomplete="name"></label>
+            <label class="field"><span>ตำแหน่ง</span>
+              <select id="reg-position" class="select"></select>
+              <input id="reg-position-other" class="other-input" placeholder="ระบุตำแหน่ง" hidden></label>
+            <label class="field"><span>ชื่อผู้ใช้ที่ต้องการ *</span><input id="reg-username" autocapitalize="off" spellcheck="false" autocomplete="username"></label>
+            <label class="field"><span>อีเมล *</span><input id="reg-email" type="email" inputmode="email" autocomplete="email"></label>
+            <label class="field"><span>สังกัด *</span>
+              <select id="reg-affiliation" class="select"></select>
+              <input id="reg-affiliation-other" class="other-input" placeholder="ระบุหน่วยงาน" hidden></label>
+            <label id="reg-workgroup-wrap" class="field" hidden><span>กลุ่มงาน *</span>
+              <select id="reg-workgroup" class="select"><option value="">— เลือกกลุ่มงาน —</option></select></label>
+          </div>
+          <label class="field"><span>เหตุผล / ระบบที่ต้องการใช้</span><textarea id="reg-reason" rows="2"></textarea></label>
+          <label class="hp" aria-hidden="true">เว็บไซต์<input id="reg-website" tabindex="-1" autocomplete="off"></label>
+          <p class="hint left">เมื่อได้รับอนุมัติ ระบบจะส่ง <b>รหัสผ่านชั่วคราว</b> ไปที่อีเมลนี้ แล้วให้ตั้งรหัสผ่านของคุณเองเมื่อเข้าระบบครั้งแรก</p>
+          <button id="btn-register" class="btn btn-primary btn-block" type="submit">ส่งคำขอสมัคร</button>
+        </div>
+        <button id="btn-reg-back" class="btn btn-ghost btn-block" type="button">↩️ กลับหน้าเข้าสู่ระบบ</button>
+      </form>
+    </section>
+
+    <!-- ลืมรหัสผ่าน -->
+    <section id="view-forgot" class="view center" hidden>
+      <form id="form-forgot" class="card auth-card" novalidate>
+        <div class="auth-brand">
+          <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
+          <h1>ลืมรหัสผ่าน</h1>
+          <p class="auth-sub">ตั้งรหัสผ่านใหม่ด้วยรหัสยืนยันทางอีเมล</p>
+        </div>
+        <div id="fg-alert" class="alert" role="alert" hidden></div>
+        <label class="field"><span>ชื่อผู้ใช้</span><input id="fg-username" autocapitalize="off" spellcheck="false" autocomplete="username"></label>
+        <div id="fg-step1">
+          <label class="field"><span>อีเมลที่ลงทะเบียนไว้</span><input id="fg-email" type="email" inputmode="email" autocomplete="email"></label>
+          <button id="btn-fg-send" class="btn btn-primary btn-block" type="submit">ส่งรหัสยืนยันทางอีเมล</button>
+          <p class="hint">ยังไม่เคยใส่อีเมลในระบบ หรือไม่ได้รับอีเมล กรุณาติดต่อผู้ดูแลระบบ</p>
+        </div>
+        <div id="fg-step2" hidden>
+          <label class="field"><span>รหัสยืนยัน 6 หลักจากอีเมล</span>
+            <input id="fg-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="code-input"></label>
+          <label class="field"><span>รหัสผ่านใหม่</span>
+            <span class="pw-wrap"><input id="fg-new" type="password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="fg-new" aria-label="แสดงรหัสผ่าน">👁️</button></span></label>
+          <ul class="rules" data-for="fg-new">
+            <li data-rule="len">อย่างน้อย 8 ตัวอักษร</li><li data-rule="alpha">มีตัวอักษรภาษาอังกฤษ</li><li data-rule="digit">มีตัวเลข</li>
+          </ul>
+          <label class="field"><span>ยืนยันรหัสผ่านใหม่</span><input id="fg-confirm" type="password" autocomplete="new-password"></label>
+          <button id="btn-fg-reset" class="btn btn-primary btn-block" type="submit">ตั้งรหัสผ่านใหม่</button>
+          <button id="btn-fg-resend" class="btn btn-ghost btn-block" type="button">ขอรหัสยืนยันใหม่</button>
+        </div>
+        <button id="btn-fg-back" class="btn btn-ghost btn-block" type="button">↩️ กลับหน้าเข้าสู่ระบบ</button>
+      </form>
+    </section>
+
+    <!-- ตั้งรหัสผ่านใหม่ (ครั้งแรก) -->
+    <section id="view-setpw" class="view center" hidden>
+      <form id="form-setpw" class="card auth-card" novalidate>
+        <div class="auth-brand">
+          <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
+          <h1>ตั้งรหัสผ่านใหม่</h1>
+          <p class="muted">สวัสดี <b id="setpw-name"></b><br>กรุณาตั้งรหัสผ่านของคุณเองก่อนเริ่มใช้งาน</p>
+        </div>
+        <div id="setpw-alert" class="alert" role="alert" hidden></div>
+        <label class="field">
+          <span>รหัสผ่านใหม่</span>
+          <span class="pw-wrap">
+            <input id="setpw-new" type="password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-target="setpw-new" aria-label="แสดงรหัสผ่าน">👁️</button>
+          </span>
+        </label>
+        <ul class="rules" data-for="setpw-new">
+          <li data-rule="len">อย่างน้อย 8 ตัวอักษร</li>
+          <li data-rule="alpha">มีตัวอักษรภาษาอังกฤษ</li>
+          <li data-rule="digit">มีตัวเลข</li>
+        </ul>
+        <label class="field">
+          <span>ยืนยันรหัสผ่านใหม่</span>
+          <input id="setpw-confirm" type="password" autocomplete="new-password" required>
+        </label>
+        <label id="setpw-email-wrap" class="field" hidden>
+          <span>อีเมล <small class="muted">(จำเป็น — ใช้รับรหัสผ่านเมื่อลืมรหัส)</small></span>
+          <input id="setpw-email" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com">
+        </label>
+        <button id="btn-setpw" class="btn btn-primary btn-block" type="submit">บันทึกรหัสผ่านและเข้าใช้งาน</button>
+        <button id="btn-setpw-cancel" class="btn btn-ghost btn-block" type="button">ยกเลิก กลับหน้าเข้าสู่ระบบ</button>
+      </form>
+    </section>
+
+    <!-- จัดการระบบกลาง -->
+    <section id="view-admin" class="view" hidden>
+      <div class="admin-head">
+        <button id="adm-back" type="button" class="btn btn-ghost">↩️ กลับหน้าหลัก</button>
+        <h1 id="adm-title">⚙️ จัดการระบบกลาง</h1>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="users">👥 ผู้ใช้งาน</button>
+        <button type="button" class="tab" data-tab="requests">📝 คำขอสมัคร <span id="adm-req-badge" class="badge" hidden></span></button>
+        <button type="button" class="tab" data-tab="perms" data-super="1">🔐 สิทธิ์เมนู</button>
+        <button type="button" class="tab" data-tab="logs">🧾 ประวัติ</button>
+        <button type="button" class="tab" data-tab="bulk">🔑 ออกรหัสชุด</button>
+      </div>
+
+      <div id="tab-users" class="tab-panel">
+        <div class="toolbar">
+          <label class="search">
+            <span aria-hidden="true">🔎</span>
+            <input id="adm-search" type="search" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้ / อีเมล" autocomplete="off">
+          </label>
+          <select id="adm-filter" class="select">
+            <option value="">ทั้งหมด</option>
+            <option value="nopw">ยังไม่มีรหัสผ่าน</option>
+            <option value="noemail">ยังไม่มีอีเมล</option>
+            <option value="locked">ถูกล็อก</option>
+            <option value="inactive">ปิดใช้งาน</option>
+          </select>
+          <button id="adm-new" type="button" class="btn btn-add">➕ เพิ่มผู้ใช้</button>
+        </div>
+        <div id="adm-count" class="muted"></div>
+        <div id="adm-users" class="list"></div>
+      </div>
+
+      <div id="tab-requests" class="tab-panel" hidden>
+        <div id="adm-requests" class="list"></div>
+      </div>
+
+      <div id="tab-perms" class="tab-panel" hidden>
+        <div class="toolbar">
+          <label class="field inline"><span>Role</span><select id="perm-role" class="select"></select></label>
+          <label class="search"><span aria-hidden="true">🔎</span><input id="perm-search" type="search" placeholder="ค้นหาเมนู" autocomplete="off"></label>
+          <button id="perm-save" type="button" class="btn btn-primary" disabled>บันทึกสิทธิ์</button>
+        </div>
+        <p class="muted small">superadmin เห็นทุกเมนูเสมอ · ติ๊ก "ดู" = เห็นเมนูบนหน้าหลัก (ยังต้องอยู่ในกลุ่มงานของเมนูนั้นตามกติกาเดิม) · บันทึกแล้วมีผลทันที</p>
+        <div id="perm-dirty" class="alert info" hidden></div>
+        <div class="table-wrap">
+          <table class="perm-table">
+            <thead><tr><th>เมนู</th><th>ดู</th><th>เพิ่ม</th><th>แก้ไข</th><th>ลบ</th></tr></thead>
+            <tbody id="perm-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-logs" class="tab-panel" hidden>
+        <div id="log-alerts" class="alert" hidden></div>
+        <div class="toolbar">
+          <label class="field inline"><span>ตั้งแต่</span><input id="log-from" type="date"></label>
+          <label class="field inline"><span>ถึง</span><input id="log-to" type="date"></label>
+          <label class="field inline"><span>เหตุการณ์</span><select id="log-action" class="select"></select></label>
+          <label class="field inline grow"><span>ผู้ใช้</span><input id="log-user" placeholder="ชื่อผู้ใช้" autocapitalize="off"></label>
+          <label class="check"><input id="log-fail" type="checkbox"><span>เฉพาะไม่สำเร็จ</span></label>
+          <button id="log-search" type="button" class="btn btn-primary">ค้นหา</button>
+          <button id="log-csv" type="button" class="btn btn-add">⬇️ CSV</button>
+        </div>
+        <div id="log-count" class="muted small"></div>
+        <div id="log-list" class="list"></div>
+        <button id="log-more" type="button" class="btn btn-ghost btn-block" hidden>โหลดเพิ่ม</button>
+      </div>
+
+      <div id="tab-bulk" class="tab-panel" hidden>
+        <div class="card pad">
+          <h2>🔑 ออกรหัสผ่านชั่วคราวทั้งชุด</h2>
+          <p class="muted">ใช้วันเปิดระบบ ออกรหัสให้ผู้ใช้ที่ <b>ยังไม่มีรหัสผ่าน</b> หรือ <b>รหัสชั่วคราวหมดอายุ</b> เท่านั้น
+            (คนที่ตั้งรหัสเองแล้วไม่ถูกแตะ) — ทุกคนต้องตั้งรหัสใหม่เมื่อเข้าระบบครั้งแรก</p>
+          <div id="bulk-summary" class="bulk-summary">กำลังโหลด...</div>
+          <div class="bulk-actions">
+            <button id="bulk-email" type="button" class="btn btn-primary" disabled>📧 ส่งรหัสทางอีเมล</button>
+            <button id="bulk-print" type="button" class="btn btn-add" disabled>🖨️ ออกรหัสและพิมพ์ใบแจก</button>
+          </div>
+          <div id="bulk-result" class="alert info" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- หน้าหลัก -->
+    <section id="view-home" class="view" hidden>
+      <div class="home-head">
+        <div>
+          <h1 id="home-greet">สวัสดี</h1>
+          <p id="home-sub" class="muted"></p>
+        </div>
+        <label class="search">
+          <span aria-hidden="true">🔎</span>
+          <input id="menu-search" type="search" placeholder="ค้นหาระบบงาน" autocomplete="off">
+        </label>
+      </div>
+      <div id="menu-groups"></div>
+      <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
+    </section>
+  </main>
+
+  <!-- เปลี่ยนรหัสผ่าน -->
+  <dialog id="dlg-change" class="dialog">
+    <form id="form-change" method="dialog" novalidate>
+      <h2>🔑 เปลี่ยนรหัสผ่าน</h2>
+      <div id="change-alert" class="alert" role="alert" hidden></div>
+      <label class="field">
+        <span>รหัสผ่านปัจจุบัน</span>
+        <input id="change-current" type="password" autocomplete="current-password" required>
+      </label>
+      <label class="field">
+        <span>รหัสผ่านใหม่</span>
+        <span class="pw-wrap">
+          <input id="change-new" type="password" autocomplete="new-password" required>
+          <button type="button" class="pw-toggle" data-target="change-new" aria-label="แสดงรหัสผ่าน">👁️</button>
+        </span>
+      </label>
+      <ul class="rules" data-for="change-new">
+        <li data-rule="len">อย่างน้อย 8 ตัวอักษร</li>
+        <li data-rule="alpha">มีตัวอักษรภาษาอังกฤษ</li>
+        <li data-rule="digit">มีตัวเลข</li>
+      </ul>
+      <label class="field">
+        <span>ยืนยันรหัสผ่านใหม่</span>
+        <input id="change-confirm" type="password" autocomplete="new-password" required>
+      </label>
+      <div class="dialog-actions">
+        <button id="btn-change-cancel" type="button" class="btn btn-ghost">ปิด</button>
+        <button id="btn-change" type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- อีเมล (บังคับ) -->
+  <dialog id="dlg-email" class="dialog">
+    <form id="form-email" method="dialog" novalidate>
+      <h2>📧 กรุณาเพิ่มอีเมล</h2>
+      <p class="muted">ระบบใหม่ใช้อีเมลส่งรหัสผ่านเมื่อคุณลืมรหัส กรุณากรอกอีเมลก่อนเริ่มใช้งาน</p>
+      <div id="email-alert" class="alert" role="alert" hidden></div>
+      <label class="field">
+        <span>อีเมล</span>
+        <input id="email-input" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" required>
+      </label>
+      <div class="dialog-actions">
+        <button id="btn-email" type="submit" class="btn btn-primary">บันทึกอีเมล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ผู้ใช้ (เพิ่ม/แก้ไข/อนุมัติคำขอ) -->
+  <dialog id="dlg-user" class="dialog dialog-wide">
+    <form id="form-user" method="dialog" novalidate>
+      <h2 id="user-title">ผู้ใช้งาน</h2>
+      <div id="user-flags" class="flags"></div>
+      <div id="user-alert" class="alert" role="alert" hidden></div>
+      <div class="grid2">
+        <label class="field"><span>ชื่อผู้ใช้ *</span><input id="u-username" autocapitalize="off" spellcheck="false"></label>
+        <label class="field"><span>ชื่อ-สกุล *</span><input id="u-fullname"></label>
+        <label class="field"><span>อีเมล</span><input id="u-email" type="email" inputmode="email"></label>
+        <label class="field"><span>Role *</span><select id="u-role" class="select"></select></label>
+        <label class="field"><span>ตำแหน่ง</span><select id="u-position" class="select"></select>
+          <input id="u-position-other" class="other-input" placeholder="ระบุตำแหน่ง" hidden></label>
+        <label class="field"><span>สังกัด</span><select id="u-affiliation" class="select"></select>
+          <input id="u-affiliation-other" class="other-input" placeholder="ระบุหน่วยงาน" hidden></label>
+        <label class="field"><span>ประเภทผู้ใช้</span>
+          <select id="u-type" class="select"><option value="main">บุคลากร ศบส.37</option><option value="external">ภายนอก</option></select></label>
+        <label class="field"><span>สถานะ</span>
+          <select id="u-status" class="select"><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select></label>
+      </div>
+      <fieldset class="checks">
+        <legend>กลุ่มงาน *</legend>
+        <div id="u-groups" class="check-grid"></div>
+      </fieldset>
+      <fieldset class="checks">
+        <legend>ระบบงาน (Web App) ที่อนุญาต</legend>
+        <p class="muted small">เมนูกลุ่มงานของกลุ่มที่เลือกจะถูกเพิ่มให้อัตโนมัติ</p>
+        <div id="u-menus" class="menu-checks"></div>
+      </fieldset>
+      <div class="dialog-actions wrap">
+        <button id="u-temp" type="button" class="btn btn-edit">🔑 ออกรหัสชั่วคราว</button>
+        <button id="u-unlock" type="button" class="btn btn-edit" hidden>🔓 ปลดล็อก</button>
+        <span class="spacer"></span>
+        <button id="u-cancel" type="button" class="btn btn-ghost">ปิด</button>
+        <button id="u-save" type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ผลออกรหัสชั่วคราว -->
+  <dialog id="dlg-temp" class="dialog">
+    <form method="dialog">
+      <h2>🔑 รหัสผ่านชั่วคราว</h2>
+      <p id="temp-who" class="muted"></p>
+      <div id="temp-code" class="temp-code"></div>
+      <p id="temp-exp" class="muted small"></p>
+      <div class="alert">รหัสนี้แสดง <b>ครั้งเดียว</b> — แจ้งผู้ใช้โดยตรง ห้ามส่งต่อในกลุ่มแชท</div>
+      <div class="dialog-actions">
+        <button id="temp-copy" type="button" class="btn btn-ghost">📋 คัดลอก</button>
+        <button type="submit" class="btn btn-primary">ปิด</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ยืนยัน / ระบุเหตุผล -->
+  <dialog id="dlg-confirm" class="dialog">
+    <form id="form-confirm" method="dialog" novalidate>
+      <h2 id="confirm-title">ยืนยัน</h2>
+      <p id="confirm-text"></p>
+      <label id="confirm-reason-wrap" class="field" hidden><span>เหตุผล *</span><textarea id="confirm-reason" rows="3"></textarea></label>
+      <div id="confirm-alert" class="alert" role="alert" hidden></div>
+      <div class="dialog-actions">
+        <button id="confirm-cancel" type="button" class="btn btn-ghost">ยกเลิก</button>
+        <button id="confirm-alt" type="button" class="btn btn-ghost" hidden></button>
+        <button id="confirm-ok" type="submit" class="btn btn-primary">ยืนยัน</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ใบแจกรหัส (แสดงตอนพิมพ์เท่านั้น) -->
+  <div id="print-slips" class="print-only"></div>
+
+  <div id="loading" class="loading" hidden><div class="spinner"></div><div id="loading-text">กำลังโหลด...</div></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+  <script src="public.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
