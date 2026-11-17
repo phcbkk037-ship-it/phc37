@@ -1,4 +1,4 @@
-/* PHC37 PWA — public.js (PHC37-PWA-PUBLIC-1.0.1) : สมัครใช้งาน + ลืมรหัสผ่าน */
+/* PHC37 PWA — public.js (PHC37-PWA-PUBLIC-1.0.2) : สมัครใช้งาน + ลืมรหัสผ่าน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -34,7 +34,7 @@
   }
 
   function fillCombos() {
-    P.comboFill('reg-position', opts.positions, '— เลือกตำแหน่ง —');
+    P.comboFill('reg-position', opts.positions, '— เลือกตำแหน่ง —', opts.positionGroups);
     P.comboFill('reg-affiliation', opts.affiliations, '— เลือกสังกัด —');
     $('reg-workgroup').value = '';
     $('reg-workgroup').classList.add('placeholder');

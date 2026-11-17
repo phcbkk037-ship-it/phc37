@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.1.1) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.1.2) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -82,7 +82,7 @@
     var b = A.boot;
     var role = $('u-role'); role.textContent = '';
     b.roles.forEach(function (r) { var o = el('option', null, P.roleLabel(r.key)); o.value = r.key; role.appendChild(o); });
-    P.comboFill('u-position', b.positions, '— ไม่ระบุ —');
+    P.comboFill('u-position', b.positions, '— ไม่ระบุ —', b.positionGroups);
     P.comboFill('u-affiliation', b.affiliations, '— ไม่ระบุ —');
     var gw = $('u-groups'); gw.textContent = '';
     b.workgroups.forEach(function (g) {

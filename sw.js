@@ -1,9 +1,9 @@
-/* PHC37 PWA — Service Worker (PHC37-PWA-1.3.1)
- * - ไฟล์ของแอพ: ดึงจากเน็ตก่อน (ได้เวอร์ชันล่าสุดเสมอ) ถ้าออฟไลน์ใช้ของที่เก็บไว้
+/* PHC37 PWA — Service Worker (PHC37-PWA-1.3.2)
+ * - ไฟล์ของแอพ: ดึงจากเน็ตก่อนและตรวจกับเซิร์ฟเวอร์ทุกครั้ง (ได้เวอร์ชันล่าสุดเสมอ) ถ้าออฟไลน์ใช้ของที่เก็บไว้
  * - ฟอนต์ Google: ใช้ของที่เก็บไว้ก่อน
  * - API (script.google.com) และข้อมูลอื่น: ไม่เก็บเลย
  */
-var CACHE = 'phc37-shell-v1.3.1';
+var CACHE = 'phc37-shell-v1.3.2';
 var FONT_CACHE = 'phc37-fonts-v1';
 var SHELL = [
   './', './index.html', './styles.css', './app.js', './admin.js', './public.js', './config.js', './manifest.webmanifest',
@@ -37,7 +37,8 @@ self.addEventListener('fetch', function (e) {
 
   if (url.origin !== self.location.origin) return;
 
-  e.respondWith(fetch(req).then(function (res) {
+  // cache: 'no-cache' = ถามเซิร์ฟเวอร์ทุกครั้งว่าไฟล์เปลี่ยนไหม (ไม่ใช้ไฟล์เก่าที่เบราว์เซอร์จำไว้ 10 นาทีของ GitHub Pages)
+  e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (res) {
     if (res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
     return res;
   }).catch(function () {

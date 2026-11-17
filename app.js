@@ -1,4 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.3.1) */
+/* PHC37 PWA — app.js (PHC37-PWA-1.3.2) */
+var PHC37_APP_VERSION = '1.3.2';
 (function () {
   'use strict';
 
@@ -452,6 +453,9 @@
     }
   });
 
+  // ---------- เลขเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) ----------
+  if ($('app-version')) $('app-version').textContent = 'PHC37 PWA เวอร์ชัน ' + PHC37_APP_VERSION;
+
   // ---------- เริ่มต้น ----------
   function boot() {
     if (!API_URL) { showLogin('ยังไม่ได้ตั้งค่า API_URL ในไฟล์ config.js'); return; }
@@ -483,11 +487,21 @@
 
   // ---------- dropdown + "อื่น ๆ (ระบุเอง)" ----------
   var OTHER = '__other__';
-  function comboFill(selId, values, placeholder) {
+  /** groups (ถ้ามี) = [{ label, items: [...] }] → แสดงเป็นหมวด (optgroup) */
+  function comboFill(selId, values, placeholder, groups) {
     var sel = $(selId), other = $(selId + '-other');
     sel.textContent = '';
     var o0 = document.createElement('option'); o0.value = ''; o0.textContent = placeholder || '— เลือก —'; sel.appendChild(o0);
-    (values || []).forEach(function (v) { var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+    var addOpt = function (parent, v) { var o = document.createElement('option'); o.value = v; o.textContent = v; parent.appendChild(o); };
+    if (groups && groups.length) {
+      groups.forEach(function (g) {
+        var og = document.createElement('optgroup'); og.label = g.label;
+        (g.items || []).forEach(function (v) { addOpt(og, v); });
+        sel.appendChild(og);
+      });
+    } else {
+      (values || []).forEach(function (v) { addOpt(sel, v); });
+    }
     var oo = document.createElement('option'); oo.value = OTHER; oo.textContent = 'อื่น ๆ (ระบุเอง)'; sel.appendChild(oo);
     if (!sel.dataset.bound) {
       sel.dataset.bound = '1';
