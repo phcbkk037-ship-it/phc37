@@ -1,4 +1,4 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.0.0) */
+/* PHC37 PWA — app.js (PHC37-PWA-1.1.0) */
 (function () {
   'use strict';
 
@@ -13,7 +13,7 @@
   };
   var ROLE_LABEL = { superadmin: 'ผู้ดูแลระบบสูงสุด', admin: 'ผู้ดูแลระบบ', manager: 'หัวหน้างาน', staff: 'เจ้าหน้าที่' };
 
-  var state = { pcToken: null, profile: null, installEvt: null };
+  var state = { pcToken: null, profile: null, installEvt: null, groupKey: null };
   var $ = function (id) { return document.getElementById(id); };
 
   // ---------- storage (กันกรณีเบราว์เซอร์ปิด storage) ----------
@@ -148,7 +148,10 @@
   });
   $('btn-setpw-cancel').addEventListener('click', function () { showLogin(); });
 
-  // ---------- หน้าหลัก ----------
+  // ---------- หน้าหลัก (จัดแบบเดียวกับ Dashboard ของ Gateway เดิม) ----------
+  var HIDDEN_MENU_NAMES = ['คำขอสมัครใช้งาน', 'คำขอลืมรหัสผ่าน', 'จัดการผู้ใช้งาน', 'จัดการสิทธิ', 'จัดการระบบกลาง'];
+  var MANAGE_SEARCH = 'จัดการระบบกลาง ผู้ใช้งาน คำขอ สมัคร ลืมรหัสผ่าน สิทธิ dashboard';
+
   function enterHome(res) {
     saveToken(res.token, res.expiresAt);
     var profile = { user: res.user, menus: res.menus || [] };
@@ -158,6 +161,7 @@
 
   function renderHome(profile) {
     state.profile = profile;
+    state.groupKey = null;
     var u = profile.user || {};
     var name = u.fullName || u.username || '';
     $('acc-initial').textContent = name.charAt(0) || '?';
@@ -168,62 +172,153 @@
     var groups = (u.groups || []).filter(function (g) { return g !== 'all'; }).map(function (g) { return GROUP_LABEL[g] || g; });
     $('home-sub').textContent = groups.length ? 'กลุ่มงาน: ' + groups.join(', ') : (u.role === 'superadmin' ? 'เข้าถึงได้ทุกกลุ่มงาน' : '');
     $('menu-search').value = '';
-    renderMenus('');
+    renderMenus();
     show('view-home');
   }
 
-  function renderMenus(filter) {
-    var wrap = $('menu-groups');
-    wrap.textContent = '';
-    var q = (filter || '').trim().toLowerCase();
-    var menus = ((state.profile && state.profile.menus) || []).filter(function (m) {
-      return !q || (m.name + ' ' + (m.description || '') + ' ' + (m.departmentName || '')).toLowerCase().indexOf(q) >= 0;
+  function allMenus() {
+    return ((state.profile && state.profile.menus) || []).filter(function (m) {
+      return HIDDEN_MENU_NAMES.indexOf(String(m.name || '').trim()) < 0;
     });
-    var order = [], byGroup = {};
-    menus.forEach(function (m) {
-      var g = m.departmentName || GROUP_LABEL[m.group] || 'ทั่วไป';
-      if (!byGroup[g]) { byGroup[g] = []; order.push(g); }
-      byGroup[g].push(m);
-    });
-    order.forEach(function (g) {
-      var sec = document.createElement('section'); sec.className = 'group';
-      var h = document.createElement('h2'); h.className = 'group-title'; h.textContent = g;
-      var tiles = document.createElement('div'); tiles.className = 'tiles';
-      byGroup[g].forEach(function (m) { tiles.appendChild(tile(m)); });
-      sec.appendChild(h); sec.appendChild(tiles); wrap.appendChild(sec);
-    });
-    $('menu-empty').hidden = menus.length > 0;
-    $('menu-empty').textContent = q ? 'ไม่พบระบบงานที่ค้นหา' : 'ยังไม่มีระบบงานที่คุณมีสิทธิ์ใช้งาน กรุณาติดต่อผู้ดูแลระบบ';
+  }
+  function childrenOf(key, menus) {
+    return (menus || allMenus()).filter(function (m) { return m.parentKey === key; });
+  }
+  function isGroupMenu(m, menus) {
+    var mode = String(m.openMode || '').toLowerCase();
+    return mode === 'group' || (Number(m.level) === 1 && childrenOf(m.key, menus).length > 0);
+  }
+  function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
+  function canManage() {
+    var r = state.profile && state.profile.user && state.profile.user.role;
+    return r === 'superadmin' || r === 'admin';
+  }
+  function hasEmoji(text) {
+    try { return /\p{Extended_Pictographic}/u.test(text); } catch (e) { return /[^\x00-\x7F]/.test(text); }
+  }
+  function iconOf(m, fallback) {
+    var t = String(m.icon || '').trim();
+    return t && hasEmoji(t) ? t : fallback;
   }
 
-  function menuReady(m) { return !!m.url && !m.requireGateway; }
+  function renderMenus() {
+    var wrap = $('menu-groups');
+    wrap.textContent = '';
+    var q = ($('menu-search').value || '').trim().toLowerCase();
+    var menus = allMenus();
+    var keys = {};
+    menus.forEach(function (m) { keys[m.key] = true; });
+    var grid = document.createElement('div'); grid.className = 'tiles';
+    var list = [];
 
-  function tile(m) {
+    if (q) {
+      state.groupKey = null;
+      list = menus.filter(function (m) {
+        return (m.name + ' ' + (m.description || '') + ' ' + (m.departmentName || '') + ' ' + (GROUP_LABEL[m.group] || ''))
+          .toLowerCase().indexOf(q) >= 0;
+      });
+      list.forEach(function (m) { grid.appendChild(tile(m, menus)); });
+      if (canManage() && MANAGE_SEARCH.indexOf(q) >= 0) grid.appendChild(manageTile());
+    } else if (state.groupKey) {
+      var parent = menus.filter(function (m) { return m.key === state.groupKey; })[0];
+      var crumb = document.createElement('div'); crumb.className = 'crumb';
+      crumb.textContent = 'เมนูหลัก › ' + (parent ? parent.name : '');
+      wrap.appendChild(crumb);
+      grid.appendChild(backTile());
+      list = childrenOf(state.groupKey, menus);
+      list.forEach(function (m) { grid.appendChild(tile(m, menus)); });
+    } else {
+      list = menus.filter(function (m) { return !m.parentKey || !keys[m.parentKey]; });
+      list.forEach(function (m) { grid.appendChild(tile(m, menus)); });
+      if (canManage()) grid.appendChild(manageTile());
+    }
+
+    wrap.appendChild(grid);
+    var count = grid.querySelectorAll('.tile:not(.back)').length;
+    $('menu-empty').hidden = count > 0;
+    $('menu-empty').textContent = q ? 'ไม่พบระบบที่ตรงกับคำค้นหา'
+      : (state.groupKey ? 'ยังไม่มีระบบในกลุ่มนี้' : 'ยังไม่มีระบบงานที่คุณมีสิทธิ์ใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
+  }
+
+  function makeTile(icon, title, note, noteClass, onClick, extraClass) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'tile' + (menuReady(m) ? '' : ' pending');
-    b.dataset.key = m.key;
-    var icon = document.createElement('span'); icon.className = 'tile-icon'; icon.textContent = m.icon || '📌';
-    var text = document.createElement('span');
-    var name = document.createElement('div'); name.className = 'tile-name'; name.textContent = m.name;
-    var note = document.createElement('div'); note.className = 'tile-note';
-    note.textContent = menuReady(m) ? (m.description || '') : 'กำลังย้ายมาระบบใหม่';
-    text.appendChild(name); if (note.textContent) text.appendChild(note);
-    b.appendChild(icon); b.appendChild(text);
-    b.addEventListener('click', function () { openMenu(m); });
+    b.className = 'tile' + (extraClass ? ' ' + extraClass : '');
+    var i = document.createElement('span'); i.className = 'tile-icon'; i.textContent = icon;
+    var text = document.createElement('span'); text.className = 'tile-text';
+    var n = document.createElement('div'); n.className = 'tile-name'; n.textContent = title;
+    text.appendChild(n);
+    if (note) {
+      var d = document.createElement('div'); d.className = 'tile-note' + (noteClass ? ' ' + noteClass : ''); d.textContent = note;
+      text.appendChild(d);
+    }
+    b.appendChild(i); b.appendChild(text);
+    b.addEventListener('click', onClick);
     return b;
   }
 
+  function tile(m, menus) {
+    var el;
+    if (isGroupMenu(m, menus)) {
+      var n = childrenOf(m.key, menus).length;
+      el = makeTile(iconOf(m, '📁'), m.name, n ? n + ' ระบบ' : '', 'count', function () { openGroup(m.key); }, 'group');
+    } else if (isRealUrl(m.url)) {
+      var ready = !m.requireGateway;
+      el = makeTile(iconOf(m, '📌'), m.name, ready ? (m.description || '') : 'กำลังย้ายมาระบบใหม่',
+        ready ? '' : 'pending', function () { openMenu(m); });
+    } else {
+      el = makeTile(iconOf(m, '📌'), m.name, 'เร็วๆ นี้', 'soon', function () {
+        toast('หน้า "' + m.name + '" กำลังสร้างในระบบใหม่ ระหว่างนี้ใช้ Gateway เดิมไปก่อน');
+      });
+    }
+    el.dataset.key = m.key;
+    return el;
+  }
+
+  function manageTile() {
+    var el = makeTile('⚙️', 'จัดการระบบกลาง', 'เร็วๆ นี้', 'soon', function () {
+      toast('หน้าจัดการระบบกลาง (ผู้ใช้ สิทธิ คำขอ) กำลังสร้างในระบบใหม่ ระหว่างนี้ใช้ Gateway เดิมไปก่อน');
+    });
+    el.dataset.key = '__manage';
+    return el;
+  }
+
+  function backTile() {
+    var el = makeTile('↩️', 'กลับเมนูหลัก', '', '', function () { closeGroup(); }, 'back');
+    el.dataset.key = '__back';
+    return el;
+  }
+
+  function openGroup(key) {
+    state.groupKey = key;
+    $('menu-search').value = '';
+    try { history.pushState({ phc37Group: key }, ''); } catch (e) {}
+    renderMenus();
+    window.scrollTo(0, 0);
+  }
+  function closeGroup() {
+    if (history.state && history.state.phc37Group) { history.back(); return; }
+    state.groupKey = null; renderMenus();
+  }
+  window.addEventListener('popstate', function () {
+    if (state.groupKey) { state.groupKey = null; renderMenus(); }
+  });
+
   function openMenu(m) {
-    if (!menuReady(m)) {
-      toast('ระบบ "' + m.name + '" กำลังย้ายมาระบบใหม่ — ระหว่างนี้ใช้ระบบเดิมไปก่อน');
+    if (m.requireGateway) {
+      toast('ระบบ "' + m.name + '" กำลังย้ายมาระบบใหม่ ระหว่างนี้ใช้ระบบเดิมไปก่อน');
       return;
     }
-    if (!/^https:\/\//i.test(m.url)) { toast('ลิงก์ของเมนูนี้ไม่ถูกต้อง กรุณาแจ้งผู้ดูแลระบบ', 'err'); return; }
+    if (!/^https:\/\//i.test(m.url)) { toast('ลิงก์ของเมนูนี้ไม่ปลอดภัย (ต้องเป็น https) กรุณาแจ้งผู้ดูแลระบบ', 'err'); return; }
     window.open(m.url, '_blank', 'noopener');
   }
 
-  $('menu-search').addEventListener('input', function (e) { renderMenus(e.target.value); });
+  $('menu-search').addEventListener('input', function () { renderMenus(); });
+
+  // ตรา/ไอคอนโหลดไม่ได้ → ซ่อนกรอบรูปเสีย
+  Array.prototype.forEach.call(document.querySelectorAll('.brand-logo, .auth-logo'), function (img) {
+    img.addEventListener('error', function () { img.style.visibility = 'hidden'; });
+  });
 
   // ---------- บัญชีผู้ใช้ ----------
   function closeAccountMenu() { $('account-menu').hidden = true; $('btn-account').setAttribute('aria-expanded', 'false'); }
@@ -324,9 +419,13 @@
       if (res.ok) {
         var profile = { user: res.user, menus: res.menus || [] };
         sset(KEY_PROFILE, JSON.stringify(profile));
-        var q = $('menu-search').value;
-        state.profile = profile;
-        if (!$('view-home').hidden && cached) renderMenus(q); else renderHome(profile);
+        if (!$('view-home').hidden && cached) {
+          state.profile = profile;
+          if (state.groupKey && !profile.menus.some(function (m) { return m.key === state.groupKey; })) state.groupKey = null;
+          renderMenus();
+        } else {
+          renderHome(profile);
+        }
       } else if (res.code === 'maintenance') {
         clearSession(); showLogin(res.message);
       } else if (res.code !== 'unauthorized' && !cached) {
