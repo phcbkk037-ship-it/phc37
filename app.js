@@ -1,4 +1,4 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.2.0) */
+/* PHC37 PWA — app.js (PHC37-PWA-1.3.0) */
 (function () {
   'use strict';
 
@@ -54,7 +54,7 @@
 
   // ---------- UI helpers ----------
   function show(view) {
-    ['view-login', 'view-setpw', 'view-home', 'view-admin'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     $('topbar').hidden = view !== 'view-home' && view !== 'view-admin';
     closeAccountMenu();
   }
@@ -152,6 +152,12 @@
     });
   });
   $('btn-setpw-cancel').addEventListener('click', function () { showLogin(); });
+  $('btn-go-register').addEventListener('click', function () {
+    if (window.PHC37Public) window.PHC37Public.openRegister();
+  });
+  $('btn-go-forgot').addEventListener('click', function () {
+    if (window.PHC37Public) window.PHC37Public.openForgot($('login-username').value.trim());
+  });
 
   // ---------- หน้าหลัก (จัดแบบเดียวกับ Dashboard ของ Gateway เดิม) ----------
   var HIDDEN_MENU_NAMES = ['คำขอสมัครใช้งาน', 'คำขอลืมรหัสผ่าน', 'จัดการผู้ใช้งาน', 'จัดการสิทธิ', 'จัดการระบบกลาง'];
@@ -219,6 +225,9 @@
   function isGroupMenu(m, menus) {
     var mode = String(m.openMode || '').toLowerCase();
     return mode === 'group' || (Number(m.level) === 1 && childrenOf(m.key, menus).length > 0);
+  }
+  function isLogsMenu(m) {
+    return String(m.key || '').toLowerCase() === 'logs' || String(m.url || '').trim().toLowerCase() === '#logs';
   }
   function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
   function canManage() {
@@ -298,6 +307,10 @@
       var ready = !m.requireGateway;
       el = makeTile(iconOf(m, '📌'), m.name, ready ? (m.description || '') : 'กำลังย้ายมาระบบใหม่',
         ready ? '' : 'pending', function () { openMenu(m); });
+    } else if (isLogsMenu(m)) {
+      el = makeTile(iconOf(m, '🧾'), m.name, '', '', function () {
+        if (window.PHC37Admin) window.PHC37Admin.open('logs'); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else {
       el = makeTile(iconOf(m, '📌'), m.name, 'เร็วๆ นี้', 'soon', function () {
         toast('หน้า "' + m.name + '" กำลังสร้างในระบบใหม่ ระหว่างนี้ใช้ Gateway เดิมไปก่อน');
@@ -472,6 +485,7 @@
   window.PHC37 = {
     api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, show: show, emailOk: emailOk,
     token: function () { return sget(KEY_TOKEN); },
+    showLogin: showLogin, bindRules: bindRules, rulesOk: rulesOk,
     profile: function () { return state.profile; },
     goHome: function () { state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0); },
     groupLabel: function (g) { return GROUP_LABEL[g] || g; },
