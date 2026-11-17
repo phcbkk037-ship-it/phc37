@@ -1,4 +1,4 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.3.0) */
+/* PHC37 PWA — app.js (PHC37-PWA-1.3.1) */
 (function () {
   'use strict';
 
@@ -481,11 +481,47 @@
     });
   }
 
+  // ---------- dropdown + "อื่น ๆ (ระบุเอง)" ----------
+  var OTHER = '__other__';
+  function comboFill(selId, values, placeholder) {
+    var sel = $(selId), other = $(selId + '-other');
+    sel.textContent = '';
+    var o0 = document.createElement('option'); o0.value = ''; o0.textContent = placeholder || '— เลือก —'; sel.appendChild(o0);
+    (values || []).forEach(function (v) { var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+    var oo = document.createElement('option'); oo.value = OTHER; oo.textContent = 'อื่น ๆ (ระบุเอง)'; sel.appendChild(oo);
+    if (!sel.dataset.bound) {
+      sel.dataset.bound = '1';
+      sel.addEventListener('change', function () {
+        other.hidden = sel.value !== OTHER;
+        sel.classList.toggle('placeholder', !sel.value);
+        if (!other.hidden) other.focus();
+      });
+    }
+    sel.classList.add('placeholder');
+    other.hidden = true; other.value = '';
+  }
+  function comboValue(selId) {
+    var sel = $(selId);
+    return sel.value === OTHER ? $(selId + '-other').value.trim() : sel.value;
+  }
+  function comboSet(selId, value) {
+    var sel = $(selId), other = $(selId + '-other');
+    value = String(value || '').trim();
+    var has = Array.prototype.some.call(sel.options, function (o) { return o.value === value && value !== OTHER; });
+    sel.value = !value ? '' : (has ? value : OTHER);
+    other.value = has ? '' : value;
+    other.hidden = sel.value !== OTHER;
+    sel.classList.toggle('placeholder', !sel.value);
+  }
+  /** สังกัด ศบส.37 (รวมชื่อที่สะกดผิดในข้อมูลเดิม "สาธารสุข") */
+  function isMainAffiliation(text) { return /ศูนย์บริการสาธารณ?สุข\s*37/.test(String(text || '')); }
+
   // ให้ admin.js ใช้ร่วม
   window.PHC37 = {
     api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, show: show, emailOk: emailOk,
     token: function () { return sget(KEY_TOKEN); },
     showLogin: showLogin, bindRules: bindRules, rulesOk: rulesOk,
+    comboFill: comboFill, comboValue: comboValue, comboSet: comboSet, isMainAffiliation: isMainAffiliation,
     profile: function () { return state.profile; },
     goHome: function () { state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0); },
     groupLabel: function (g) { return GROUP_LABEL[g] || g; },

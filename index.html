@@ -24,7 +24,7 @@
   <!-- แถบหัว (หลังเข้าระบบ) -->
   <header id="topbar" class="topbar" hidden>
     <div class="brand">
-      <img src="icons/logo.png" alt="" class="brand-logo">
+      <span class="logo brand-logo" role="img" aria-label="ตรา ศบส.37"></span>
       <div>
         <div class="brand-title">PHC37</div>
         <div class="brand-sub">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div>
@@ -49,7 +49,7 @@
     <section id="view-login" class="view login-split" hidden>
       <aside class="login-hero">
         <div class="hero-brand">
-          <img src="icons/logo.png" alt="" class="hero-logo">
+          <span class="logo hero-logo" role="img" aria-label="ตรา ศบส.37"></span>
           <div>
             <div class="hero-title">PHC37 Webapp</div>
             <div class="hero-sub">ศูนย์บริการสาธารณสุข 37 ประสงค์ สุดสาคร ตู้จินดา</div>
@@ -61,7 +61,7 @@
       <div class="login-main">
         <form id="form-login" class="card auth-card" novalidate>
           <div class="auth-brand">
-            <img src="icons/logo.png" alt="" class="auth-logo">
+            <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
             <h1>เข้าสู่ระบบ</h1>
             <p class="auth-sub">ระบบ Web App ศบส.37</p>
           </div>
@@ -92,7 +92,7 @@
     <section id="view-register" class="view center" hidden>
       <form id="form-register" class="card auth-card wide" novalidate>
         <div class="auth-brand">
-          <img src="icons/logo.png" alt="" class="auth-logo">
+          <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
           <h1>สมัครใช้งาน</h1>
           <p class="auth-sub">ส่งคำขอให้ผู้ดูแลระบบอนุมัติ</p>
         </div>
@@ -100,11 +100,16 @@
         <div id="reg-fields">
           <div class="grid2">
             <label class="field"><span>ชื่อ-สกุล *</span><input id="reg-fullname" autocomplete="name"></label>
-            <label class="field"><span>ตำแหน่ง</span><input id="reg-position" list="dl-reg-positions"></label>
+            <label class="field"><span>ตำแหน่ง</span>
+              <select id="reg-position" class="select"></select>
+              <input id="reg-position-other" class="other-input" placeholder="ระบุตำแหน่ง" hidden></label>
             <label class="field"><span>ชื่อผู้ใช้ที่ต้องการ *</span><input id="reg-username" autocapitalize="off" spellcheck="false" autocomplete="username"></label>
             <label class="field"><span>อีเมล *</span><input id="reg-email" type="email" inputmode="email" autocomplete="email"></label>
-            <label class="field"><span>สังกัด</span><input id="reg-affiliation" list="dl-reg-affiliations"></label>
-            <label class="field"><span>กลุ่มงาน *</span><select id="reg-workgroup" class="select"><option value="">— เลือกกลุ่มงาน —</option></select></label>
+            <label class="field"><span>สังกัด *</span>
+              <select id="reg-affiliation" class="select"></select>
+              <input id="reg-affiliation-other" class="other-input" placeholder="ระบุหน่วยงาน" hidden></label>
+            <label id="reg-workgroup-wrap" class="field" hidden><span>กลุ่มงาน *</span>
+              <select id="reg-workgroup" class="select"><option value="">— เลือกกลุ่มงาน —</option></select></label>
           </div>
           <label class="field"><span>เหตุผล / ระบบที่ต้องการใช้</span><textarea id="reg-reason" rows="2"></textarea></label>
           <label class="hp" aria-hidden="true">เว็บไซต์<input id="reg-website" tabindex="-1" autocomplete="off"></label>
@@ -114,14 +119,12 @@
         <button id="btn-reg-back" class="btn btn-ghost btn-block" type="button">↩️ กลับหน้าเข้าสู่ระบบ</button>
       </form>
     </section>
-    <datalist id="dl-reg-positions"></datalist>
-    <datalist id="dl-reg-affiliations"></datalist>
 
     <!-- ลืมรหัสผ่าน -->
     <section id="view-forgot" class="view center" hidden>
       <form id="form-forgot" class="card auth-card" novalidate>
         <div class="auth-brand">
-          <img src="icons/logo.png" alt="" class="auth-logo">
+          <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
           <h1>ลืมรหัสผ่าน</h1>
           <p class="auth-sub">ตั้งรหัสผ่านใหม่ด้วยรหัสยืนยันทางอีเมล</p>
         </div>
@@ -153,7 +156,7 @@
     <section id="view-setpw" class="view center" hidden>
       <form id="form-setpw" class="card auth-card" novalidate>
         <div class="auth-brand">
-          <img src="icons/logo.png" alt="" class="auth-logo">
+          <span class="logo auth-logo" role="img" aria-label="ตรา ศบส.37"></span>
           <h1>ตั้งรหัสผ่านใหม่</h1>
           <p class="muted">สวัสดี <b id="setpw-name"></b><br>กรุณาตั้งรหัสผ่านของคุณเองก่อนเริ่มใช้งาน</p>
         </div>
@@ -343,8 +346,10 @@
         <label class="field"><span>ชื่อ-สกุล *</span><input id="u-fullname"></label>
         <label class="field"><span>อีเมล</span><input id="u-email" type="email" inputmode="email"></label>
         <label class="field"><span>Role *</span><select id="u-role" class="select"></select></label>
-        <label class="field"><span>ตำแหน่ง</span><input id="u-position" list="dl-positions"></label>
-        <label class="field"><span>สังกัด</span><input id="u-affiliation" list="dl-affiliations"></label>
+        <label class="field"><span>ตำแหน่ง</span><select id="u-position" class="select"></select>
+          <input id="u-position-other" class="other-input" placeholder="ระบุตำแหน่ง" hidden></label>
+        <label class="field"><span>สังกัด</span><select id="u-affiliation" class="select"></select>
+          <input id="u-affiliation-other" class="other-input" placeholder="ระบุหน่วยงาน" hidden></label>
         <label class="field"><span>ประเภทผู้ใช้</span>
           <select id="u-type" class="select"><option value="main">บุคลากร ศบส.37</option><option value="external">ภายนอก</option></select></label>
         <label class="field"><span>สถานะ</span>
@@ -368,8 +373,6 @@
       </div>
     </form>
   </dialog>
-  <datalist id="dl-positions"></datalist>
-  <datalist id="dl-affiliations"></datalist>
 
   <!-- ผลออกรหัสชั่วคราว -->
   <dialog id="dlg-temp" class="dialog">

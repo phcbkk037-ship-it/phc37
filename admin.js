@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.1.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.1.1) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -82,10 +82,8 @@
     var b = A.boot;
     var role = $('u-role'); role.textContent = '';
     b.roles.forEach(function (r) { var o = el('option', null, P.roleLabel(r.key)); o.value = r.key; role.appendChild(o); });
-    var dp = $('dl-positions'); dp.textContent = '';
-    b.positions.forEach(function (v) { var o = el('option'); o.value = v; dp.appendChild(o); });
-    var da = $('dl-affiliations'); da.textContent = '';
-    b.affiliations.forEach(function (v) { var o = el('option'); o.value = v; da.appendChild(o); });
+    P.comboFill('u-position', b.positions, '— ไม่ระบุ —');
+    P.comboFill('u-affiliation', b.affiliations, '— ไม่ระบุ —');
     var gw = $('u-groups'); gw.textContent = '';
     b.workgroups.forEach(function (g) {
       var l = el('label', 'check');
@@ -176,7 +174,7 @@
     var src = u || {};
     if (request) src = { username: request.username, fullName: request.fullName, email: request.email,
       position: request.position, affiliation: request.affiliation, groups: request.workgroup ? [request.workgroup] : [],
-      role: 'staff', status: 'active', userType: 'main', menuKeys: [] };
+      role: 'staff', status: 'active', userType: P.isMainAffiliation(request.affiliation) ? 'main' : 'external', menuKeys: [] };
     $('u-username').value = src.username || '';
     $('u-fullname').value = src.fullName || '';
     $('u-email').value = src.email || '';
@@ -184,8 +182,8 @@
     if (src.role && $('u-role').value !== src.role) {   // role ที่ admin ตั้งไม่ได้ (ไม่น่าเกิด) → แสดงไว้
       var o = el('option', null, P.roleLabel(src.role)); o.value = src.role; $('u-role').appendChild(o); $('u-role').value = src.role;
     }
-    $('u-position').value = src.position || '';
-    $('u-affiliation').value = src.affiliation || '';
+    P.comboSet('u-position', src.position || '');
+    P.comboSet('u-affiliation', src.affiliation || '');
     $('u-type').value = src.userType === 'external' ? 'external' : 'main';
     $('u-status').value = src.status === 'inactive' ? 'inactive' : 'active';
     setChecks('grp', src.groups || []);
@@ -211,7 +209,7 @@
     var f = {
       id: A.editing ? A.editing.id : undefined,
       username: $('u-username').value.trim(), fullName: $('u-fullname').value.trim(), email: $('u-email').value.trim(),
-      role: $('u-role').value, position: $('u-position').value.trim(), affiliation: $('u-affiliation').value.trim(),
+      role: $('u-role').value, position: P.comboValue('u-position'), affiliation: P.comboValue('u-affiliation'),
       userType: $('u-type').value, status: $('u-status').value, groups: getChecks('grp'), menuKeys: getChecks('menu')
     };
     if (!f.username || !f.fullName) return P.setAlert('user-alert', 'กรุณากรอกชื่อผู้ใช้และชื่อ-สกุล');

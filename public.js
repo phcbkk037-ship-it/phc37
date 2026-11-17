@@ -1,4 +1,4 @@
-/* PHC37 PWA — public.js (PHC37-PWA-PUBLIC-1.0.0) : สมัครใช้งาน + ลืมรหัสผ่าน */
+/* PHC37 PWA — public.js (PHC37-PWA-PUBLIC-1.0.1) : สมัครใช้งาน + ลืมรหัสผ่าน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -6,7 +6,6 @@
   var $ = function (id) { return document.getElementById(id); };
   var opts = null;
 
-  function emptyEl(id) { var e = $(id); e.textContent = ''; return e; }
   function backToLogin(msg, info) {
     P.showLogin(msg || '');
     if (msg && info) $('login-alert').className = 'alert info';
@@ -17,10 +16,10 @@
     P.show('view-register');
     P.setAlert('reg-alert', '');
     $('reg-fields').hidden = false;
-    ['reg-fullname', 'reg-position', 'reg-username', 'reg-email', 'reg-affiliation', 'reg-reason', 'reg-website']
+    ['reg-fullname', 'reg-username', 'reg-email', 'reg-reason', 'reg-website']
       .forEach(function (id) { $(id).value = ''; });
     window.scrollTo(0, 0);
-    if (opts) { $('reg-fullname').focus(); return; }
+    if (opts) { fillCombos(); $('reg-fullname').focus(); return; }
     var btn = $('btn-register'); P.busy(btn, true, 'กำลังโหลดตัวเลือก...');
     P.api('public.registerOptions', {}).then(function (res) {
       P.busy(btn, false);
@@ -29,23 +28,41 @@
       var sel = $('reg-workgroup');
       while (sel.options.length > 1) sel.remove(1);
       res.workgroups.forEach(function (g) { var o = document.createElement('option'); o.value = g.key; o.textContent = g.label; sel.appendChild(o); });
-      var dp = emptyEl('dl-reg-positions');
-      res.positions.forEach(function (v) { var o = document.createElement('option'); o.value = v; dp.appendChild(o); });
-      var da = emptyEl('dl-reg-affiliations');
-      res.affiliations.forEach(function (v) { var o = document.createElement('option'); o.value = v; da.appendChild(o); });
+      fillCombos();
       $('reg-fullname').focus();
     });
   }
 
+  function fillCombos() {
+    P.comboFill('reg-position', opts.positions, '— เลือกตำแหน่ง —');
+    P.comboFill('reg-affiliation', opts.affiliations, '— เลือกสังกัด —');
+    $('reg-workgroup').value = '';
+    $('reg-workgroup').classList.add('placeholder');
+    syncWorkgroup();
+  }
+  /** กลุ่มงาน: แสดงเฉพาะเมื่อสังกัดเป็น ศบส.37 */
+  function syncWorkgroup() {
+    var main = P.isMainAffiliation(P.comboValue('reg-affiliation'));
+    $('reg-workgroup-wrap').hidden = !main;
+    if (!main) $('reg-workgroup').value = '';
+  }
+  $('reg-affiliation').addEventListener('change', syncWorkgroup);
+  $('reg-affiliation-other').addEventListener('input', syncWorkgroup);
+  $('reg-workgroup').addEventListener('change', function () { $('reg-workgroup').classList.toggle('placeholder', !$('reg-workgroup').value); });
+
   $('form-register').addEventListener('submit', function (e) {
     e.preventDefault();
     var d = {
-      fullName: $('reg-fullname').value.trim(), position: $('reg-position').value.trim(),
+      fullName: $('reg-fullname').value.trim(), position: P.comboValue('reg-position'),
       username: $('reg-username').value.trim(), email: $('reg-email').value.trim(),
-      affiliation: $('reg-affiliation').value.trim(), workgroup: $('reg-workgroup').value,
+      affiliation: P.comboValue('reg-affiliation'), workgroup: $('reg-workgroup').value,
       reason: $('reg-reason').value.trim(), website: $('reg-website').value
     };
-    if (!d.fullName || !d.username || !d.email || !d.workgroup) return P.setAlert('reg-alert', 'กรุณากรอกช่องที่มี * ให้ครบ');
+    var main = P.isMainAffiliation(d.affiliation);
+    if (!main) d.workgroup = '';
+    if (!d.fullName || !d.username || !d.email || !d.affiliation || (main && !d.workgroup)) {
+      return P.setAlert('reg-alert', 'กรุณากรอกช่องที่มี * ให้ครบ');
+    }
     if (/\s/.test(d.username) || d.username.length < 3) return P.setAlert('reg-alert', 'ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร และห้ามมีช่องว่าง');
     if (!P.emailOk(d.email)) return P.setAlert('reg-alert', 'รูปแบบอีเมลไม่ถูกต้อง');
     var btn = $('btn-register'); P.busy(btn, true, 'กำลังส่งคำขอ...');
