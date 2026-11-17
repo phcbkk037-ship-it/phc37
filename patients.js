@@ -1,4 +1,4 @@
-/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.0.0) : เวชระเบียนกลาง — ค้นหา · เปิดแฟ้ม (ดูอย่างเดียวช่วงเปลี่ยนผ่าน)
+/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.0.1) : เวชระเบียนกลาง — ค้นหา · เปิดแฟ้ม (ดูอย่างเดียวช่วงเปลี่ยนผ่าน)
  * ไม่เก็บข้อมูลผู้ป่วยไว้ในเครื่อง (ไม่ใช้แคช localStorage) — เก็บเฉพาะตัวเลขสรุปภาพรวม */
 (function () {
   'use strict';
@@ -47,7 +47,7 @@
       box.appendChild(chip('ทั้งหมด ' + (r.total || 0) + ' ราย', 'ok'));
       if (r.noBirthDate) box.appendChild(chip('ไม่มีวันเกิด ' + r.noBirthDate, 'warn'));
       if (r.noHN) box.appendChild(chip('ไม่มี HN ' + r.noHN, 'warn'));
-      if (r.invalidCID) box.appendChild(chip('เลขบัตรผิดหลักสุดท้าย ' + r.invalidCID, 'danger'));
+      if (r.invalidCID) box.appendChild(chip('เลขบัตรไม่ถูกต้อง ' + r.invalidCID, 'danger'));
       if (r.noMainRight) box.appendChild(chip('ไม่มีสิทธิหลัก ' + r.noMainRight, ''));
       if (r.missingInSource) box.appendChild(chip('ถูกลบจากระบบเดิม ' + r.missingInSource, ''));
     });
@@ -129,7 +129,7 @@
     var head = el('div', 'row-flags');
     head.appendChild(chip(p.hn ? 'HN ' + p.hn : 'ไม่มี HN', p.hn ? 'ok' : 'warn'));
     if (String(p.status).toLowerCase() === 'inactive' || p.status === 'ปิดใช้งาน') head.appendChild(chip('ปิดใช้งาน', 'danger'));
-    if (p.cidState === 'invalid') head.appendChild(chip('เลขบัตรผิดหลักสุดท้าย', 'danger'));
+    if (p.cidState === 'invalid') head.appendChild(chip('เลขบัตรไม่ถูกต้อง', 'danger'));
     if (!p.hasBirthDate) head.appendChild(chip('ไม่มีวันเกิด', 'warn'));
     body.appendChild(head);
     body.appendChild(el('p', 'muted tk-meta', 'รหัสผู้ป่วย ' + p.patientID + ' · ดูอย่างเดียว (แก้ไขที่ Gateway เดิมช่วงเปลี่ยนผ่าน)'));

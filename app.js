@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
-var PHC37_APP_VERSION = '1.8.0';
+/* PHC37 PWA — app.js (PHC37-PWA-1.8.1) */
+var PHC37_APP_VERSION = '1.8.1';
 (function () {
   'use strict';
 
@@ -132,6 +132,7 @@ var PHC37_APP_VERSION = '1.8.0';
       })
       .then(function (res) {
         clearTimeout(timer);
+        res = apiExplain(res);
         if (!quiet) lineEnd(!res || res.code === 'network');
         if (res && res.code === 'unauthorized' && action !== 'auth.setNewPassword') {
           clearSession();
@@ -139,6 +140,18 @@ var PHC37_APP_VERSION = '1.8.0';
         }
         return res || { ok: false, code: 'empty', message: 'ไม่ได้รับคำตอบจากระบบ' };
       });
+  }
+
+  /** คำตอบที่ไม่ใช่รูปแบบของระบบเรา (เช่น Supabase ตอบ "Requested function was not found") = ตั้ง API_URL ผิด */
+  function apiExplain(res) {
+    if (!res || typeof res !== 'object') return res;
+    if (typeof res.ok !== 'boolean') {
+      return { ok: false, code: 'config', message: 'API_URL ในไฟล์ config.js ไม่ถูกต้อง (' + String(res.message || res.msg || res.error || 'ระบบตอบกลับผิดรูปแบบ') + ') — ใช้ค่าเดียวกับ EDGE_API_URL ใน Script Properties' };
+    }
+    if (res.code === 'unknown_action') {
+      res.message = (res.message || 'ไม่รู้จักคำสั่ง') + ' — ตรวจว่า API_URL ในไฟล์ config.js ชี้ไปที่ Edge Function รุ่นล่าสุด';
+    }
+    return res;
   }
 
   // ---------- UI helpers ----------
