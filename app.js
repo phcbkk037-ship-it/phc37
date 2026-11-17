@@ -1,4 +1,4 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.1.0) */
+/* PHC37 PWA — app.js (PHC37-PWA-1.2.0) */
 (function () {
   'use strict';
 
@@ -13,7 +13,7 @@
   };
   var ROLE_LABEL = { superadmin: 'ผู้ดูแลระบบสูงสุด', admin: 'ผู้ดูแลระบบ', manager: 'หัวหน้างาน', staff: 'เจ้าหน้าที่' };
 
-  var state = { pcToken: null, profile: null, installEvt: null, groupKey: null };
+  var state = { pcToken: null, pcNeedsEmail: false, profile: null, installEvt: null, groupKey: null };
   var $ = function (id) { return document.getElementById(id); };
 
   // ---------- storage (กันกรณีเบราว์เซอร์ปิด storage) ----------
@@ -54,8 +54,8 @@
 
   // ---------- UI helpers ----------
   function show(view) {
-    ['view-login', 'view-setpw', 'view-home'].forEach(function (v) { $(v).hidden = v !== view; });
-    $('topbar').hidden = view !== 'view-home';
+    ['view-login', 'view-setpw', 'view-home', 'view-admin'].forEach(function (v) { $(v).hidden = v !== view; });
+    $('topbar').hidden = view !== 'view-home' && view !== 'view-admin';
     closeAccountMenu();
   }
   function setAlert(id, msg, info) {
@@ -90,6 +90,7 @@
     });
   }
   function rulesOk(value) { var r = pwRules(value); return r.len && r.alpha && r.digit; }
+  function emailOk(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim()); }
 
   // ---------- หน้าเข้าสู่ระบบ ----------
   function showLogin(message) {
@@ -113,7 +114,9 @@
       if (res.mustChange) {
         state.pcToken = res.token;
         $('setpw-name').textContent = (res.user && res.user.fullName) || u;
-        $('setpw-new').value = ''; $('setpw-confirm').value = '';
+        $('setpw-new').value = ''; $('setpw-confirm').value = ''; $('setpw-email').value = '';
+        state.pcNeedsEmail = !!(res.user && res.user.needsEmail);
+        $('setpw-email-wrap').hidden = !state.pcNeedsEmail;
         $('setpw-new').dispatchEvent(new Event('input'));
         setAlert('setpw-alert', '');
         show('view-setpw');
@@ -130,8 +133,10 @@
     var n = $('setpw-new').value, c = $('setpw-confirm').value;
     if (!rulesOk(n)) return setAlert('setpw-alert', 'รหัสผ่านยังไม่ครบเงื่อนไขด้านล่าง');
     if (n !== c) return setAlert('setpw-alert', 'รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน');
+    var em = $('setpw-email').value.trim();
+    if (state.pcNeedsEmail && !emailOk(em)) return setAlert('setpw-alert', em ? 'รูปแบบอีเมลไม่ถูกต้อง' : 'กรุณากรอกอีเมล');
     var btn = $('btn-setpw'); busy(btn, true, 'กำลังบันทึก...');
-    api('auth.setNewPassword', { token: state.pcToken, newPassword: n, confirmPassword: c }).then(function (res) {
+    api('auth.setNewPassword', { token: state.pcToken, newPassword: n, confirmPassword: c, email: state.pcNeedsEmail ? em : undefined }).then(function (res) {
       busy(btn, false);
       if (!res.ok) {
         if (res.code === 'unauthorized') {
@@ -174,7 +179,34 @@
     $('menu-search').value = '';
     renderMenus();
     show('view-home');
+    if (u.needsEmail) askEmail();
   }
+
+  // ---------- บังคับกรอกอีเมล ----------
+  function askEmail() {
+    var d = $('dlg-email');
+    if (d.open) return;
+    $('email-input').value = '';
+    setAlert('email-alert', '');
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+    setTimeout(function () { $('email-input').focus(); }, 50);
+  }
+  $('dlg-email').addEventListener('cancel', function (e) { e.preventDefault(); });
+  $('form-email').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var em = $('email-input').value.trim();
+    if (!emailOk(em)) return setAlert('email-alert', em ? 'รูปแบบอีเมลไม่ถูกต้อง' : 'กรุณากรอกอีเมล');
+    var btn = $('btn-email'); busy(btn, true, 'กำลังบันทึก...');
+    api('auth.setEmail', { token: sget(KEY_TOKEN), email: em }).then(function (res) {
+      busy(btn, false);
+      if (!res.ok) { if (res.code !== 'unauthorized') setAlert('email-alert', res.message); else $('dlg-email').close(); return; }
+      var profile = { user: res.user, menus: res.menus || [] };
+      sset(KEY_PROFILE, JSON.stringify(profile));
+      state.profile = profile;
+      $('dlg-email').close();
+      toast(res.message || 'บันทึกอีเมลแล้ว', 'ok');
+    });
+  });
 
   function allMenus() {
     return ((state.profile && state.profile.menus) || []).filter(function (m) {
@@ -276,8 +308,8 @@
   }
 
   function manageTile() {
-    var el = makeTile('⚙️', 'จัดการระบบกลาง', 'เร็วๆ นี้', 'soon', function () {
-      toast('หน้าจัดการระบบกลาง (ผู้ใช้ สิทธิ คำขอ) กำลังสร้างในระบบใหม่ ระหว่างนี้ใช้ Gateway เดิมไปก่อน');
+    var el = makeTile('⚙️', 'จัดการระบบกลาง', 'ผู้ใช้ · คำขอ · ออกรหัส', 'count', function () {
+      if (window.PHC37Admin) window.PHC37Admin.open(); else toast('โหลดหน้าจัดการไม่สำเร็จ กรุณารีเฟรช', 'err');
     });
     el.dataset.key = '__manage';
     return el;
@@ -435,6 +467,16 @@
       }
     });
   }
+
+  // ให้ admin.js ใช้ร่วม
+  window.PHC37 = {
+    api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, show: show, emailOk: emailOk,
+    token: function () { return sget(KEY_TOKEN); },
+    profile: function () { return state.profile; },
+    goHome: function () { state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0); },
+    groupLabel: function (g) { return GROUP_LABEL[g] || g; },
+    roleLabel: function (r) { return ROLE_LABEL[r] || r; }
+  };
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
