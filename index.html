@@ -47,6 +47,9 @@
         <div class="brand-sub">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div>
       </div>
     </div>
+    <button id="btn-bell" type="button" class="btn btn-ghost btn-bell" aria-label="การแจ้งเตือน">
+      <span aria-hidden="true">🔔</span><span id="bell-badge" class="badge bell-badge" hidden></span>
+    </button>
     <button id="btn-account" class="btn btn-ghost btn-account" aria-haspopup="true" aria-expanded="false">
       <span id="acc-initial" class="avatar"></span><span id="acc-name" class="acc-name"></span>
     </button>
@@ -344,8 +347,32 @@
           <input id="menu-search" type="search" placeholder="ค้นหาระบบงาน" autocomplete="off">
         </label>
       </div>
+      <button id="home-tasks" type="button" class="task-strip" hidden>
+        <span class="task-strip-icon" aria-hidden="true">📋</span>
+        <span class="task-strip-text"><b>งานของฉัน</b><span id="home-tasks-sub"></span></span>
+        <span class="task-strip-go" aria-hidden="true">›</span>
+      </button>
       <div id="menu-groups"></div>
       <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
+    </section>
+
+    <!-- งานบุคคล -->
+    <section id="view-tasks" class="view" hidden>
+      <div class="admin-head">
+        <button id="tk-back" type="button" class="btn btn-ghost">↩️ กลับหน้าหลัก</button>
+        <h1>📋 งานของฉัน</h1>
+        <button id="tk-new" type="button" class="btn btn-primary tk-new" hidden>➕ มอบหมายงาน</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-box="todo">📥 ต้องทำ <span class="badge" data-count="todo" hidden></span></button>
+        <button type="button" class="tab" data-box="sent">📤 ส่งแล้ว</button>
+        <button type="button" class="tab" data-box="done">✅ เสร็จแล้ว</button>
+        <button type="button" class="tab" data-box="assigned" data-assigner="1">🗂️ งานที่มอบ</button>
+        <button type="button" class="tab" data-box="review" data-assigner="1">🔎 รอตรวจรับ <span class="badge" data-count="toReview" hidden></span></button>
+        <button type="button" class="tab" data-box="closed" data-assigner="1">🗄️ ปิดแล้ว</button>
+      </div>
+      <label id="tk-all-wrap" class="check tk-all" hidden><input id="tk-all" type="checkbox"><span>แสดงงานที่ทุกคนมอบ (superadmin)</span></label>
+      <div id="tk-list"></div>
     </section>
   </main>
 
@@ -505,6 +532,82 @@
   </dialog>
 
   <!-- ยืนยัน / ระบุเหตุผล -->
+  <!-- งานบุคคล: รายละเอียด -->
+  <dialog id="dlg-task" class="dialog dialog-wide">
+    <div class="dlg-pad">
+      <div class="tk-dlg-head">
+        <h2 id="tk-title">งาน</h2>
+        <button id="tk-close" type="button" class="btn btn-ghost btn-sm" aria-label="ปิด">✕</button>
+      </div>
+      <div id="tk-body"></div>
+    </div>
+  </dialog>
+
+  <!-- งานบุคคล: มอบหมายงาน -->
+  <dialog id="dlg-task-new" class="dialog dialog-wide">
+    <form id="form-task-new" novalidate>
+      <h2>➕ มอบหมายงาน</h2>
+      <div id="tn-alert" class="alert" role="alert" hidden></div>
+      <label class="field"><span>ชื่องาน *</span><input id="tn-title" type="text" maxlength="200" required></label>
+      <label class="field"><span>รายละเอียด</span><textarea id="tn-detail" rows="4" maxlength="5000"></textarea></label>
+      <p class="hint left">🔒 ห้ามใส่ชื่อ-นามสกุลหรือเลขบัตรประชาชนผู้ป่วย — ถ้าต้องอ้างถึงให้ใช้ HN หรือรหัสอ้างอิง</p>
+      <div class="grid2">
+        <label class="field"><span>ความเร่งด่วน</span>
+          <select id="tn-priority" class="select"><option value="normal">ปกติ</option><option value="urgent">ด่วน</option><option value="very_urgent">ด่วนมาก</option></select></label>
+        <label class="field"><span>กำหนดส่ง (ไม่บังคับ)</span><input id="tn-due" type="text" class="th-date" data-time="1" data-future="1"></label>
+      </div>
+      <label class="check"><input id="tn-review" type="checkbox" checked><span>ต้องตรวจรับผลงาน (ไม่ติ๊ก = ส่งผลแล้วถือว่าเสร็จ)</span></label>
+      <fieldset class="checks">
+        <legend>ผู้รับงาน *</legend>
+        <div class="tn-sub">ทั้งกลุ่มงาน (สมาชิกทุกคน ณ ตอนมอบ)</div>
+        <div id="tn-groups" class="check-grid"></div>
+        <div class="tn-sub">รายคน <span id="tn-picked" class="muted"></span></div>
+        <label class="search tn-search"><span aria-hidden="true">🔎</span><input id="tn-user-search" type="search" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้ / ตำแหน่ง" autocomplete="off"></label>
+        <div id="tn-users" class="tn-users"></div>
+      </fieldset>
+      <div class="field"><span class="field-label">ไฟล์แนบ</span><div id="tn-files"></div></div>
+      <div class="dialog-actions">
+        <button id="tn-cancel" type="button" class="btn btn-ghost">ปิด</button>
+        <button id="tn-save" type="submit" class="btn btn-primary">มอบหมายงาน</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- งานบุคคล: กรอกเหตุผล -->
+  <dialog id="dlg-tk-prompt" class="dialog">
+    <form id="form-tk-prompt" novalidate>
+      <h2 id="tp-title">ระบุเหตุผล</h2>
+      <p id="tp-text" class="muted"></p>
+      <div id="tp-alert" class="alert" role="alert" hidden></div>
+      <label class="field"><span id="tp-label">เหตุผล</span><textarea id="tp-note" rows="3" maxlength="2000"></textarea></label>
+      <div class="dialog-actions">
+        <button id="tp-cancel" type="button" class="btn btn-ghost">ปิด</button>
+        <button id="tp-ok" type="submit" class="btn btn-primary">ยืนยัน</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- แจ้งเตือน -->
+  <dialog id="dlg-notif" class="dialog">
+    <div class="dlg-pad">
+      <div class="tk-dlg-head">
+        <h2>🔔 การแจ้งเตือน</h2>
+        <button id="nf-close" type="button" class="btn btn-ghost btn-sm" aria-label="ปิด">✕</button>
+      </div>
+      <div id="nf-list"></div>
+      <div class="dialog-actions"><button id="nf-readall" type="button" class="btn btn-ghost btn-sm">✔️ อ่านทั้งหมด</button></div>
+    </div>
+  </dialog>
+
+  <!-- ดูรูปภาพแนบ -->
+  <dialog id="dlg-viewer" class="dialog dialog-wide">
+    <div class="dlg-pad">
+      <div class="tk-dlg-head"><h2 id="vw-name">ไฟล์</h2><button id="vw-close" type="button" class="btn btn-ghost btn-sm" aria-label="ปิด">✕</button></div>
+      <div id="vw-body" class="vw-body"></div>
+      <div class="dialog-actions"><a id="vw-download" class="btn btn-ghost btn-sm" download>⬇️ ดาวน์โหลด</a></div>
+    </div>
+  </dialog>
+
   <dialog id="dlg-confirm" class="dialog">
     <form id="form-confirm" method="dialog" novalidate>
       <h2 id="confirm-title">ยืนยัน</h2>
@@ -533,5 +636,6 @@
   <script src="app.js"></script>
   <script src="public.js"></script>
   <script src="admin.js"></script>
+  <script src="tasks.js"></script>
 </body>
 </html>

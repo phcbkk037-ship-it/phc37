@@ -1,5 +1,5 @@
 /* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
-var PHC37_APP_VERSION = '1.5.0';
+var PHC37_APP_VERSION = '1.6.0';
 (function () {
   'use strict';
 
@@ -21,7 +21,10 @@ var PHC37_APP_VERSION = '1.5.0';
   function sget(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function sdel(k) { try { localStorage.removeItem(k); } catch (e) {} }
-  function clearSession() { sdel(KEY_TOKEN); sdel(KEY_EXP); sdel(KEY_PROFILE); state.profile = null; }
+  function clearSession() {
+    sdel(KEY_TOKEN); sdel(KEY_EXP); sdel(KEY_PROFILE); state.profile = null;
+    if (window.PHC37Tasks) window.PHC37Tasks.reset();
+  }
   function saveToken(token, exp) { sset(KEY_TOKEN, token); sset(KEY_EXP, exp || ''); }
   function tokenValid() {
     var t = sget(KEY_TOKEN), e = sget(KEY_EXP);
@@ -103,8 +106,8 @@ var PHC37_APP_VERSION = '1.5.0';
   // ---------- UI helpers ----------
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
-    $('topbar').hidden = view !== 'view-home' && view !== 'view-admin';
+    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    $('topbar').hidden = view !== 'view-home' && view !== 'view-admin' && view !== 'view-tasks';
     closeAccountMenu();
   }
   function setAlert(id, msg, info) {
@@ -459,6 +462,7 @@ var PHC37_APP_VERSION = '1.5.0';
     renderMaintBanner(profile);
     renderMenus();
     show('view-home');
+    if (window.PHC37Tasks) window.PHC37Tasks.refresh(true);
     if (u.needsEmail) askEmail();
   }
 
@@ -823,7 +827,10 @@ var PHC37_APP_VERSION = '1.5.0';
     showLogin: showLogin, bindRules: bindRules, rulesOk: rulesOk,
     comboFill: comboFill, comboValue: comboValue, comboSet: comboSet, isMainAffiliation: isMainAffiliation,
     profile: function () { return state.profile; },
-    goHome: function () { state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0); },
+    goHome: function () {
+      state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0);
+      if (window.PHC37Tasks) window.PHC37Tasks.refresh(false);
+    },
     refreshProfile: function () {
       return api('auth.me', { token: sget(KEY_TOKEN) }).then(function (res) {
         if (!res.ok) return res;

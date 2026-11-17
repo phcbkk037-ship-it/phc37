@@ -1,4 +1,4 @@
-/* PHC37 PWA 1.5.0 — สีและขนาดตาม UI Kit 1.2.0 */
+/* PHC37 PWA 1.6.0 — สีและขนาดตาม UI Kit 1.2.0 */
 :root {
   --primary: #15703A; --primary-hover: #0E5A2E; --primary-soft: #EAF6EC; --brand: #3DA852;
   --text: #17201A; --text-2: #4A5550; --line: #D8DED9; --bg: #F4F6F4; --white: #fff;
@@ -406,4 +406,85 @@ td .sk-row { border: 0; padding: 8px 0; margin: 0; background: transparent; }
   .boot-logo, .sk-ic, .sk-l, .topline.on::before { animation: none; }
   .topline.on::before { left: 0; width: 100%; opacity: .6; }
   .btn-spin { animation-duration: 1.6s; }
+}
+
+/* ============ งานบุคคล (1.6.0) ============ */
+.btn-bell { position: relative; padding: 8px 10px; font-size: 20px; margin-left: auto; margin-right: 6px; }
+.bell-badge { position: absolute; top: 2px; right: 0; font-size: 11px; min-width: 18px; line-height: 18px; padding: 0 4px; }
+.task-strip { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; cursor: pointer;
+  background: var(--white); border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 12px; padding: 12px 16px; margin: 0 0 16px; }
+.task-strip:hover { background: var(--primary-soft); }
+.task-strip.alert-strip { border-left-color: #F97316; }
+.task-strip-icon { font-size: 24px; }
+.task-strip-text { flex: 1; display: flex; flex-direction: column; }
+.task-strip-text b { color: var(--primary); }
+.task-strip-text span { color: var(--text-2); font-size: 15px; }
+.task-strip-go { font-size: 26px; color: var(--text-2); }
+.tk-new { margin-left: auto; }
+.tk-all { margin: -6px 0 10px; }
+.tk-row { width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.tk-row:hover { border-color: var(--primary); }
+.tk-due { display: block; font-size: 14px; color: var(--text-2); margin-top: 2px; }
+.tk-due.warn { color: var(--warn); font-weight: 600; }
+.tk-due.danger { color: var(--danger); font-weight: 600; }
+.tk-due.big { font-size: 15px; margin: 4px 0 10px; }
+.tk-bar { display: block; height: 6px; border-radius: 3px; background: var(--primary-soft); margin-top: 8px; overflow: hidden; max-width: 320px; }
+.tk-bar-in { display: block; height: 100%; background: var(--brand); border-radius: 3px; transition: width .3s; }
+.dlg-pad { padding: 18px 22px 22px; border-top: 4px solid var(--brand); max-height: calc(100vh - 40px); overflow-y: auto; }
+.tk-dlg-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.tk-dlg-head h2 { flex: 1; margin: 0; font-size: 20px; }
+.tk-head-flags { margin-bottom: 4px; }
+.tk-meta { font-size: 14px; margin: 4px 0; }
+.tk-detail { white-space: pre-wrap; background: var(--bg); border-radius: 10px; padding: 10px 12px; margin: 6px 0 10px; line-height: 1.6; }
+.tk-sec { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
+.tk-sec h3 { font-size: 17px; margin: 0 0 8px; }
+.tk-label { font-weight: 600; font-size: 15px; margin: 10px 0 4px; }
+.tk-pct { font-size: 13px; margin-top: 2px; }
+.tk-form { background: var(--bg); border-radius: 12px; padding: 10px 12px 12px; margin-top: 12px; }
+.tk-form textarea { margin: 4px 0 8px; background: var(--white); }
+.tk-submit { border: 1px solid var(--primary-soft); background: #F7FBF8; }
+.tk-range { display: flex; align-items: center; gap: 10px; }
+.tk-range input { flex: 1; accent-color: var(--primary); }
+.tk-range b { min-width: 48px; text-align: right; color: var(--primary); }
+.tk-acts { margin-top: 10px; }
+.tk-person { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
+.tk-person.hl { border-color: var(--warn); background: #FFFBF4; }
+.tk-person-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tk-cancel { margin-top: 12px; color: var(--danger); }
+.tk-files { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.file-chip { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 14px; max-width: 100%;
+  background: var(--white); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; color: var(--text); }
+button.file-chip:hover { border-color: var(--primary); }
+.file-chip.uploading { opacity: .7; }
+.file-chip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-x { border: 0; background: none; cursor: pointer; color: var(--text-2); font-size: 13px; padding: 0 2px; }
+.file-x:hover { color: var(--danger); }
+.tk-file-note { font-size: 13px; margin-top: 4px; }
+.tl { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--primary-soft); }
+.tl li { position: relative; padding: 0 0 12px 8px; }
+.tl li::before { content: ''; position: absolute; left: -23px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); border: 2px solid var(--white); }
+.tl-head { font-size: 15px; }
+.tl-note { white-space: pre-wrap; margin-top: 2px; }
+.tn-sub { font-weight: 600; font-size: 14px; margin: 8px 0 4px; color: var(--text-2); }
+.tn-search { margin-bottom: 6px; max-width: none; }
+.tn-users { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px; }
+.tn-user small { display: block; font-size: 13px; }
+.field-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+.nf-item { display: flex; gap: 10px; width: 100%; text-align: left; font: inherit; background: none; border: 0; border-bottom: 1px solid var(--line);
+  padding: 10px 4px; cursor: pointer; color: var(--text); }
+.nf-item:hover { background: var(--bg); }
+.nf-item.unread { background: var(--primary-soft); }
+.nf-item.unread b::before { content: '● '; color: var(--brand); }
+.nf-icon { font-size: 20px; }
+.nf-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.nf-body { font-size: 14px; color: var(--text-2); }
+.nf-time { font-size: 12px; }
+#nf-list { max-height: 60vh; overflow-y: auto; margin: 6px 0; }
+.vw-body img { display: block; max-width: 100%; max-height: 70vh; margin: 0 auto; border-radius: 8px; }
+.vw-body iframe { width: 100%; height: 70vh; border: 0; }
+@media (max-width: 560px) {
+  .btn-account .acc-name { display: none; }
+  .task-strip { padding: 10px 12px; }
+  .dlg-pad { padding: 14px 14px 18px; }
+  .tk-new { width: 100%; margin: 6px 0 0; }
 }
