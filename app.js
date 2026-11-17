@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.3.2) */
-var PHC37_APP_VERSION = '1.3.2';
+/* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
+var PHC37_APP_VERSION = '1.4.0';
 (function () {
   'use strict';
 
@@ -100,6 +100,27 @@ var PHC37_APP_VERSION = '1.3.2';
     setAlert('login-alert', message || '', false);
     $('login-password').value = '';
     setTimeout(function () { ($('login-username').value ? $('login-password') : $('login-username')).focus(); }, 50);
+    checkStatus();
+  }
+
+  // ---------- แจ้งปิดปรับปรุงที่หน้าเข้าสู่ระบบ ----------
+  var lastStatusAt = 0;
+  function checkStatus() {
+    if (!API_URL || Date.now() - lastStatusAt < 60000) return;
+    lastStatusAt = Date.now();
+    api('public.status', {}).then(function (res) {
+      var box = $('login-maint');
+      if (res.ok && res.maintenance && res.maintenance.on) { box.textContent = '🔧 ' + res.maintenance.text; box.hidden = false; }
+      else box.hidden = true;
+    });
+  }
+  function fmtTime(iso) {
+    try {
+      var d = new Date(iso), o = { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' };
+      if (d.getFullYear() !== new Date().getFullYear()) o.year = '2-digit';
+      return d.toLocaleString('th-TH', o) + ' น.';
+    }
+    catch (e) { return ''; }
   }
 
   $('form-login').addEventListener('submit', function (e) {
@@ -110,7 +131,12 @@ var PHC37_APP_VERSION = '1.3.2';
     var btn = $('btn-login'); busy(btn, true, 'กำลังเข้าสู่ระบบ...');
     api('auth.login', { username: u, password: p }).then(function (res) {
       busy(btn, false);
-      if (!res.ok) { setAlert('login-alert', res.message); $('login-password').select(); return; }
+      if (!res.ok) {
+        if (res.code === 'maintenance') {             // แสดงที่กล่องแจ้งปิดปรับปรุงกล่องเดียว ไม่ซ้ำสองกล่อง
+          var box = $('login-maint'); box.textContent = '🔧 ' + res.message; box.hidden = false;
+        } else setAlert('login-alert', res.message);
+        $('login-password').select(); return;
+      }
       $('login-password').value = '';
       if (res.mustChange) {
         state.pcToken = res.token;
@@ -166,9 +192,18 @@ var PHC37_APP_VERSION = '1.3.2';
 
   function enterHome(res) {
     saveToken(res.token, res.expiresAt);
-    var profile = { user: res.user, menus: res.menus || [] };
+    var profile = { user: res.user, menus: res.menus || [], maintenance: res.maintenance || null };
     sset(KEY_PROFILE, JSON.stringify(profile));
     renderHome(profile);
+  }
+
+  function renderMaintBanner(profile) {
+    var m = profile && profile.maintenance, box = $('home-maint');
+    if (m && m.on) {
+      box.textContent = '🔧 ระบบปิดปรับปรุงอยู่ — ผู้ใช้อื่นเข้าระบบไม่ได้' + (m.until ? ' (เปิดอัตโนมัติ ' + fmtTime(m.until) + ')' : '') +
+        ' · ปิด/เปิดได้ที่ ⚙️ จัดการระบบกลาง → ตั้งค่า';
+      box.hidden = false;
+    } else box.hidden = true;
   }
 
   function renderHome(profile) {
@@ -184,6 +219,7 @@ var PHC37_APP_VERSION = '1.3.2';
     var groups = (u.groups || []).filter(function (g) { return g !== 'all'; }).map(function (g) { return GROUP_LABEL[g] || g; });
     $('home-sub').textContent = groups.length ? 'กลุ่มงาน: ' + groups.join(', ') : (u.role === 'superadmin' ? 'เข้าถึงได้ทุกกลุ่มงาน' : '');
     $('menu-search').value = '';
+    renderMaintBanner(profile);
     renderMenus();
     show('view-home');
     if (u.needsEmail) askEmail();
@@ -304,6 +340,11 @@ var PHC37_APP_VERSION = '1.3.2';
     if (isGroupMenu(m, menus)) {
       var n = childrenOf(m.key, menus).length;
       el = makeTile(iconOf(m, '📁'), m.name, n ? n + ' ระบบ' : '', 'count', function () { openGroup(m.key); }, 'group');
+    } else if (m.maintenance) {
+      el = makeTile(iconOf(m, '📌'), m.name, '🔧 ปิดปรับปรุง' + (m.maintenance.until ? ' ถึง ' + fmtTime(m.maintenance.until) : ''),
+        'pending', function () {
+          toast('"' + m.name + '" ปิดปรับปรุงชั่วคราว' + (m.maintenance.until ? ' จะเปิดประมาณ ' + fmtTime(m.maintenance.until) : ''));
+        });
     } else if (isRealUrl(m.url)) {
       var ready = !m.requireGateway;
       el = makeTile(iconOf(m, '📌'), m.name, ready ? (m.description || '') : 'กำลังย้ายมาระบบใหม่',
@@ -466,10 +507,11 @@ var PHC37_APP_VERSION = '1.3.2';
     api('auth.me', { token: sget(KEY_TOKEN) }).then(function (res) {
       loading(false);
       if (res.ok) {
-        var profile = { user: res.user, menus: res.menus || [] };
+        var profile = { user: res.user, menus: res.menus || [], maintenance: res.maintenance || null };
         sset(KEY_PROFILE, JSON.stringify(profile));
         if (!$('view-home').hidden && cached) {
           state.profile = profile;
+          renderMaintBanner(profile);
           if (state.groupKey && !profile.menus.some(function (m) { return m.key === state.groupKey; })) state.groupKey = null;
           renderMenus();
         } else {
@@ -538,6 +580,16 @@ var PHC37_APP_VERSION = '1.3.2';
     comboFill: comboFill, comboValue: comboValue, comboSet: comboSet, isMainAffiliation: isMainAffiliation,
     profile: function () { return state.profile; },
     goHome: function () { state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0); },
+    refreshProfile: function () {
+      return api('auth.me', { token: sget(KEY_TOKEN) }).then(function (res) {
+        if (!res.ok) return res;
+        var profile = { user: res.user, menus: res.menus || [], maintenance: res.maintenance || null };
+        sset(KEY_PROFILE, JSON.stringify(profile));
+        state.profile = profile; renderMaintBanner(profile); renderMenus();
+        return res;
+      });
+    },
+    fmtTime: fmtTime,
     groupLabel: function (g) { return GROUP_LABEL[g] || g; },
     roleLabel: function (r) { return ROLE_LABEL[r] || r; }
   };

@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.1.2) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.2.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -67,7 +67,9 @@
     Array.prototype.forEach.call(document.querySelectorAll('#view-admin .tab'), function (t) {
       t.classList.toggle('active', t.dataset.tab === tab);
     });
-    ['users', 'requests', 'perms', 'logs', 'bulk'].forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
+    ['users', 'requests', 'perms', 'menus', 'logs', 'bulk', 'settings'].forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
+    if (tab === 'menus') loadMenus();
+    if (tab === 'settings') loadSettings();
     if (tab === 'requests') loadRequests();
     if (tab === 'bulk') loadBulk(false);
     if (tab === 'perms') loadPerms();
@@ -606,6 +608,246 @@
     a.download = 'phc37-logs-' + dateStr(new Date()) + '.csv';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  // ---------- วันเวลา (datetime-local ↔ ISO) ----------
+  function toLocalInput(iso) {
+    if (!iso) return '';
+    var d = new Date(iso); if (isNaN(d.getTime())) return '';
+    var p = function (n) { return ('0' + n).slice(-2); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function fromLocalInput(v) { if (!v) return ''; var d = new Date(v); return isNaN(d.getTime()) ? '' : d.toISOString(); }
+
+  // ---------- ตั้งค่าระบบ (superadmin) ----------
+  var ST = null;
+  function loadSettings() {
+    $('st-apps').textContent = '';
+    $('st-apps').appendChild(el('p', 'muted', 'กำลังโหลด...'));
+    call('admin.settingsGet').then(function (res) {
+      if (!res.ok) { $('st-apps').textContent = res.message; return; }
+      ST = res;
+      var m = res.maintenance;
+      var flags = $('st-maint-state'); flags.textContent = '';
+      flags.appendChild(m.on ? chip('🔧 กำลังปิดปรับปรุง' + (m.until ? ' · เปิดอัตโนมัติ ' + fmtDate(m.until) : ''), 'warn') : chip('✅ เปิดใช้งานปกติ', 'ok'));
+      $('st-maint-on').checked = m.on;
+      $('st-maint-until').value = m.on ? toLocalInput(m.until) : '';
+      $('st-maint-msg').value = m.on ? (m.message || '') : '';
+      $('st-maint-open').hidden = !m.on;
+      $('st-ttl').value = res.sessionHours;
+      renderApps();
+    });
+  }
+  function renderApps() {
+    var wrap = $('st-apps'); wrap.textContent = '';
+    if (!ST.childApps.length) { wrap.appendChild(el('p', 'empty', 'ยังไม่มีแอพลูก')); return; }
+    ST.childApps.forEach(function (a) {
+      var row = el('div', 'row static');
+      var main = el('span', 'row-main');
+      main.appendChild(el('span', 'row-title', a.name));
+      main.appendChild(el('span', 'row-sub', a.id + (a.menuKeys.length ? ' · เมนู: ' + a.menuKeys.join(', ') : '')));
+      var f = el('span', 'row-flags');
+      f.appendChild(a.status === 'maintenance'
+        ? chip('🔧 ปิดปรับปรุง' + (a.until ? ' ถึง ' + fmtDate(a.until) : ''), 'warn')
+        : (a.status === 'inactive' ? chip('ปิดใช้งาน', 'muted') : chip('ใช้งานปกติ', 'ok')));
+      main.appendChild(f);
+      row.appendChild(main);
+      var acts = el('span', 'row-actions');
+      var b = el('button', 'btn btn-sm ' + (a.status === 'maintenance' ? 'btn-primary' : 'btn-edit'),
+        a.status === 'maintenance' ? '▶️ เปิดใช้งาน' : '🔧 ปิดปรับปรุง');
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        if (a.status === 'maintenance') setApp(a, 'active', '', b);
+        else { A.app = a; $('app-name').textContent = a.name; $('app-until').value = ''; P.setAlert('app-alert', ''); openDlg($('dlg-app')); }
+      });
+      acts.appendChild(b); row.appendChild(acts);
+      wrap.appendChild(row);
+    });
+  }
+  function setApp(a, status, until, btn) {
+    if (btn) P.busy(btn, true, 'กำลังบันทึก...');
+    return call('admin.childAppSet', { appId: a.id, status: status, until: until }).then(function (res) {
+      if (btn) P.busy(btn, false);
+      if (!res.ok) { P.toast(res.message, 'err'); return res; }
+      P.toast(res.message, 'ok'); loadSettings(); P.refreshProfile();
+      return res;
+    });
+  }
+  $('form-app').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var until = fromLocalInput($('app-until').value);
+    if ($('app-until').value && new Date(until).getTime() <= Date.now()) return P.setAlert('app-alert', 'เวลาเปิดอัตโนมัติต้องอยู่ในอนาคต');
+    var btn = $('app-ok'); P.busy(btn, true, 'กำลังบันทึก...');
+    setApp(A.app, 'maintenance', until).then(function (res) {
+      P.busy(btn, false);
+      if (res.ok) $('dlg-app').close(); else P.setAlert('app-alert', res.message);
+    });
+  });
+  $('app-cancel').addEventListener('click', function () { $('dlg-app').close(); });
+
+  function saveMaint(on) {
+    var until = fromLocalInput($('st-maint-until').value);
+    if (on && $('st-maint-until').value && new Date(until).getTime() <= Date.now()) return P.toast('เวลาเปิดอัตโนมัติต้องอยู่ในอนาคต', 'err');
+    var go = function () {
+      var btn = $('st-maint-save'); P.busy(btn, true, 'กำลังบันทึก...');
+      return call('admin.settingsSave', { maintenance: { on: on, until: on ? until : '', message: on ? $('st-maint-msg').value.trim() : '' } })
+        .then(function (res) {
+          P.busy(btn, false);
+          if (!res.ok) { P.toast(res.message, 'err'); return res; }
+          P.toast(on ? 'ปิดปรับปรุงระบบแล้ว — ผู้ใช้อื่นเข้าไม่ได้จนกว่าจะเปิด' : 'เปิดระบบแล้ว', 'ok');
+          loadSettings(); P.refreshProfile();
+          return res;
+        });
+    };
+    if (on && !(ST && ST.maintenance.on)) {
+      confirmBox('ปิดปรับปรุงระบบ', 'ผู้ใช้ทุกคนยกเว้น superadmin จะเข้าระบบไม่ได้ทันที (คนที่ใช้อยู่จะถูกให้ออกเมื่อโหลดหน้าใหม่)', false, go, 'ปิดปรับปรุง');
+    } else go();
+  }
+  $('st-maint-save').addEventListener('click', function () { saveMaint($('st-maint-on').checked); });
+  $('st-maint-open').addEventListener('click', function () { $('st-maint-on').checked = false; saveMaint(false); });
+  $('st-ttl-save').addEventListener('click', function () {
+    var h = Number($('st-ttl').value);
+    if (!(h >= 1 && h <= 24) || Math.round(h) !== h) return P.toast('กรอกจำนวนชั่วโมง 1–24', 'err');
+    var btn = $('st-ttl-save'); P.busy(btn, true, 'กำลังบันทึก...');
+    call('admin.settingsSave', { sessionHours: h }).then(function (res) {
+      P.busy(btn, false);
+      P.toast(res.ok ? 'บันทึกแล้ว — มีผลกับการเข้าสู่ระบบครั้งถัดไป' : res.message, res.ok ? 'ok' : 'err');
+    });
+  });
+
+  // ---------- จัดการเมนู (superadmin) ----------
+  var MN = { menus: [], wg: [] };
+  var ICON_PICKS = ['🏠', '📊', '📈', '👤', '👥', '📅', '🔁', '📋', '📌', '🗂️', '💊', '🧪', '🩺', '🦷', '🧠', '🏥', '🏘️', '📦', '🖥️', '📄', '🧾', '⚙️', '📁', '🔔'];
+  function loadMenus() {
+    $('mn-list').textContent = '';
+    $('mn-list').appendChild(el('p', 'muted', 'กำลังโหลด...'));
+    call('admin.menusList').then(function (res) {
+      if (!res.ok) { $('mn-list').textContent = res.message; return; }
+      MN.menus = res.menus; MN.wg = res.workgroups;
+      renderMenusAdmin();
+    });
+  }
+  function groupName(g) { return g === 'all' || !g ? 'ทั่วไป (ทุกกลุ่ม)' : ((MN.wg.filter(function (w) { return w.key === g; })[0] || {}).label || P.groupLabel(g)); }
+  function renderMenusAdmin() {
+    var wrap = $('mn-list'); wrap.textContent = '';
+    var q = $('mn-search').value.trim().toLowerCase(), showOff = $('mn-inactive').checked;
+    var vis = function (m) {
+      return (showOff || m.status === 'active') && (!q || (m.name + ' ' + m.key).toLowerCase().indexOf(q) >= 0);
+    };
+    var tops = MN.menus.filter(function (m) { return !m.parentKey; });
+    var kids = function (k) { return MN.menus.filter(function (m) { return m.parentKey === k; }); };
+    var n = 0;
+    tops.forEach(function (t) {
+      var ch = kids(t.key).filter(vis);
+      if (!vis(t) && !ch.length) return;
+      wrap.appendChild(menuRow(t, false)); n++;
+      ch.forEach(function (c) { wrap.appendChild(menuRow(c, true)); n++; });
+    });
+    if (!n) wrap.appendChild(el('p', 'empty', 'ไม่พบเมนู'));
+  }
+  function menuRow(m, child) {
+    var row = el('div', 'row static menu-row' + (child ? ' child' : '') + (m.status !== 'active' ? ' off' : ''));
+    row.appendChild(el('span', 'tile-icon sm', m.icon && /[^\x00-\x7F]/.test(m.icon) ? m.icon : (child ? '📌' : '📁')));
+    var main = el('span', 'row-main');
+    main.appendChild(el('span', 'row-title', m.name));
+    main.appendChild(el('span', 'row-sub', m.key + ' · ' + groupName(m.group) + (m.url ? ' · ' + m.url : '')));
+    var f = el('span', 'row-flags');
+    if (m.status !== 'active') f.appendChild(chip('ปิดใช้งาน', 'danger'));
+    if (m.openMode === 'group' || (!child && MN.menus.some(function (x) { return x.parentKey === m.key; }))) f.appendChild(chip('เมนูกลุ่ม', 'ok'));
+    if (m.requireGateway) f.appendChild(chip('แอพลูก', 'info'));
+    if (m.allowedGroups.length) f.appendChild(chip('เห็น: ' + m.allowedGroups.map(function (g) {
+      return g === '@person' ? 'รายบุคคล' : (g === 'all' ? 'ทุกกลุ่ม' : P.groupLabel(g)); }).join(', '), 'muted'));
+    main.appendChild(f);
+    row.appendChild(main);
+    var acts = el('span', 'row-actions');
+    [['▲', 'up'], ['▼', 'down']].forEach(function (x) {
+      var b = el('button', 'btn btn-ghost btn-sm', x[0]); b.type = 'button'; b.title = x[1] === 'up' ? 'เลื่อนขึ้น' : 'เลื่อนลง';
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        call('admin.menuMove', { key: m.key, dir: x[1] }).then(function (res) {
+          if (!res.ok) return P.toast(res.message, 'err');
+          loadMenus(); P.refreshProfile();
+        });
+      });
+      acts.appendChild(b);
+    });
+    var e = el('button', 'btn btn-edit btn-sm', '✏️ แก้ไข'); e.type = 'button';
+    e.addEventListener('click', function () { editMenu(m); });
+    acts.appendChild(e);
+    row.appendChild(acts);
+    return row;
+  }
+  $('mn-search').addEventListener('input', renderMenusAdmin);
+  $('mn-inactive').addEventListener('change', renderMenusAdmin);
+  $('mn-new').addEventListener('click', function () { editMenu(null); });
+
+  (function buildIconPicks() {
+    var box = $('mn-icons');
+    ICON_PICKS.forEach(function (ic) {
+      var b = el('button', 'icon-pick', ic); b.type = 'button'; b.title = 'ใช้ไอคอนนี้';
+      b.addEventListener('click', function () { $('mn-icon').value = ic; });
+      box.appendChild(b);
+    });
+  })();
+
+  function editMenu(m) {
+    MN.editing = m;
+    P.setAlert('mn-alert', '');
+    $('mn-title').textContent = m ? '✏️ แก้ไขเมนู' : '➕ เพิ่มเมนู';
+    var g = $('mn-group'); g.textContent = '';
+    [{ key: 'all', label: 'ทั่วไป (ทุกกลุ่ม)' }].concat(MN.wg).forEach(function (w) {
+      var o = el('option', null, w.label); o.value = w.key; g.appendChild(o);
+    });
+    var p = $('mn-parent'); p.textContent = '';
+    var o0 = el('option', null, '— ไม่มี (เมนูระดับบนสุด) —'); o0.value = ''; p.appendChild(o0);
+    MN.menus.filter(function (x) { return !x.parentKey && (!m || x.key !== m.key); }).forEach(function (x) {
+      var o = el('option', null, (x.icon && /[^\x00-\x7F]/.test(x.icon) ? x.icon + ' ' : '') + x.name + ' (' + x.key + ')'); o.value = x.key; p.appendChild(o);
+    });
+    var al = $('mn-allowed'); al.textContent = '';
+    [{ key: 'all', label: 'ทุกกลุ่ม' }, { key: '@person', label: 'เฉพาะคนที่ได้รับมอบ' }].concat(MN.wg).forEach(function (w) {
+      var l = el('label', 'check'); var c = el('input'); c.type = 'checkbox'; c.value = w.key; c.name = 'mn-allowed';
+      c.checked = !!(m && m.allowedGroups.indexOf(w.key) >= 0);
+      l.appendChild(c); l.appendChild(el('span', null, w.label)); al.appendChild(l);
+    });
+    $('mn-key').value = m ? m.key : ''; $('mn-key').readOnly = !!m;
+    $('mn-name').value = m ? m.name : '';
+    $('mn-icon').value = m ? m.icon : '';
+    $('mn-url').value = m ? m.url : '';
+    g.value = m ? (m.group || 'all') : 'all';
+    if (m && m.group && g.value !== m.group) { var og = el('option', null, m.group); og.value = m.group; g.appendChild(og); g.value = m.group; }
+    p.value = m ? m.parentKey : '';
+    $('mn-dept').value = m ? m.departmentName : '';
+    $('mn-sort').value = m ? m.sort : '';
+    $('mn-status').value = m ? m.status : 'active';
+    $('mn-desc').value = m ? m.description : '';
+    $('mn-isgroup').checked = !!(m && m.openMode === 'group');
+    $('mn-gateway').checked = !!(m && m.requireGateway);
+    $('mn-assign').checked = !!(m && m.assignable);
+    openDlg($('dlg-menu'));
+  }
+  $('mn-cancel').addEventListener('click', function () { $('dlg-menu').close(); });
+  $('form-menu').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = {
+      isNew: !MN.editing, key: $('mn-key').value.trim(), name: $('mn-name').value.trim(), icon: $('mn-icon').value.trim(),
+      url: $('mn-url').value.trim(), group: $('mn-group').value, parentKey: $('mn-parent').value,
+      departmentName: $('mn-dept').value.trim(), sort: $('mn-sort').value === '' ? '' : Number($('mn-sort').value),
+      status: $('mn-status').value, description: $('mn-desc').value.trim(),
+      openMode: $('mn-isgroup').checked ? 'group' : '', requireGateway: $('mn-gateway').checked, assignable: $('mn-assign').checked,
+      allowedGroups: Array.prototype.filter.call(document.querySelectorAll('input[name=mn-allowed]'), function (c) { return c.checked; })
+        .map(function (c) { return c.value; })
+    };
+    if (!/^[a-z0-9_]{2,40}$/.test(f.key)) return P.setAlert('mn-alert', 'รหัสเมนูใช้ได้เฉพาะ a-z 0-9 _ ยาว 2–40 ตัว');
+    if (!f.name) return P.setAlert('mn-alert', 'กรุณากรอกชื่อเมนู');
+    if (f.url && !/^https:\/\//i.test(f.url) && !/^#[a-z0-9_]+$/i.test(f.url)) return P.setAlert('mn-alert', 'ลิงก์ต้องขึ้นต้นด้วย https:// หรือเป็นหน้าในระบบ เช่น #logs');
+    var btn = $('mn-save'); P.busy(btn, true, 'กำลังบันทึก...');
+    call('admin.menuSave', { menu: f }).then(function (res) {
+      P.busy(btn, false);
+      if (!res.ok) return P.setAlert('mn-alert', res.message);
+      $('dlg-menu').close();
+      P.toast(res.message, 'ok');
+      loadMenus(); P.refreshProfile();
+    });
   });
 
   window.PHC37Admin = { open: open };

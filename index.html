@@ -65,6 +65,7 @@
             <h1>เข้าสู่ระบบ</h1>
             <p class="auth-sub">ระบบ Web App ศบส.37</p>
           </div>
+          <div id="login-maint" class="alert warn" role="status" hidden></div>
           <div id="login-alert" class="alert" role="alert" hidden></div>
           <label class="field">
             <span>ชื่อผู้ใช้</span>
@@ -197,8 +198,10 @@
         <button type="button" class="tab active" data-tab="users">👥 ผู้ใช้งาน</button>
         <button type="button" class="tab" data-tab="requests">📝 คำขอสมัคร <span id="adm-req-badge" class="badge" hidden></span></button>
         <button type="button" class="tab" data-tab="perms" data-super="1">🔐 สิทธิ์เมนู</button>
+        <button type="button" class="tab" data-tab="menus" data-super="1">📋 เมนู</button>
         <button type="button" class="tab" data-tab="logs">🧾 ประวัติ</button>
         <button type="button" class="tab" data-tab="bulk">🔑 ออกรหัสชุด</button>
+        <button type="button" class="tab" data-tab="settings" data-super="1">⚙️ ตั้งค่า</button>
       </div>
 
       <div id="tab-users" class="tab-panel">
@@ -256,6 +259,46 @@
         <button id="log-more" type="button" class="btn btn-ghost btn-block" hidden>โหลดเพิ่ม</button>
       </div>
 
+      <div id="tab-menus" class="tab-panel" hidden>
+        <div class="toolbar">
+          <label class="search"><span aria-hidden="true">🔎</span><input id="mn-search" type="search" placeholder="ค้นหาเมนู / รหัสเมนู" autocomplete="off"></label>
+          <label class="check"><input id="mn-inactive" type="checkbox"><span>แสดงเมนูที่ปิดใช้งาน</span></label>
+          <button id="mn-new" type="button" class="btn btn-add">➕ เพิ่มเมนู</button>
+        </div>
+        <p class="muted small">ลำดับในหน้านี้ = ลำดับบนหน้าหลัก · ▲▼ เลื่อนเทียบกับเมนูในระดับเดียวกัน · เมนูใหม่ต้องให้สิทธิ์ "ดู" ในแท็บสิทธิ์เมนูก่อนผู้ใช้จะเห็น · ไม่มีการลบเมนู ใช้ "ปิดใช้งาน" แทน</p>
+        <div id="mn-list" class="list"></div>
+      </div>
+
+      <div id="tab-settings" class="tab-panel" hidden>
+        <div class="card pad section">
+          <h2>🔧 ปิดปรับปรุงทั้งระบบ</h2>
+          <div id="st-maint-state" class="flags"></div>
+          <p class="muted small">ระหว่างปิดปรับปรุง เข้าระบบได้เฉพาะ superadmin · ผู้ใช้อื่นจะเห็นข้อความแจ้งที่หน้าเข้าสู่ระบบ · ถ้าตั้งเวลาไว้ ระบบจะเปิดเองเมื่อถึงเวลา</p>
+          <label class="check"><input id="st-maint-on" type="checkbox"><span><b>ปิดปรับปรุงระบบ</b></span></label>
+          <div class="grid2">
+            <label class="field"><span>เปิดระบบอัตโนมัติเวลา (ไม่บังคับ)</span><input id="st-maint-until" type="datetime-local"></label>
+            <label class="field"><span>ข้อความถึงผู้ใช้ (ไม่บังคับ)</span><input id="st-maint-msg" maxlength="300" placeholder="เช่น อัปเดตระบบ ประมาณ 30 นาที"></label>
+          </div>
+          <div class="bulk-actions">
+            <button id="st-maint-save" type="button" class="btn btn-primary">บันทึก</button>
+            <button id="st-maint-open" type="button" class="btn btn-ghost" hidden>เปิดระบบทันที</button>
+          </div>
+        </div>
+        <div class="card pad section">
+          <h2>🧩 ปิดปรับปรุงแอพลูก</h2>
+          <p class="muted small">ปิดเฉพาะแอพที่กำลังปรับปรุง แอพอื่นใช้งานได้ตามปกติ · เมนูของแอพนั้นจะขึ้นว่า "ปิดปรับปรุง"</p>
+          <div id="st-apps" class="list"></div>
+        </div>
+        <div class="card pad section">
+          <h2>⏱️ การเข้าสู่ระบบ</h2>
+          <div class="toolbar">
+            <label class="field inline"><span>อยู่ในระบบได้นาน (ชั่วโมง, 1–24)</span><input id="st-ttl" type="number" min="1" max="24" step="1"></label>
+            <button id="st-ttl-save" type="button" class="btn btn-primary">บันทึก</button>
+          </div>
+          <p class="muted small">ครบเวลาแล้วต้องเข้าสู่ระบบใหม่ · มีผลกับการเข้าสู่ระบบครั้งถัดไป</p>
+        </div>
+      </div>
+
       <div id="tab-bulk" class="tab-panel" hidden>
         <div class="card pad">
           <h2>🔑 ออกรหัสผ่านชั่วคราวทั้งชุด</h2>
@@ -273,6 +316,7 @@
 
     <!-- หน้าหลัก -->
     <section id="view-home" class="view" hidden>
+      <div id="home-maint" class="alert warn" role="status" hidden></div>
       <div class="home-head">
         <div>
           <h1 id="home-greet">สวัสดี</h1>
@@ -371,6 +415,59 @@
         <span class="spacer"></span>
         <button id="u-cancel" type="button" class="btn btn-ghost">ปิด</button>
         <button id="u-save" type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- เมนู (เพิ่ม/แก้ไข) -->
+  <dialog id="dlg-menu" class="dialog dialog-wide">
+    <form id="form-menu" method="dialog" novalidate>
+      <h2 id="mn-title">เมนู</h2>
+      <div id="mn-alert" class="alert" role="alert" hidden></div>
+      <div class="grid2">
+        <label class="field"><span>รหัสเมนู * <small class="muted">(a-z 0-9 _ เปลี่ยนไม่ได้หลังสร้าง)</small></span><input id="mn-key" autocapitalize="off" spellcheck="false"></label>
+        <label class="field"><span>ชื่อเมนู *</span><input id="mn-name"></label>
+        <label class="field"><span>ไอคอน</span><input id="mn-icon" maxlength="8" placeholder="📌"></label>
+        <label class="field"><span>ลิงก์ <small class="muted">(https://… หรือ #หน้าในระบบ)</small></span><input id="mn-url" inputmode="url" spellcheck="false"></label>
+      </div>
+      <div id="mn-icons" class="icon-picks"></div>
+      <div class="grid2">
+        <label class="field"><span>กลุ่มงานของเมนู</span><select id="mn-group" class="select"></select></label>
+        <label class="field"><span>อยู่ใต้เมนูกลุ่ม</span><select id="mn-parent" class="select"></select></label>
+        <label class="field"><span>หัวข้อ / หน่วยงาน (ไม่บังคับ)</span><input id="mn-dept"></label>
+        <label class="field"><span>ลำดับ <small class="muted">(น้อย = ขึ้นก่อน, ว่าง = ต่อท้าย)</small></span><input id="mn-sort" type="number" step="1"></label>
+        <label class="field"><span>สถานะ</span>
+          <select id="mn-status" class="select"><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select></label>
+      </div>
+      <label class="field"><span>คำอธิบาย (ไม่บังคับ)</span><input id="mn-desc" maxlength="300"></label>
+      <fieldset class="checks">
+        <legend>ประเภท</legend>
+        <label class="check"><input id="mn-isgroup" type="checkbox"><span>เป็นเมนูกลุ่ม (กดแล้วแสดงระบบย่อยข้างใน)</span></label>
+        <label class="check"><input id="mn-gateway" type="checkbox"><span>เป็นแอพลูก (ต้องเข้าผ่าน Gateway)</span></label>
+        <label class="check"><input id="mn-assign" type="checkbox"><span>มอบให้ผู้ใช้รายบุคคลได้</span></label>
+      </fieldset>
+      <fieldset class="checks">
+        <legend>กลุ่มที่เห็นเมนูนี้ (AllowedGroups)</legend>
+        <p class="muted small">ไม่เลือกเลย = ใช้กลุ่มงานของเมนูตามกติกาเดิม · "ทุกกลุ่ม" = ทุกคนที่มีสิทธิ์ดู · "เฉพาะคนที่ได้รับมอบ" = ต้องมอบรายบุคคล (เลือกกลุ่มเพิ่มเพื่อจำกัดเฉพาะกลุ่ม)</p>
+        <div id="mn-allowed" class="check-grid"></div>
+      </fieldset>
+      <div class="dialog-actions">
+        <button id="mn-cancel" type="button" class="btn btn-ghost">ปิด</button>
+        <button id="mn-save" type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ปิดปรับปรุงแอพลูก (เลือกเวลาเปิด) -->
+  <dialog id="dlg-app" class="dialog">
+    <form id="form-app" method="dialog" novalidate>
+      <h2>🔧 ปิดปรับปรุงแอพลูก</h2>
+      <p id="app-name" class="muted"></p>
+      <label class="field"><span>เปิดอัตโนมัติเวลา (ไม่บังคับ)</span><input id="app-until" type="datetime-local"></label>
+      <div id="app-alert" class="alert" role="alert" hidden></div>
+      <div class="dialog-actions">
+        <button id="app-cancel" type="button" class="btn btn-ghost">ยกเลิก</button>
+        <button id="app-ok" type="submit" class="btn btn-edit">ปิดปรับปรุง</button>
       </div>
     </form>
   </dialog>
