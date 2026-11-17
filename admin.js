@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.2.1) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.3.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -329,8 +329,7 @@
 
   // ---------- คำขอสมัคร ----------
   function loadRequests() {
-    var wrap = $('adm-requests'); wrap.textContent = '';
-    wrap.appendChild(el('p', 'muted', 'กำลังโหลด...'));
+    var wrap = $('adm-requests'); P.skeleton(wrap, 3);
     call('admin.listRequests').then(function (res) {
       wrap.textContent = '';
       if (!res.ok) { wrap.appendChild(el('p', 'empty', res.message)); return; }
@@ -373,7 +372,7 @@
 
   // ---------- ออกรหัสชุด ----------
   function loadBulk(keepResult) {
-    $('bulk-summary').textContent = 'กำลังโหลด...';
+    P.skeleton($('bulk-summary'), 1, 'line');
     if (!keepResult) $('bulk-result').hidden = true;
     call('admin.bulkPreview').then(function (res) {
       if (!res.ok) { $('bulk-summary').textContent = res.message; return; }
@@ -446,7 +445,7 @@
   var PM = { data: null, dirty: {} };
   function loadPerms(role) {
     var body = $('perm-body'); body.textContent = '';
-    var tr = el('tr'); var td = el('td', 'muted', 'กำลังโหลด...'); td.colSpan = 5; tr.appendChild(td); body.appendChild(tr);
+    var tr = el('tr'); var td = el('td'); td.colSpan = 5; tr.appendChild(td); body.appendChild(tr); P.skeleton(td, 6);
     PM.dirty = {}; updateDirty();
     call('admin.permGet', { role: role || $('perm-role').value }).then(function (res) {
       if (!res.ok) { td.textContent = res.message; return; }
@@ -569,10 +568,11 @@
   function loadLogs(more) {
     var q = logQuery();
     if (more && LG.next) q.before = LG.next;
-    if (!more) { LG.rows = []; $('log-list').textContent = ''; $('log-count').textContent = 'กำลังโหลด...'; }
+    if (!more) { LG.rows = []; P.skeleton($('log-list'), 5); P.skeleton($('log-count'), 1, 'line'); }
     var btn = $('log-more'); if (more) P.busy(btn, true, 'กำลังโหลด...');
     call('logs.list', q).then(function (res) {
       if (more) P.busy(btn, false);
+      else $('log-list').textContent = '';
       if (!res.ok) { $('log-count').textContent = res.message; return; }
       LG.next = res.nextBefore;
       LG.rows = LG.rows.concat(res.logs);
@@ -624,8 +624,7 @@
   // ---------- ตั้งค่าระบบ (superadmin) ----------
   var ST = null;
   function loadSettings() {
-    $('st-apps').textContent = '';
-    $('st-apps').appendChild(el('p', 'muted', 'กำลังโหลด...'));
+    P.skeleton($('st-apps'), 3);
     call('admin.settingsGet').then(function (res) {
       if (!res.ok) { $('st-apps').textContent = res.message; return; }
       ST = res;
@@ -721,8 +720,7 @@
   var MN = { menus: [], wg: [] };
   var ICON_PICKS = ['🏠', '📊', '📈', '👤', '👥', '📅', '🔁', '📋', '📌', '🗂️', '💊', '🧪', '🩺', '🦷', '🧠', '🏥', '🏘️', '📦', '🖥️', '📄', '🧾', '⚙️', '📁', '🔔'];
   function loadMenus() {
-    $('mn-list').textContent = '';
-    $('mn-list').appendChild(el('p', 'muted', 'กำลังโหลด...'));
+    P.skeleton($('mn-list'), 6);
     call('admin.menusList').then(function (res) {
       if (!res.ok) { $('mn-list').textContent = res.message; return; }
       MN.menus = res.menus; MN.wg = res.workgroups;

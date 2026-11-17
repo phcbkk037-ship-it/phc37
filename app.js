@@ -1,5 +1,5 @@
 /* PHC37 PWA — app.js (PHC37-PWA-1.4.0) */
-var PHC37_APP_VERSION = '1.4.1';
+var PHC37_APP_VERSION = '1.5.0';
 (function () {
   'use strict';
 
@@ -29,8 +29,54 @@ var PHC37_APP_VERSION = '1.4.1';
   }
 
   // ---------- API ----------
-  function api(action, data) {
+  // ---------- Loading แบบ B: เส้นวิ่งด้านบน (รอเกิน 0.3 วิ แสดง · แสดงอย่างน้อย 0.3 วิ · ล้มเหลวเป็นสีแดง) ----------
+  var LN = { n: 0, t: null, at: 0 };
+  function lineStart() {
+    if (++LN.n > 1) return;
+    clearTimeout(LN.t);
+    LN.t = setTimeout(function () { var tl = $('topline'); if (tl) { tl.className = 'topline on'; LN.at = Date.now(); } }, 300);
+  }
+  function lineEnd(fail) {
+    if (LN.n === 0) return;
+    if (--LN.n > 0) return;
+    clearTimeout(LN.t);
+    var tl = $('topline'); if (!tl || tl.className.indexOf('on') < 0) return;
+    setTimeout(function () {
+      if (LN.n > 0) return;
+      tl.className = 'topline done' + (fail ? ' fail' : '');
+      LN.t = setTimeout(function () { if (LN.n === 0) tl.className = 'topline'; }, fail ? 900 : 450);
+    }, Math.max(0, 300 - (Date.now() - LN.at)));
+  }
+
+  // ---------- หน้าเปิดระบบ ----------
+  var bootSlowT = null;
+  function bootOn() { var b = $('boot'); return !!(b && !b.hidden); }
+  function bootStep(text) { if (bootOn()) $('boot-text').textContent = text; }
+  function bootHide() {
+    clearTimeout(bootSlowT);
+    var b = $('boot'); if (!b || b.hidden || b.classList.contains('out')) return;
+    b.classList.add('out');
+    setTimeout(function () { b.hidden = true; b.classList.remove('out', 'fail'); }, 260);
+  }
+  function bootFail(msg) {
+    clearTimeout(bootSlowT);
+    var b = $('boot'); b.hidden = false; b.classList.remove('out'); b.classList.add('fail');
+    $('boot-text').textContent = 'เชื่อมต่อระบบไม่สำเร็จ';
+    $('boot-fail-text').textContent = (!msg || /^เชื่อมต่อระบบไม่สำเร็จ/.test(msg))
+      ? 'กรุณาตรวจสอบอินเทอร์เน็ต แล้วกด "ลองใหม่"' : msg;
+    $('boot-fail').hidden = false;
+  }
+  $('boot-retry').addEventListener('click', function () {
+    var b = $('boot'); b.classList.remove('fail'); $('boot-fail').hidden = true;
+    $('boot-text').textContent = 'กำลังเปิดระบบ…';
+    boot();
+  });
+
+  /** opts.quiet = งานเบื้องหลัง ไม่แสดงเส้นวิ่ง */
+  function api(action, data, opts) {
     if (!API_URL) return Promise.resolve({ ok: false, code: 'config', message: 'ยังไม่ได้ตั้งค่า API_URL ในไฟล์ config.js' });
+    var quiet = (opts && opts.quiet) || bootOn();
+    if (!quiet) lineStart();
     var ctrl = ('AbortController' in window) ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 30000);
     return fetch(API_URL, {
@@ -45,6 +91,7 @@ var PHC37_APP_VERSION = '1.4.1';
       })
       .then(function (res) {
         clearTimeout(timer);
+        if (!quiet) lineEnd(!res || res.code === 'network');
         if (res && res.code === 'unauthorized' && action !== 'auth.setNewPassword') {
           clearSession();
           showLogin(res.message);
@@ -55,6 +102,7 @@ var PHC37_APP_VERSION = '1.4.1';
 
   // ---------- UI helpers ----------
   function show(view) {
+    bootHide();
     ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     $('topbar').hidden = view !== 'view-home' && view !== 'view-admin';
     closeAccountMenu();
@@ -72,13 +120,49 @@ var PHC37_APP_VERSION = '1.4.1';
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { el.hidden = true; }, 3500);
   }
+  var loadingT = null;
   function loading(on, text) {
     $('loading-text').textContent = text || 'กำลังโหลด...';
-    $('loading').hidden = !on;
+    clearTimeout(loadingT);
+    if (!on) { $('loading').hidden = true; return; }
+    if (bootOn()) return;                                  // หน้าเปิดระบบแสดงอยู่แล้ว ไม่ซ้อน
+    loadingT = setTimeout(function () { $('loading').hidden = false; }, 300);   // งานเร็วไม่กระพริบ
   }
+  /** ปุ่มที่กด: วงหมุน + ข้อความ · กดซ้ำไม่ได้ */
   function busy(btn, on, text) {
-    if (on) { btn.dataset.label = btn.textContent; btn.textContent = text || 'กำลังดำเนินการ...'; btn.disabled = true; }
-    else { btn.textContent = btn.dataset.label || btn.textContent; btn.disabled = false; }
+    if (!btn) return;
+    if (on) {
+      if (btn.getAttribute('aria-busy') === 'true') return;
+      btn.dataset.label = btn.textContent;
+      btn.textContent = '';
+      var s = document.createElement('span'); s.className = 'btn-spin'; s.setAttribute('aria-hidden', 'true');
+      btn.appendChild(s); btn.appendChild(document.createTextNode(text || 'กำลังดำเนินการ...'));
+      btn.disabled = true; btn.setAttribute('aria-busy', 'true');
+    } else {
+      if (btn.getAttribute('aria-busy') === 'true') btn.textContent = btn.dataset.label || '';
+      btn.disabled = false; btn.removeAttribute('aria-busy');
+    }
+  }
+  /** โครงเทาแทนข้อความ "กำลังโหลด" — kind: 'rows' (ค่าเริ่มต้น) | 'line' */
+  function skeleton(target, n, kind) {
+    target.textContent = '';
+    var w = document.createElement(kind === 'line' ? 'span' : 'div');
+    w.className = kind === 'line' ? 'sk sk-inline' : 'sk';
+    w.setAttribute('aria-busy', 'true');
+    var sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = 'กำลังโหลด'; w.appendChild(sr);
+    if (kind === 'line') { var l = document.createElement('span'); l.className = 'sk-l'; w.appendChild(l); }
+    else {
+      for (var i = 0; i < (n || 4); i++) {
+        var r = document.createElement('div'); r.className = 'sk-row';
+        var ic = document.createElement('div'); ic.className = 'sk-ic'; r.appendChild(ic);
+        var ls = document.createElement('div'); ls.className = 'sk-lines';
+        var a = document.createElement('div'); a.className = 'sk-l'; a.style.width = (55 + (i * 17) % 35) + '%';
+        var b = document.createElement('div'); b.className = 'sk-l sm'; b.style.width = (30 + (i * 23) % 30) + '%';
+        ls.appendChild(a); ls.appendChild(b); r.appendChild(ls); w.appendChild(r);
+      }
+    }
+    target.appendChild(w);
+    return w;
   }
   function pwRules(value) {
     return { len: value.length >= 8, alpha: /[A-Za-z]/.test(value), digit: /[0-9]/.test(value) };
@@ -108,7 +192,7 @@ var PHC37_APP_VERSION = '1.4.1';
   function checkStatus() {
     if (!API_URL || Date.now() - lastStatusAt < 60000) return;
     lastStatusAt = Date.now();
-    api('public.status', {}).then(function (res) {
+    api('public.status', {}, { quiet: true }).then(function (res) {
       var box = $('login-maint');
       if (res.ok && res.maintenance && res.maintenance.on) { box.textContent = '🔧 ' + res.maintenance.text; box.hidden = false; }
       else box.hidden = true;
@@ -656,9 +740,16 @@ var PHC37_APP_VERSION = '1.4.1';
     if (!tokenValid()) { clearSession(); showLogin(); return; }
     var cached = null;
     try { cached = JSON.parse(sget(KEY_PROFILE) || 'null'); } catch (e) { cached = null; }
-    if (cached) renderHome(cached); else loading(true, 'กำลังโหลดข้อมูลผู้ใช้...');
+    if (cached) renderHome(cached);
+    else {
+      bootStep('กำลังตรวจสอบการเข้าสู่ระบบ…');
+      clearTimeout(bootSlowT);
+      bootSlowT = setTimeout(function () { bootStep('เซิร์ฟเวอร์กำลังเริ่มทำงาน อาจใช้เวลาสักครู่…'); }, 4000);
+    }
     api('auth.me', { token: sget(KEY_TOKEN) }).then(function (res) {
-      loading(false);
+      clearTimeout(bootSlowT);
+      if (!res.ok && res.code === 'network' && !cached) { bootFail(res.message); return; }
+      if (res.ok && !cached) bootStep('กำลังโหลดเมนู…');
       if (res.ok) {
         var profile = { user: res.user, menus: res.menus || [], maintenance: res.maintenance || null };
         sset(KEY_PROFILE, JSON.stringify(profile));
@@ -727,7 +818,7 @@ var PHC37_APP_VERSION = '1.4.1';
 
   // ให้ admin.js ใช้ร่วม
   window.PHC37 = {
-    api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, show: show, emailOk: emailOk,
+    api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, skeleton: skeleton, show: show, emailOk: emailOk,
     token: function () { return sget(KEY_TOKEN); },
     showLogin: showLogin, bindRules: bindRules, rulesOk: rulesOk,
     comboFill: comboFill, comboValue: comboValue, comboSet: comboSet, isMainAffiliation: isMainAffiliation,
