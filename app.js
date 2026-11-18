@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.0.0 · หน้าทะเบียนบุคลากรกลางในแอป) */
-var PHC37_APP_VERSION = '2.0.0';
+/* PHC37 PWA — app.js (PHC37-PWA-2.1.0 · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป) */
+var PHC37_APP_VERSION = '2.1.0';
 (function () {
   'use strict';
 
@@ -155,10 +155,10 @@ var PHC37_APP_VERSION = '2.0.0';
   }
 
   // ---------- UI helpers ----------
-  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel'];
+  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material'];
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
     closeAccountMenu(); closeSide();
@@ -592,6 +592,8 @@ var PHC37_APP_VERSION = '2.0.0';
   }
   /** ทะเบียนบุคลากรกลาง — เปิดเป็นหน้าในแอป (2.0.0) */
   function isPersonnelMenu(m) { return String(m.key || '').toLowerCase() === 'personnel_master'; }
+  /** ระบบเบิก–จ่ายวัสดุ — เปิดหน้าเดิมในแอป (2.1.0) */
+  function isMaterialMenu(m) { return String(m.key || '').toLowerCase() === 'material_requisition'; }
   function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
   function canManage() {
     var r = state.profile && state.profile.user && state.profile.user.role;
@@ -681,6 +683,10 @@ var PHC37_APP_VERSION = '2.0.0';
       el = makeTile(iconOf(m, '🗂️'), m.name, groupNote(m), '', function () {
         if (window.PHC37Patients) window.PHC37Patients.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
+    } else if (isMaterialMenu(m)) {
+      el = makeTile(iconOf(m, '📦'), m.name, groupNote(m), '', function () {
+        if (window.PHC37Material) window.PHC37Material.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else if (isPersonnelMenu(m)) {
       el = makeTile(iconOf(m, '👥'), m.name, groupNote(m), '', function () {
         if (window.PHC37Personnel) window.PHC37Personnel.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
@@ -756,7 +762,7 @@ var PHC37_APP_VERSION = '2.0.0';
     var box = $('gw7-apps'); box.textContent = '';
     var menus = allMenus(), n = 0;
     menus.forEach(function (m) {
-      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m))) return;
+      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m) && !isMaterialMenu(m))) return;
       var b = document.createElement('button'); b.type = 'button'; b.className = 'gw7-app';
       var ic = document.createElement('span'); ic.className = 'gw7-app-ic'; ic.textContent = iconOf(m, '📌'); ic.setAttribute('aria-hidden', 'true');
       var t = document.createElement('span'); t.className = 'gw7-nav-text'; t.textContent = m.name;

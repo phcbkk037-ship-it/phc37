@@ -139,3 +139,9 @@ button.psn-kpi:hover { border-color: var(--psn-green-b); }
   .psn-table td { padding: 4px 0; border: 0; }
   .psn-table td[data-label]::before { content: attr(data-label); display: block; color: var(--psn-ink2); font-size: 12px; font-weight: 700; }
 }
+
+/* ระบบเบิก–จ่ายวัสดุ (หน้าเดิมใน iframe) — เต็มพื้นที่ใต้แถบบน */
+.gw7-container > .mr-view { margin: -20px -28px -40px; }
+.mr-frame { display: block; width: 100%; height: calc(100vh - 74px); border: 0; background: #F4F6F4; }
+.mr-note { padding: 8px 16px; background: #FFF4E5; color: #8A4B00; border-bottom: 1px solid #E8C48F; font-size: 14px; font-family: Sarabun, "Noto Sans Thai", Arial, sans-serif; }
+@media (max-width: 900px) { .gw7-container > .mr-view { margin: -14px -12px -32px; } }
