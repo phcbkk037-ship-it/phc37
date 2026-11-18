@@ -1,4 +1,4 @@
-/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.1.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน */
+/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.2.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -67,24 +67,44 @@
     if (s.overdue) parts.push('เลยกำหนด ' + s.overdue);
     if (s.waiting) parts.push('รอตรวจ ' + s.waiting);
     if (s.toReview) parts.push('ต้องตรวจรับ ' + s.toReview);
-    var strip = $('home-tasks');
-    strip.hidden = false;
-    strip.classList.toggle('alert-strip', !!(s.overdue || s.newTasks || s.toReview));
-    $('home-tasks-sub').textContent = parts.length ? parts.join(' · ') : 'ไม่มีงานค้าง';
-    Array.prototype.forEach.call(document.querySelectorAll('#view-tasks [data-count]'), function (x) {
+    // การ์ดงานของฉันบนหน้าหลัก (แบบ Gateway เดิม)
+    var box = $('home-tasks'), pending = (s.todo || 0) + (s.toReview || 0);
+    box.hidden = false;
+    box.className = 'gw-inbox' + (s.overdue ? ' alert' : (pending ? ' busy' : ''));
+    $('home-tasks-ic').textContent = s.overdue ? '⚠️' : (pending ? '📌' : '✅');
+    $('home-tasks-title').textContent = pending ? 'มีงานค้าง ' + pending + ' งาน' : 'ไม่มีงานค้าง';
+    $('home-tasks-sub').textContent = parts.length ? parts.join(' · ') : 'ตอนนี้ยังไม่มีงานที่ได้รับมอบหมายค้างอยู่';
+    var sum = $('home-tasks-sum'); sum.textContent = '';
+    [['📌 ต้องทำ', s.todo], ['⏱️ เลยกำหนด', s.overdue], ['🔎 รอตรวจรับ', s.waiting]].concat(s.canAssign ? [['📥 ต้องตรวจรับ', s.toReview]] : [])
+      .forEach(function (x) { var b = el('span', 'gw-mini', x[0] + ': '); b.appendChild(el('b', null, String(x[1] || 0))); sum.appendChild(b); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-count]'), function (x) {
       var n = s[x.dataset.count] || 0; x.hidden = !n; x.textContent = n;
     });
-    Array.prototype.forEach.call(document.querySelectorAll('#view-tasks [data-assigner]'), function (x) { x.hidden = !s.canAssign; });
-    $('tk-new').hidden = !s.canAssign;
+    Array.prototype.forEach.call(document.querySelectorAll('#home-tasks [data-assigner]'), function (x) { x.hidden = !s.canAssign; });
+    var nb = $('nav-task-badge'); nb.hidden = !s.todo; nb.textContent = s.todo || '';
+    var rb = $('nav-review-badge'); rb.hidden = !s.toReview; rb.textContent = s.toReview || '';
+    $('nav-assign').hidden = !s.canAssign;
+    boxVisibility();
     var prof = P.profile(), sup = prof && prof.user && prof.user.role === 'superadmin';
     $('tk-all-wrap').hidden = !(sup && !ASSIGNEE_BOX[S.box]);
   }
 
   // ---------- หน้ากล่องงาน ----------
-  function open(box) {
+  /** งานของฉัน = กล่องผู้รับ · มอบหมายงาน = กล่องผู้มอบ (แบบเมนูเดิม "งานของฉัน" / "มอบหมายงาน") */
+  function boxVisibility() {
+    var canAssign = !!(S.summary && S.summary.canAssign), assign = S.mode === 'assign';
+    Array.prototype.forEach.call(document.querySelectorAll('#view-tasks .tab'), function (t) {
+      t.hidden = assign ? !(t.dataset.assigner && canAssign) : !!t.dataset.assigner;
+    });
+    $('tk-new').hidden = !(assign && canAssign);
+  }
+  function open(box, assignMode) {
     S.box = box || 'todo';
+    S.mode = assignMode || !ASSIGNEE_BOX[S.box] ? 'assign' : 'mine';
     P.show('view-tasks');
-    $('topbar').hidden = false;
+    P.setPage(S.mode === 'assign' ? 'assign' : 'tasks', S.mode === 'assign' ? 'มอบหมายงาน' : 'งานของฉัน');
+    $('tk-heading').textContent = S.mode === 'assign' ? '👥 งานบุคคล · มอบหมายงานและติดตามงาน' : '📋 งานของฉัน';
+    boxVisibility();
     try { history.pushState({ phc37View: 'tasks' }, ''); } catch (e) {}
     window.scrollTo(0, 0);
     refreshSummary(true);
@@ -606,10 +626,10 @@
   });
 
   // ---------- ปุ่ม / ผูกเหตุการณ์ ----------
-  $('home-tasks').addEventListener('click', function () {
-    var s = S.summary || {};
-    open(s.todo ? 'todo' : (s.toReview ? 'review' : 'todo'));
+  Array.prototype.forEach.call(document.querySelectorAll('#home-tasks [data-open-box]'), function (b) {
+    b.addEventListener('click', function () { open(b.dataset.openBox, b.dataset.openBox === 'review'); });
   });
+  $('tk-refresh').addEventListener('click', function () { refreshSummary(true); loadList(true); });
   $('tk-back').addEventListener('click', function () {
     if (history.state && history.state.phc37View === 'tasks') { history.back(); return; }
     P.goHome();
@@ -623,11 +643,11 @@
   $('tk-all').addEventListener('change', function () { loadList(); });
   $('tk-new').addEventListener('click', openNew);
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && !$('topbar').hidden) refreshSummary(false);
+    if (document.visibilityState === 'visible' && !$('shell').hidden) refreshSummary(false);
   });
   P.initDatePickers($('dlg-task-new'));
 
   if (!$('view-home').hidden && P.token()) refreshSummary(true);   // หน้าหลักแสดงก่อนไฟล์นี้โหลด (ข้อมูลในเครื่อง)
 
-  window.PHC37Tasks = { open: open, openTask: openTask, refresh: refreshSummary, reset: function () { S.summary = null; S.opts = null; S.sumAt = 0; $('home-tasks').hidden = true; $('bell-badge').hidden = true; } };
+  window.PHC37Tasks = { open: open, openTask: openTask, refresh: refreshSummary, reset: function () { S.summary = null; S.opts = null; S.sumAt = 0; $('home-tasks').hidden = true; $('bell-badge').hidden = true; $('nav-assign').hidden = true; $('nav-task-badge').hidden = true; $('nav-review-badge').hidden = true; } };
 })();

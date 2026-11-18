@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.8.1) */
-var PHC37_APP_VERSION = '1.8.1';
+/* PHC37 PWA — app.js (PHC37-PWA-1.9.0) */
+var PHC37_APP_VERSION = '1.9.0';
 (function () {
   'use strict';
 
@@ -155,12 +155,25 @@ var PHC37_APP_VERSION = '1.8.1';
   }
 
   // ---------- UI helpers ----------
+  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients'];
   function show(view) {
     bootHide();
     ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
-    $('topbar').hidden = ['view-home', 'view-admin', 'view-tasks', 'view-patients'].indexOf(view) < 0;
-    closeAccountMenu();
+    var inApp = IN_APP.indexOf(view) >= 0;
+    $('shell').hidden = !inApp; $('app').hidden = inApp;
+    closeAccountMenu(); closeSide();
+    if (view === 'view-home') setPage('home', 'หน้าหลัก');
   }
+  /** หัวหน้า + แถบเมนูซ้าย: ชื่อหน้า และเมนูที่กำลังเปิด (แบบ Gateway เดิม) */
+  function setPage(navKey, title) {
+    if (title) { $('gw7-title').textContent = title; document.title = title + ' · PHC37'; }
+    Array.prototype.forEach.call(document.querySelectorAll('#gw7-side .gw7-nav[data-go]'), function (b) {
+      b.classList.toggle('gw7-active', b.dataset.go === navKey);
+      if (b.dataset.go === navKey) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+  }
+  function openSide() { $('shell').classList.add('gw7-side-open'); }
+  function closeSide() { $('shell').classList.remove('gw7-side-open'); }
   function setAlert(id, msg, info) {
     var el = $(id);
     el.textContent = msg || '';
@@ -199,6 +212,13 @@ var PHC37_APP_VERSION = '1.8.1';
   }
   /** โครงเทาแทนข้อความ "กำลังโหลด" — kind: 'rows' (ค่าเริ่มต้น) | 'line' */
   function skeleton(target, n, kind) {
+    if (target.tagName === 'TBODY') {   // ตาราง: โครงเทาในแถวเดียวเต็มความกว้าง
+      target.textContent = '';
+      var tr0 = document.createElement('tr'), td0 = document.createElement('td');
+      td0.colSpan = target.parentNode.querySelectorAll('thead th').length || 1;
+      tr0.appendChild(td0); target.appendChild(tr0);
+      return skeleton(td0, n, kind);
+    }
     target.textContent = '';
     var w = document.createElement(kind === 'line' ? 'span' : 'div');
     w.className = kind === 'line' ? 'sk sk-inline' : 'sk';
@@ -502,16 +522,24 @@ var PHC37_APP_VERSION = '1.8.1';
     state.groupKey = null;
     var u = profile.user || {};
     var name = u.fullName || u.username || '';
+    var groups = (u.groups || []).filter(function (g) { return g !== 'all'; }).map(function (g) { return GROUP_LABEL[g] || g; });
+    var groupText = groups.length ? groups.join(', ') : (u.role === 'superadmin' || (u.groups || []).indexOf('all') >= 0 ? 'ทุกกลุ่มงาน' : '');
     $('acc-initial').textContent = name.charAt(0) || '?';
     $('acc-name').textContent = name;
+    $('acc-role').textContent = [ROLE_LABEL[u.role] || u.role, groupText].filter(Boolean).join(' · ');
     $('acc-full').textContent = name;
     $('acc-meta').textContent = [ROLE_LABEL[u.role] || u.role, u.position].filter(Boolean).join(' · ');
-    $('home-greet').textContent = 'สวัสดี ' + name;
-    var groups = (u.groups || []).filter(function (g) { return g !== 'all'; }).map(function (g) { return GROUP_LABEL[g] || g; });
-    $('home-sub').textContent = groups.length ? 'กลุ่มงาน: ' + groups.join(', ') : (u.role === 'superadmin' ? 'เข้าถึงได้ทุกกลุ่มงาน' : '');
+    var info = $('acc-info'); info.textContent = '';
+    [['สังกัด', u.affiliation], ['ตำแหน่ง', u.position], ['ชื่อผู้ใช้', u.username], ['กลุ่มงาน', groupText], ['E-mail', u.email]].forEach(function (x) {
+      if (!x[1]) return;
+      var dt = document.createElement('dt'); dt.textContent = x[0];
+      var dd = document.createElement('dd'); dd.textContent = x[1];
+      info.appendChild(dt); info.appendChild(dd);
+    });
     $('menu-search').value = '';
     renderMaintBanner(profile);
     renderMenus();
+    renderNav();
     show('view-home');
     if (window.PHC37Tasks) window.PHC37Tasks.refresh(true);
     if (u.needsEmail) askEmail();
@@ -582,7 +610,8 @@ var PHC37_APP_VERSION = '1.8.1';
     var menus = allMenus();
     var keys = {};
     menus.forEach(function (m) { keys[m.key] = true; });
-    var grid = document.createElement('div'); grid.className = 'tiles';
+    var grid = document.createElement('div'); grid.className = 'gw-mgrid';
+    $('home-menu-title').textContent = 'เมนูระบบ';
     var list = [];
 
     if (q) {
@@ -595,9 +624,7 @@ var PHC37_APP_VERSION = '1.8.1';
       if (canManage() && MANAGE_SEARCH.indexOf(q) >= 0) grid.appendChild(manageTile());
     } else if (state.groupKey) {
       var parent = menus.filter(function (m) { return m.key === state.groupKey; })[0];
-      var crumb = document.createElement('div'); crumb.className = 'crumb';
-      crumb.textContent = 'เมนูหลัก › ' + (parent ? parent.name : '');
-      wrap.appendChild(crumb);
+      $('home-menu-title').textContent = 'เมนูระบบ › ' + (parent ? parent.name : '');
       grid.appendChild(backTile());
       list = childrenOf(state.groupKey, menus);
       list.forEach(function (m) { grid.appendChild(tile(m, menus)); });
@@ -608,27 +635,34 @@ var PHC37_APP_VERSION = '1.8.1';
     }
 
     wrap.appendChild(grid);
-    var count = grid.querySelectorAll('.tile:not(.back)').length;
+    var count = grid.querySelectorAll('.gw-mcard:not(.back)').length;
     $('menu-empty').hidden = count > 0;
     $('menu-empty').textContent = q ? 'ไม่พบระบบที่ตรงกับคำค้นหา'
       : (state.groupKey ? 'ยังไม่มีระบบในกลุ่มนี้' : 'ยังไม่มีระบบงานที่คุณมีสิทธิ์ใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
   }
 
+  /** การ์ดเมนูแบบ Gateway เดิม: ไอคอน · ชื่อ · กลุ่มงาน · ป้ายสถานะ · › */
   function makeTile(icon, title, note, noteClass, onClick, extraClass) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'tile' + (extraClass ? ' ' + extraClass : '');
-    var i = document.createElement('span'); i.className = 'tile-icon'; i.textContent = icon;
-    var text = document.createElement('span'); text.className = 'tile-text';
-    var n = document.createElement('div'); n.className = 'tile-name'; n.textContent = title;
-    text.appendChild(n);
+    b.className = 'gw-mcard' + (extraClass ? ' ' + extraClass : '') + (noteClass === 'soon' || noteClass === 'pending' ? ' off' : '');
+    var i = document.createElement('span'); i.className = 'ic'; i.textContent = icon; i.setAttribute('aria-hidden', 'true');
+    var n = document.createElement('span'); n.className = 'nm'; n.textContent = title;
+    b.appendChild(i); b.appendChild(n);
     if (note) {
-      var d = document.createElement('div'); d.className = 'tile-note' + (noteClass ? ' ' + noteClass : ''); d.textContent = note;
-      text.appendChild(d);
+      var isStatus = noteClass === 'soon' || noteClass === 'pending';
+      var d = document.createElement('span');
+      d.className = isStatus ? 'st' + (/ปิดปรับปรุง/.test(note) ? ' maint' : '') : 'mt';
+      d.textContent = note;
+      b.appendChild(d);
     }
-    b.appendChild(i); b.appendChild(text);
+    if (extraClass !== 'back') { var ar = document.createElement('span'); ar.className = 'ar'; ar.textContent = '›'; ar.setAttribute('aria-hidden', 'true'); b.appendChild(ar); }
     b.addEventListener('click', onClick);
     return b;
+  }
+  function groupNote(m) {
+    if (m.departmentName) return m.departmentName;
+    return !m.group || m.group === 'all' ? 'ทุกกลุ่มงาน' : (GROUP_LABEL[m.group] || m.group);
   }
 
   function tile(m, menus) {
@@ -642,19 +676,19 @@ var PHC37_APP_VERSION = '1.8.1';
           toast('"' + m.name + '" ปิดปรับปรุงชั่วคราว' + (m.maintenance.until ? ' จะเปิดประมาณ ' + fmtTime(m.maintenance.until) : ''));
         });
     } else if (isPatientMenu(m)) {
-      el = makeTile(iconOf(m, '🗂️'), m.name, 'ค้นหา · เปิดแฟ้ม', '', function () {
+      el = makeTile(iconOf(m, '🗂️'), m.name, groupNote(m), '', function () {
         if (window.PHC37Patients) window.PHC37Patients.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
     } else if (isRealUrl(m.url)) {
       var ready = !m.requireGateway;
-      el = makeTile(iconOf(m, '📌'), m.name, ready ? (m.description || '') : 'กำลังย้ายมาระบบใหม่',
+      el = makeTile(iconOf(m, '📌'), m.name, ready ? groupNote(m) : 'กำลังย้ายมาระบบใหม่',
         ready ? '' : 'pending', function () { openMenu(m); });
     } else if (isLogsMenu(m)) {
-      el = makeTile(iconOf(m, '🧾'), m.name, '', '', function () {
+      el = makeTile(iconOf(m, '🧾'), m.name, groupNote(m), '', function () {
         if (window.PHC37Admin) window.PHC37Admin.open('logs'); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
     } else {
-      el = makeTile(iconOf(m, '📌'), m.name, 'เร็วๆ นี้', 'soon', function () {
+      el = makeTile(iconOf(m, '📌'), m.name, 'ยังไม่เปิดใช้งาน', 'soon', function () {
         toast('หน้า "' + m.name + '" กำลังสร้างในระบบใหม่ ระหว่างนี้ใช้ Gateway เดิมไปก่อน');
       });
     }
@@ -663,7 +697,7 @@ var PHC37_APP_VERSION = '1.8.1';
   }
 
   function manageTile() {
-    var el = makeTile('⚙️', 'จัดการระบบกลาง', 'ผู้ใช้ · คำขอ · ออกรหัส', 'count', function () {
+    var el = makeTile('⚙️', 'จัดการระบบกลาง', '', '', function () {
       if (window.PHC37Admin) window.PHC37Admin.open(); else toast('โหลดหน้าจัดการไม่สำเร็จ กรุณารีเฟรช', 'err');
     });
     el.dataset.key = '__manage';
@@ -671,7 +705,7 @@ var PHC37_APP_VERSION = '1.8.1';
   }
 
   function backTile() {
-    var el = makeTile('↩️', 'กลับเมนูหลัก', '', '', function () { closeGroup(); }, 'back');
+    var el = makeTile('↩️', 'กลับเมนูหลัก', 'ระบบทั้งหมด', '', function () { closeGroup(); }, 'back');
     el.dataset.key = '__back';
     return el;
   }
@@ -701,6 +735,52 @@ var PHC37_APP_VERSION = '1.8.1';
   }
 
   $('menu-search').addEventListener('input', function () { renderMenus(); });
+
+  // ---------- แถบเมนูซ้าย (แบบ Gateway เดิม) ----------
+  function hasPatientMenu() { return allMenus().some(isPatientMenu); }
+  function renderNav() {
+    var u = (state.profile && state.profile.user) || {};
+    $('nav-patients').hidden = !hasPatientMenu();
+    $('nav-admin').hidden = !canManage();
+    $('nav-perm').hidden = u.role !== 'superadmin';
+    renderSideApps();
+  }
+  /** ระบบงานของฉัน: ระบบที่เปิดได้ (ไม่รวมเมนูกลุ่ม) */
+  function renderSideApps() {
+    var box = $('gw7-apps'); box.textContent = '';
+    var menus = allMenus(), n = 0;
+    menus.forEach(function (m) {
+      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || !isRealUrl(m.url)) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'gw7-app';
+      var ic = document.createElement('span'); ic.className = 'gw7-app-ic'; ic.textContent = iconOf(m, '📌'); ic.setAttribute('aria-hidden', 'true');
+      var t = document.createElement('span'); t.className = 'gw7-nav-text'; t.textContent = m.name;
+      b.appendChild(ic); b.appendChild(t);
+      if (m.maintenance) { var tg = document.createElement('span'); tg.className = 'gw7-app-tag'; tg.textContent = 'ปิดปรับปรุง'; b.appendChild(tg); }
+      b.addEventListener('click', function () { closeSide(); tile(m, menus).click(); });
+      box.appendChild(b); n++;
+    });
+    if (!n) { var e = document.createElement('div'); e.className = 'gw7-apps-empty'; e.textContent = 'ยังไม่มีระบบงาน'; box.appendChild(e); }
+  }
+  $('gw7-apps-toggle').addEventListener('click', function () {
+    var box = $('gw7-apps'), open = box.hidden;
+    box.hidden = !open; this.setAttribute('aria-expanded', String(open)); $('gw7-apps-chev').textContent = open ? '−' : '+';
+  });
+  function go(key) {
+    closeSide();
+    if (key === 'home') { window.PHC37.goHome(); return; }
+    if (key === 'tasks' || key === 'assign') { if (window.PHC37Tasks) window.PHC37Tasks.open(key === 'assign' ? 'assigned' : 'todo', key === 'assign'); return; }
+    if (key === 'patients') { if (window.PHC37Patients) window.PHC37Patients.open(); return; }
+    if (window.PHC37Admin) window.PHC37Admin.open(key); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#gw7-side .gw7-nav[data-go]'), function (b) {
+    b.addEventListener('click', function () { go(b.dataset.go); });
+  });
+  $('gw7-burger').addEventListener('click', openSide);
+  $('gw7-scrim').addEventListener('click', closeSide);
+  $('gw7-close').addEventListener('click', closeSide);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('shell').classList.contains('gw7-side-open')) closeSide(); });
+  $('nav-change').addEventListener('click', function () { closeSide(); $('btn-open-change').click(); });
+  $('nav-logout').addEventListener('click', function () { closeSide(); $('btn-logout').click(); });
 
   // ตรา/ไอคอนโหลดไม่ได้ → ซ่อนกรอบรูปเสีย
   Array.prototype.forEach.call(document.querySelectorAll('.brand-logo, .auth-logo'), function (img) {
@@ -766,17 +846,18 @@ var PHC37_APP_VERSION = '1.8.1';
   // ---------- ติดตั้งแอพ ----------
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault(); state.installEvt = e;
-    $('btn-install-login').hidden = false; $('btn-install-menu').hidden = false;
+    $('btn-install-login').hidden = false; $('btn-install-menu').hidden = false; $('nav-install').hidden = false;
   });
   function doInstall() {
     if (!state.installEvt) return;
     state.installEvt.prompt();
     state.installEvt.userChoice.then(function () {
-      state.installEvt = null; $('btn-install-login').hidden = true; $('btn-install-menu').hidden = true;
+      state.installEvt = null; $('btn-install-login').hidden = true; $('btn-install-menu').hidden = true; $('nav-install').hidden = true;
     });
   }
   $('btn-install-login').addEventListener('click', doInstall);
   $('btn-install-menu').addEventListener('click', function () { closeAccountMenu(); doInstall(); });
+  $('nav-install').addEventListener('click', function () { closeSide(); doInstall(); });
   var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   $('ios-hint').hidden = !(isIos && !standalone);
@@ -820,7 +901,7 @@ var PHC37_APP_VERSION = '1.8.1';
           state.profile = profile;
           renderMaintBanner(profile);
           if (state.groupKey && !profile.menus.some(function (m) { return m.key === state.groupKey; })) state.groupKey = null;
-          renderMenus();
+          renderMenus(); renderNav();
         } else {
           renderHome(profile);
         }
@@ -879,9 +960,18 @@ var PHC37_APP_VERSION = '1.8.1';
   /** สังกัด ศบส.37 (รวมชื่อที่สะกดผิดในข้อมูลเดิม "สาธารสุข") */
   function isMainAffiliation(text) { return /ศูนย์บริการสาธารณ?สุข\s*37/.test(String(text || '')); }
 
+  /** ข้อความแถวเดียวในตาราง (ว่าง / ผิดพลาด) */
+  function tableMsg(tbody, text) {
+    tbody.textContent = '';
+    var tr = document.createElement('tr'), td = document.createElement('td');
+    td.className = 'empty'; td.colSpan = tbody.parentNode.querySelectorAll('thead th').length || 1; td.textContent = text;
+    tr.appendChild(td); tbody.appendChild(tr);
+  }
+
   // ให้ admin.js ใช้ร่วม
   window.PHC37 = {
     api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, skeleton: skeleton, show: show, emailOk: emailOk,
+    setPage: setPage, hasPatientMenu: hasPatientMenu, tableMsg: tableMsg,
     token: function () { return sget(KEY_TOKEN); },
     showLogin: showLogin, bindRules: bindRules, rulesOk: rulesOk,
     comboFill: comboFill, comboValue: comboValue, comboSet: comboSet, isMainAffiliation: isMainAffiliation,
@@ -895,7 +985,7 @@ var PHC37_APP_VERSION = '1.8.1';
         if (!res.ok) return res;
         var profile = { user: res.user, menus: res.menus || [], maintenance: res.maintenance || null };
         sset(KEY_PROFILE, JSON.stringify(profile));
-        state.profile = profile; renderMaintBanner(profile); renderMenus();
+        state.profile = profile; renderMaintBanner(profile); renderMenus(); renderNav();
         return res;
       });
     },

@@ -1,4 +1,4 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.4.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.5.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -30,18 +30,19 @@
   function myRole() { var p = P.profile(); return (p && p.user && p.user.role) || ''; }
   function isAdminRole() { var r = myRole(); return r === 'superadmin' || r === 'admin'; }
 
+  /** mode: users | requests | perm | logs (เมนูซ้ายแบบ Gateway เดิม) */
   function open(mode) {
     P.show('view-admin');
     window.scrollTo(0, 0);
     try { history.pushState({ phc37Admin: 1 }, ''); } catch (e) {}
     var admin = isAdminRole();
-    $('adm-title').textContent = admin ? '⚙️ จัดการระบบกลาง' : '🧾 ประวัติการใช้งานของฉัน';
     Array.prototype.forEach.call(document.querySelectorAll('#view-admin .tab'), function (t) {
       t.hidden = !admin || (t.dataset.super && myRole() !== 'superadmin');
     });
-    document.querySelector('#view-admin .tabs').hidden = !admin;
-    if (!admin || mode === 'logs') { switchTab('logs'); if (!admin) return; }
-    else switchTab('users');
+    var sec = !admin ? 'logs' : (mode === 'perm' ? (myRole() === 'superadmin' ? 'menus' : 'users') : (mode || 'users'));
+    switchTab(sec);
+    if (!admin) return;
+    if (A.boot && sec === 'logs') return;
     // แสดงรายชื่อที่จำไว้ทันที แล้วค่อยอัปเดต
     var cb = P.cacheGet('adm.boot'), cu = P.cacheGet('adm.users');
     if (cb && cu) { A.boot = cb; A.users = cu; fillOptions(); setBadge(cb.pendingRequests); renderUsers(); }
@@ -67,14 +68,35 @@
   });
   window.addEventListener('popstate', function () { if (!$('view-admin').hidden) close(); });
 
-  function setBadge(n) { var b = $('adm-req-badge'); b.textContent = n || ''; b.hidden = !n; }
+  function setBadge(n) {
+    var b = $('adm-req-badge'); b.textContent = n || ''; b.hidden = !n;
+    var nb = $('nav-req-badge'); nb.textContent = n || ''; nb.hidden = !n;
+  }
 
   // ---------- แท็บ ----------
+  var PERM_GROUP = { menus: 1, perms: 1, settings: 1 };
+  var PAGE = {
+    users: ['users', 'ผู้ใช้งาน', '⚙️ จัดการระบบกลาง'], bulk: ['users', 'ผู้ใช้งาน', '⚙️ จัดการระบบกลาง'],
+    requests: ['requests', 'คำขอรออนุมัติ', '⚙️ จัดการระบบกลาง'], menus: ['perm', 'สิทธิ์และเมนู', '⚙️ จัดการระบบกลาง'],
+    perms: ['perm', 'สิทธิ์และเมนู', '⚙️ จัดการระบบกลาง'], settings: ['perm', 'สิทธิ์และเมนู', '⚙️ จัดการระบบกลาง'],
+    logs: ['logs', 'บันทึกการใช้งาน (Log)', '🧾 ประวัติการใช้งาน']
+  };
   function switchTab(tab) {
     A.tab = tab;
+    var admin = isAdminRole();
     Array.prototype.forEach.call(document.querySelectorAll('#view-admin .tab'), function (t) {
-      t.classList.toggle('active', t.dataset.tab === tab);
+      var on = t.dataset.tab === tab || (t.dataset.group === 'perm' && PERM_GROUP[tab]);
+      t.classList.toggle('on', !!on); t.classList.toggle('active', !!on);
     });
+    Array.prototype.forEach.call(document.querySelectorAll('#adm-subtabs .gw7-subtab'), function (t) {
+      t.classList.toggle('gw7-on', t.dataset.sub === tab);
+    });
+    $('adm-tiles').hidden = !admin || tab === 'logs';
+    $('adm-subtabs').hidden = !PERM_GROUP[tab];
+    var pg = PAGE[tab] || PAGE.users;
+    $('adm-title').textContent = tab === 'logs' && !admin ? '🧾 ประวัติการใช้งานของฉัน' : pg[2];
+    $('adm-sub').hidden = tab !== 'logs'; $('adm-sub').textContent = 'ช่วงวันที่ที่เลือก · ล่าสุดก่อน';
+    P.setPage(pg[0], pg[1]);
     ['users', 'requests', 'perms', 'menus', 'logs', 'bulk', 'settings'].forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
     if (tab === 'menus') loadMenus();
     if (tab === 'settings') loadSettings();
@@ -85,6 +107,17 @@
   }
   Array.prototype.forEach.call(document.querySelectorAll('#view-admin .tab'), function (t) {
     t.addEventListener('click', function () { switchTab(t.dataset.tab); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#adm-subtabs .gw7-subtab'), function (t) {
+    t.addEventListener('click', function () { switchTab(t.dataset.sub); });
+  });
+  $('adm-refresh').addEventListener('click', function () {
+    var t = A.tab;
+    if (t === 'users') refreshUsers();
+    else if (t === 'requests') loadRequests(true);
+    else if (t === 'menus') loadMenus(true);
+    else if (t === 'logs') loadLogs(false);
+    else switchTab(t);
   });
 
   // ---------- ตัวเลือก ----------
@@ -142,22 +175,25 @@
       return true;
     });
     list.sort(function (a, b) { return String(a.fullName).localeCompare(String(b.fullName), 'th'); });
-    $('adm-count').textContent = 'แสดง ' + list.length + ' จาก ' + A.users.length + ' คน';
+    $('adm-count').textContent = 'แสดง ' + list.length + ' จากทั้งหมด ' + A.users.length + ' ผู้ใช้';
     var wrap = $('adm-users'); wrap.textContent = '';
-    if (!list.length) { wrap.appendChild(el('p', 'empty', 'ไม่พบผู้ใช้ตามเงื่อนไข')); return; }
+    if (!list.length) { P.tableMsg(wrap, 'ไม่พบข้อมูลผู้ใช้งานตามเงื่อนไขที่เลือก'); return; }
     list.forEach(function (u) {
-      var row = el('button', 'row'); row.type = 'button'; row.dataset.id = u.id;
-      var av = el('span', 'avatar', (u.fullName || '?').charAt(0));
-      var main = el('span', 'row-main');
-      main.appendChild(el('span', 'row-title', u.fullName));
-      main.appendChild(el('span', 'row-sub', u.username + ' · ' + P.roleLabel(u.role) +
-        (u.groups.length ? ' · ' + u.groups.map(P.groupLabel).join(', ') : '')));
-      var flags = el('span', 'row-flags');
-      userFlags(u).forEach(function (x) { flags.appendChild(chip(x[0], x[1])); });
-      main.appendChild(flags);
-      row.appendChild(av); row.appendChild(main); row.appendChild(el('span', 'row-edit', '✏️'));
-      row.addEventListener('click', function () { editUser(u); });
-      wrap.appendChild(row);
+      var tr = el('tr', 'click'); tr.dataset.id = u.id;
+      tr.appendChild(el('td', 'nowrap', u.username));
+      tr.appendChild(el('td', null, u.fullName));
+      tr.appendChild(el('td', null, u.position || '-'));
+      tr.appendChild(el('td', null, u.affiliation || '-'));
+      tr.appendChild(el('td', null, u.groups.length ? u.groups.map(P.groupLabel).join(', ') : '-'));
+      tr.appendChild(el('td', 'nowrap', P.roleLabel(u.role)));
+      var st = el('td');
+      var fl = userFlags(u);
+      if (!fl.some(function (x) { return x[0] === 'ปิดใช้งาน'; })) st.appendChild(el('span', 'gw-st on', 'ใช้งาน'));
+      fl.forEach(function (x) { st.appendChild(document.createTextNode(' ')); st.appendChild(el('span', 'gw-st ' + (x[1] === 'danger' ? 'danger' : (x[1] === 'warn' ? 'warn' : (x[1] === 'info' ? 'info' : 'off'))), x[0])); });
+      tr.appendChild(st);
+      var act = el('td'); var b = el('button', 'gw-edit', '✏️ แก้ไข'); b.type = 'button'; act.appendChild(b); tr.appendChild(act);
+      tr.addEventListener('click', function () { editUser(u); });
+      wrap.appendChild(tr);
     });
   }
   $('adm-search').addEventListener('input', renderUsers);
@@ -341,29 +377,32 @@
     var wrap = $('adm-requests');
     P.swr('adm.requests', function () { return call('admin.listRequests'); }, function (res) {
       wrap.textContent = '';
-      if (!res.ok) { wrap.appendChild(el('p', 'empty', res.message)); return; }
+      if (!res.ok) { P.tableMsg(wrap, res.message); return; }
       A.requests = res.requests;
       var pending = res.requests.filter(function (r) { return r.status === 'pending'; });
       setBadge(pending.length);
-      if (!res.requests.length) { wrap.appendChild(el('p', 'empty', 'ยังไม่มีคำขอสมัครใช้งาน')); return; }
+      if (!res.requests.length) { P.tableMsg(wrap, 'ไม่มีคำขอสมัครใช้งาน'); return; }
       res.requests.forEach(function (r) {
-        var card = el('div', 'row static');
-        var main = el('span', 'row-main');
-        main.appendChild(el('span', 'row-title', r.fullName));
-        main.appendChild(el('span', 'row-sub', r.username + (r.position ? ' · ' + r.position : '') +
-          (r.workgroup ? ' · ' + P.groupLabel(r.workgroup) : '') + ' · ยื่น ' + fmtDate(r.createdAt)));
-        var flags = el('span', 'row-flags');
-        if (r.status === 'pending') flags.appendChild(chip('รออนุมัติ', 'warn'));
-        if (r.status === 'approved') flags.appendChild(chip('อนุมัติแล้ว โดย ' + r.processedBy, 'ok'));
-        if (r.status === 'rejected') flags.appendChild(chip('ไม่อนุมัติ: ' + r.rejectReason, 'danger'));
-        if (!r.email) flags.appendChild(chip('ไม่มีอีเมล', 'muted'));
-        main.appendChild(flags);
-        card.appendChild(main);
+        var card = el('tr');
+        card.appendChild(el('td', 'nowrap', fmtDate(r.createdAt)));
+        card.appendChild(el('td', null, r.fullName));
+        card.appendChild(el('td', null, r.position || '-'));
+        card.appendChild(el('td', 'nowrap', r.username));
+        card.appendChild(el('td', null, r.email || 'ไม่มีอีเมล'));
+        card.appendChild(el('td', null, r.workgroup ? P.groupLabel(r.workgroup) : '-'));
+        card.appendChild(el('td', null, r.reason || '-'));
+        var stc = el('td');
+        if (r.status === 'pending') stc.appendChild(el('span', 'gw-st warn', 'รออนุมัติ'));
+        if (r.status === 'approved') { stc.appendChild(el('span', 'gw-st on', 'อนุมัติแล้ว')); stc.appendChild(el('span', 'sub', 'โดย ' + r.processedBy)); }
+        if (r.status === 'rejected') { stc.appendChild(el('span', 'gw-st danger', 'ไม่อนุมัติ')); stc.appendChild(el('span', 'sub', r.rejectReason)); }
+        card.appendChild(stc);
+        var acts = el('td');
+        card.appendChild(acts);
         if (r.status === 'pending') {
-          var acts = el('span', 'row-actions');
-          var ok = el('button', 'btn btn-primary btn-sm', '✅ อนุมัติ'); ok.type = 'button';
+          acts = el('span', 'acts'); card.lastChild.appendChild(acts);
+          var ok = el('button', 'gbtn gbtn-green gbtn-sm', '✅ อนุมัติ'); ok.type = 'button';
           ok.addEventListener('click', function () { editUser(null, r); });
-          var no = el('button', 'btn btn-danger-soft btn-sm', '✖️ ไม่อนุมัติ'); no.type = 'button';
+          var no = el('button', 'gbtn gbtn-gray gbtn-sm', '✖️ ไม่อนุมัติ'); no.type = 'button';
           no.addEventListener('click', function () {
             confirmBox('ไม่อนุมัติคำขอ', 'ไม่อนุมัติคำขอของ "' + r.fullName + '"', true, function (reason) {
               return call('admin.rejectRequest', { requestId: r.id, reason: reason }).then(function (res2) {
@@ -372,7 +411,7 @@
               });
             }, 'ยืนยันไม่อนุมัติ');
           });
-          acts.appendChild(ok); acts.appendChild(no); card.appendChild(acts);
+          acts.appendChild(ok); acts.appendChild(no);
         }
         wrap.appendChild(card);
       });
@@ -504,7 +543,7 @@
         body.appendChild(tr);
       });
     });
-    if (!order.length) { var tr = el('tr'); var td = el('td', 'muted', 'ไม่พบเมนู'); td.colSpan = 5; tr.appendChild(td); body.appendChild(tr); }
+    if (!order.length) P.tableMsg(body, 'ไม่พบรายการ');
   }
   function markDirty(m, f, val) {
     var d = PM.dirty[m.key] || { key: m.key, view: m.view, add: m.add, edit: m.edit, del: m.del };
@@ -539,6 +578,7 @@
     USER_STATUS: 'เปลี่ยนสถานะผู้ใช้', USER_UNLOCK: 'ปลดล็อกบัญชี', TEMP_PASSWORD_ISSUED: 'ออกรหัสชั่วคราว',
     TEMP_PASSWORD_EMAILED: 'ส่งรหัสชั่วคราวทางอีเมล', ROLE_PERMISSION_UPDATE: 'แก้สิทธิ์เมนูราย Role',
     PATIENT_SEARCH: 'ค้นหาผู้ป่วย', PATIENT_VIEW: 'เปิดแฟ้มผู้ป่วย', PATIENT_VIEW_CID: 'ดูเลขบัตรผู้ป่วย',
+    PATIENT_CREATE: 'เพิ่มผู้ป่วย (เวชระเบียนกลาง)', PATIENT_UPDATE: 'แก้ไขผู้ป่วย (เวชระเบียนกลาง)',
     TASK_CREATE: 'มอบหมายงาน', TASK_APPROVE: 'ตรวจรับงาน', TASK_RETURN: 'ส่งงานกลับแก้ไข', TASK_CANCEL: 'ยกเลิกงาน',
     MENU_CREATE: 'เพิ่มเมนู', MENU_UPDATE: 'แก้ไขเมนู', MENU_MOVE: 'เลื่อนลำดับเมนู',
     MAINTENANCE_ON: 'ปิดปรับปรุงระบบ', MAINTENANCE_OFF: 'เปิดระบบหลังปรับปรุง', SETTINGS_UPDATE: 'แก้ตั้งค่าระบบ', CHILD_APP_STATUS: 'เปลี่ยนสถานะแอพลูก',
@@ -584,26 +624,25 @@
     call('logs.list', q).then(function (res) {
       if (more) P.busy(btn, false);
       else $('log-list').textContent = '';
-      if (!res.ok) { $('log-count').textContent = res.message; return; }
+      if (!res.ok) { $('log-count').textContent = res.message; P.tableMsg($('log-list'), res.message); return; }
       LG.next = res.nextBefore;
       LG.rows = LG.rows.concat(res.logs);
       res.logs.forEach(function (l) { $('log-list').appendChild(logRow(l)); });
       $('log-count').textContent = 'แสดง ' + LG.rows.length + ' รายการ' + (res.nextBefore ? ' (มีเพิ่ม)' : '') +
         (res.scope === 'group' ? ' · เฉพาะผู้ใช้ในกลุ่มงานของคุณ' : '');
       btn.hidden = !res.nextBefore;
-      if (!LG.rows.length) $('log-list').appendChild(el('p', 'empty', 'ไม่พบประวัติในช่วงที่เลือก'));
+      if (!LG.rows.length) P.tableMsg($('log-list'), 'ไม่พบรายการในช่วงนี้');
     });
   }
   function logRow(l) {
-    var row = el('div', 'row static log-row' + (l.result === 'fail' ? ' fail' : ''));
-    var main = el('span', 'row-main');
-    var title = el('span', 'row-title', (l.result === 'fail' ? '⚠️ ' : '') + (ACTION_LABEL[l.action] || l.action));
-    main.appendChild(title);
-    var who = l.actor + (l.targetId && l.targetId !== l.actor ? ' → ' + (l.targetLabel || l.targetId) : '');
-    main.appendChild(el('span', 'row-sub', fmtDate(l.at) + ' · ' + who));
-    if (l.detail) main.appendChild(el('span', 'log-detail', l.detail));
-    row.appendChild(main);
-    return row;
+    var tr = el('tr', l.result === 'fail' ? 'fail' : null);
+    tr.appendChild(el('td', 'nowrap', fmtDate(l.at)));
+    var who = el('td', 'nowrap', l.actor); if (l.role) who.appendChild(el('span', 'sub', P.roleLabel(l.role))); tr.appendChild(who);
+    tr.appendChild(el('td', null, ACTION_LABEL[l.action] || l.action));
+    tr.appendChild(el('td', null, l.targetId && l.targetId !== l.actor ? (l.targetLabel || l.targetId) : '-'));
+    tr.appendChild(el('td', null, l.detail || ''));
+    var r = el('td'); r.appendChild(el('span', 'gw-st ' + (l.result === 'fail' ? 'danger' : 'on'), l.result === 'fail' ? 'ไม่สำเร็จ' : 'สำเร็จ')); tr.appendChild(r);
+    return tr;
   }
   $('log-search').addEventListener('click', function () { loadLogs(false); });
   $('log-more').addEventListener('click', function () { loadLogs(true); });
@@ -732,7 +771,7 @@
   var ICON_PICKS = ['🏠', '📊', '📈', '👤', '👥', '📅', '🔁', '📋', '📌', '🗂️', '💊', '🧪', '🩺', '🦷', '🧠', '🏥', '🏘️', '📦', '🖥️', '📄', '🧾', '⚙️', '📁', '🔔'];
   function loadMenus(fresh) {
     P.swr('adm.menus', function () { return call('admin.menusList'); }, function (res) {
-      if (!res.ok) { $('mn-list').textContent = res.message; return; }
+      if (!res.ok) { P.tableMsg($('mn-list'), res.message); return; }
       MN.menus = res.menus; MN.wg = res.workgroups;
       renderMenusAdmin();
     }, function () { P.skeleton($('mn-list'), 6); }, fresh === true);
@@ -753,25 +792,27 @@
       wrap.appendChild(menuRow(t, false)); n++;
       ch.forEach(function (c) { wrap.appendChild(menuRow(c, true)); n++; });
     });
-    if (!n) wrap.appendChild(el('p', 'empty', 'ไม่พบเมนู'));
+    if (!n) P.tableMsg(wrap, 'ไม่พบรายการ');
   }
   function menuRow(m, child) {
-    var row = el('div', 'row static menu-row' + (child ? ' child' : '') + (m.status !== 'active' ? ' off' : ''));
-    row.appendChild(el('span', 'tile-icon sm', m.icon && /[^\x00-\x7F]/.test(m.icon) ? m.icon : (child ? '📌' : '📁')));
-    var main = el('span', 'row-main');
-    main.appendChild(el('span', 'row-title', m.name));
-    main.appendChild(el('span', 'row-sub', m.key + ' · ' + groupName(m.group) + (m.url ? ' · ' + m.url : '')));
-    var f = el('span', 'row-flags');
-    if (m.status !== 'active') f.appendChild(chip('ปิดใช้งาน', 'danger'));
-    if (m.openMode === 'group' || (!child && MN.menus.some(function (x) { return x.parentKey === m.key; }))) f.appendChild(chip('เมนูกลุ่ม', 'ok'));
-    if (m.requireGateway) f.appendChild(chip('แอพลูก', 'info'));
-    if (m.allowedGroups.length) f.appendChild(chip('เห็น: ' + m.allowedGroups.map(function (g) {
-      return g === '@person' ? 'รายบุคคล' : (g === 'all' ? 'ทุกกลุ่ม' : P.groupLabel(g)); }).join(', '), 'muted'));
-    main.appendChild(f);
-    row.appendChild(main);
-    var acts = el('span', 'row-actions');
+    var row = el('tr', (child ? 'child' : '') + (m.status !== 'active' ? ' off' : ''));
+    var nm = el('td'); var box = el('span', 'gw7-mv-name');
+    box.appendChild(el('span', 'gw7-mv-ic', m.icon && /[^\x00-\x7F]/.test(m.icon) ? m.icon : (child ? '📌' : '📁')));
+    var t = el('span'); t.appendChild(el('b', null, m.name)); t.appendChild(el('span', 'gw7-mv-key', m.key));
+    box.appendChild(t); nm.appendChild(box);
+    if (child) nm.style.paddingLeft = '34px';
+    row.appendChild(nm);
+    var f = el('td');
+    f.appendChild(el('span', 'gw-st ' + (m.status === 'active' ? 'on' : 'off'), m.status === 'active' ? 'เปิดใช้งาน' : 'ปิดใช้งาน'));
+    if (m.openMode === 'group' || (!child && MN.menus.some(function (x) { return x.parentKey === m.key; }))) { f.appendChild(document.createTextNode(' ')); f.appendChild(el('span', 'gw-st info', 'เมนูกลุ่ม')); }
+    if (m.requireGateway) { f.appendChild(document.createTextNode(' ')); f.appendChild(el('span', 'gw-st warn', 'แอพลูก')); }
+    row.appendChild(f);
+    row.appendChild(el('td', null, m.allowedGroups.length ? m.allowedGroups.map(function (g) {
+      return g === '@person' ? 'รายบุคคล' : (g === 'all' ? 'ทุกกลุ่ม' : P.groupLabel(g)); }).join(', ') : groupName(m.group)));
+    var u = el('td'); u.appendChild(el('span', 'sub', m.url || '-')); row.appendChild(u);
+    var acts = el('span', 'acts'); var at = el('td'); at.appendChild(acts); row.appendChild(at);
     [['▲', 'up'], ['▼', 'down']].forEach(function (x) {
-      var b = el('button', 'btn btn-ghost btn-sm', x[0]); b.type = 'button'; b.title = x[1] === 'up' ? 'เลื่อนขึ้น' : 'เลื่อนลง';
+      var b = el('button', 'gw-view', x[0]); b.type = 'button'; b.title = x[1] === 'up' ? 'เลื่อนขึ้น' : 'เลื่อนลง';
       b.addEventListener('click', function () {
         b.disabled = true;
         call('admin.menuMove', { key: m.key, dir: x[1] }).then(function (res) {
@@ -781,10 +822,9 @@
       });
       acts.appendChild(b);
     });
-    var e = el('button', 'btn btn-edit btn-sm', '✏️ แก้ไข'); e.type = 'button';
+    var e = el('button', 'gw-edit', '✏️ แก้ไข'); e.type = 'button';
     e.addEventListener('click', function () { editMenu(m); });
     acts.appendChild(e);
-    row.appendChild(acts);
     return row;
   }
   $('mn-search').addEventListener('input', renderMenusAdmin);

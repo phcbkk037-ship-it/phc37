@@ -16,6 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="gw7.css">
   <script src="config.js"></script>
 </head>
 <body>
@@ -38,31 +39,303 @@
   </div>
   <div id="offline" class="banner banner-warn" hidden>ไม่มีการเชื่อมต่ออินเทอร์เน็ต — ใช้งานได้เมื่อกลับมาออนไลน์</div>
 
-  <!-- แถบหัว (หลังเข้าระบบ) -->
-  <header id="topbar" class="topbar" hidden>
-    <div class="brand">
-      <span class="logo brand-logo" role="img" aria-label="ตรา ศบส.37"></span>
-      <div>
-        <div class="brand-title">PHC37</div>
-        <div class="brand-sub">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div>
+  <!-- โครงหลังเข้าระบบ: แถบเมนูซ้าย + หัวหน้า (แบบ Gateway เดิม GW7) -->
+  <div id="shell" class="gw7-shell" hidden>
+    <nav id="gw7-side" class="gw7-side" aria-label="เมนูหลัก">
+      <div class="gw7-brand">
+        <div class="gw7-brand-logo"><span class="logo" role="img" aria-label="ตรา ศบส.37"></span></div>
+        <div class="gw7-brand-text"><strong>PHC37 Webapp</strong><span>ศูนย์บริการสาธารณสุข 37</span></div>
+        <button type="button" id="gw7-close" class="gw7-side-close" aria-label="ปิดเมนู"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div class="gw7-sec">ทั่วไป</div>
+      <button type="button" class="gw7-nav" data-go="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg><span class="gw7-nav-text">หน้าหลัก</span></button>
+      <button type="button" class="gw7-nav" data-go="tasks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v3H9zM6 6h12v15H6z"></path><path d="M9 12l2 2 4-4"></path></svg><span class="gw7-nav-text">งานของฉัน</span><span id="nav-task-badge" class="gw7-badge" hidden></span></button>
+      <button type="button" id="gw7-apps-toggle" class="gw7-nav" aria-expanded="false" aria-controls="gw7-apps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg><span class="gw7-nav-text">ระบบงานของฉัน</span><span id="gw7-apps-chev" class="gw7-chev" aria-hidden="true">+</span></button>
+      <div id="gw7-apps" class="gw7-apps" hidden></div>
+      <button type="button" id="nav-patients" class="gw7-nav" data-go="patients" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span class="gw7-nav-text">เวชระเบียนกลาง</span></button>
+      <div id="nav-admin" hidden>
+        <div class="gw7-sec">ผู้ดูแลระบบ</div>
+        <button type="button" class="gw7-nav" data-go="users"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .8 3 2.8 3 6"></path></svg><span class="gw7-nav-text">ผู้ใช้งาน</span></button>
+        <button type="button" class="gw7-nav" data-go="requests"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span class="gw7-nav-text">คำขอรออนุมัติ</span><span id="nav-req-badge" class="gw7-badge" hidden></span></button>
+        <button type="button" id="nav-perm" class="gw7-nav" data-go="perm" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path></svg><span class="gw7-nav-text">สิทธิ์และเมนู</span></button>
+      </div>
+      <button type="button" id="nav-assign" class="gw7-nav" data-go="assign" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-2-7z"></path></svg><span class="gw7-nav-text">มอบหมายงาน</span><span id="nav-review-badge" class="gw7-badge" hidden></span></button>
+      <button type="button" id="nav-logs" class="gw7-nav" data-go="logs"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg><span class="gw7-nav-text">บันทึกการใช้งาน (Log)</span></button>
+      <div class="gw7-side-foot">
+        <button type="button" id="nav-install" class="gw7-nav" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg><span class="gw7-nav-text">ติดตั้งแอพ</span></button>
+        <button type="button" id="nav-change" class="gw7-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M17 6l3 3"></path></svg><span class="gw7-nav-text">เปลี่ยนรหัสผ่าน</span></button>
+        <button type="button" id="nav-logout" class="gw7-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"></path></svg><span class="gw7-nav-text">ออกจากระบบ</span></button>
+      </div>
+    </nav>
+    <div id="gw7-scrim" class="gw7-scrim"></div>
+    <div class="gw7-main">
+      <header id="topbar" class="gw7-top">
+        <button type="button" id="gw7-burger" class="gw7-burger" aria-label="เปิดเมนู" aria-controls="gw7-side"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+        <h1 id="gw7-title" class="gw7-title">หน้าหลัก</h1>
+        <button id="btn-bell" type="button" class="gw7-bell" aria-label="การแจ้งเตือน">
+          <span aria-hidden="true">🔔</span><span id="bell-badge" class="badge bell-badge" hidden></span>
+        </button>
+        <button id="btn-account" type="button" class="gw7-user" aria-haspopup="true" aria-expanded="false" title="ข้อมูลผู้ใช้งาน">
+          <span id="acc-initial" class="gw7-avatar" aria-hidden="true"></span>
+          <span class="gw7-user-text"><strong id="acc-name"></strong><span id="acc-role"></span></span>
+        </button>
+        <div id="account-menu" class="account-menu" hidden>
+          <div class="acc-head">
+            <div id="acc-full" class="acc-full"></div>
+            <div id="acc-meta" class="muted"></div>
+          </div>
+          <dl id="acc-info" class="acc-info"></dl>
+          <button id="btn-open-change" class="menu-item">🔑 เปลี่ยนรหัสผ่าน</button>
+          <button id="btn-install-menu" class="menu-item" hidden>📲 ติดตั้งแอพ</button>
+          <button id="btn-logout" class="menu-item danger">↩️ ออกจากระบบ</button>
+        </div>
+      </header>
+      <div class="gw7-container">
+        <!-- หน้าหลัก -->
+        <section id="view-home" class="view" hidden>
+          <div id="home-maint" class="alert warn" role="status" hidden></div>
+          <div id="home-tasks" class="gw-inbox" hidden>
+            <div class="gw-inbox-head">
+              <div id="home-tasks-ic" class="gw-inbox-ic" aria-hidden="true">✅</div>
+              <div class="gw-inbox-title">
+                <h3 id="home-tasks-title">ไม่มีงานค้าง</h3>
+                <p id="home-tasks-sub">ตอนนี้ยังไม่มีงานที่ได้รับมอบหมายค้างอยู่</p>
+              </div>
+              <div id="home-tasks-sum" class="gw-inbox-sum"></div>
+            </div>
+            <div class="gw-inbox-tabs">
+              <button type="button" class="gw-ttab" data-open-box="todo">🟠 ต้องทำ</button>
+              <button type="button" class="gw-ttab" data-open-box="sent">🔎 รอตรวจรับ</button>
+              <button type="button" class="gw-ttab" data-open-box="done">✅ ดำเนินการเรียบร้อย</button>
+              <button type="button" class="gw-ttab" data-open-box="review" data-assigner="1" hidden>📥 ผลงานรอฉันตรวจ <span class="badge" data-count="toReview" hidden></span></button>
+            </div>
+            <div class="gw-inbox-note">เลือกสถานะเพื่อดูรายการงาน</div>
+          </div>
+          <div class="gw-card">
+            <div class="gw-menu-head">
+              <h3 id="home-menu-title">เมนูระบบ</h3>
+              <label class="gw-msearch"><span aria-hidden="true">⌕</span>
+                <input id="menu-search" type="search" placeholder="ค้นหาระบบ" autocomplete="off"></label>
+            </div>
+            <div id="menu-groups"></div>
+            <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
+          </div>
+        </section>
+
+        <!-- เวชระเบียนกลาง -->
+        <section id="view-patients" class="view" hidden>
+          <div class="gw-card">
+            <div class="gw-hero">
+              <div><h3>🏥 เวชระเบียนกลาง</h3></div>
+              <div class="gw-hero-actions">
+                <button id="pt-add" type="button" class="gbtn gbtn-green" hidden>➕ เพิ่มข้อมูลผู้ป่วย</button>
+                <button id="pt-refresh" type="button" class="gbtn">↻ รีเฟรช</button>
+                <button id="pt-back" type="button" class="gbtn">🏠 กลับเมนูหลัก</button>
+              </div>
+            </div>
+            <div id="pt-overview" class="gw-sum"></div>
+            <div id="pt-quality" class="pt-qual"></div>
+            <div id="pt-notice" class="pt-trans" role="status" hidden></div>
+            <div class="gw-panel">
+              <div class="gw-head"><h3>🔎 ค้นหาเวชระเบียนกลาง</h3></div>
+              <form id="pt-form" class="pt-search-row" role="search" novalidate>
+                <label class="gw-lbl-wrap"><span class="gw-lbl">คำค้นหา</span>
+                  <input id="pt-q" type="search" placeholder="HN / CID / ชื่อ / เบอร์โทร / สิทธิ" autocomplete="off" enterkeyhint="search"></label>
+                <button id="pt-go" type="submit" class="gbtn gbtn-green">ค้นหา</button>
+                <button id="pt-clear" type="button" class="gbtn gbtn-gray">ล้าง</button>
+              </form>
+              <div class="pt-opts">
+                <label class="check pt-inactive"><input id="pt-inactive" type="checkbox"><span>รวมรายที่ปิดใช้งาน</span></label>
+                <span id="pt-count" class="muted"></span>
+              </div>
+              <div class="gw-table-wrap">
+                <table class="gw-table">
+                  <thead><tr><th>รหัสผู้ป่วย / HN</th><th>ชื่อ-สกุล</th><th>วันเกิด (พ.ศ.)</th><th>อายุ ณ ปัจจุบัน</th><th>CID</th><th>โทรศัพท์</th><th>ชุมชน</th><th>สิทธิ</th><th>สถานะ</th><th>อัปเดตล่าสุด</th><th>จัดการ</th></tr></thead>
+                  <tbody id="pt-list"><tr><td colspan="11" class="empty">พิมพ์คำค้นหาแล้วกดค้นหา เพื่อแสดงรายการผู้ป่วย</td></tr></tbody>
+                </table>
+              </div>
+              <div id="pt-detail" class="pt-detail" hidden></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- งานของฉัน / มอบหมายงาน -->
+        <section id="view-tasks" class="view" hidden>
+          <div class="gw-card">
+            <div class="gw-hero">
+              <div><h3 id="tk-heading">📋 งานของฉัน</h3></div>
+              <div class="gw-hero-actions">
+                <button id="tk-new" type="button" class="gbtn gbtn-green" hidden>➕ สร้างงานใหม่</button>
+                <button id="tk-refresh" type="button" class="gbtn">↻ รีเฟรช</button>
+                <button id="tk-back" type="button" class="gbtn">🏠 กลับเมนูหลัก</button>
+              </div>
+            </div>
+            <div id="tk-sumcards" class="gw-sum" hidden></div>
+            <div class="gw-boxes" role="tablist">
+              <button type="button" class="gw-ttab tab" data-box="todo">🟠 ต้องทำ <span class="badge" data-count="todo" hidden></span></button>
+              <button type="button" class="gw-ttab tab" data-box="sent">🔎 รอตรวจรับ</button>
+              <button type="button" class="gw-ttab tab" data-box="done">✅ ดำเนินการเรียบร้อย</button>
+              <button type="button" class="gw-ttab tab" data-box="assigned" data-assigner="1">📌 งานที่มอบ (กำลังทำ)</button>
+              <button type="button" class="gw-ttab tab" data-box="review" data-assigner="1">📥 รอฉันตรวจรับ <span class="badge" data-count="toReview" hidden></span></button>
+              <button type="button" class="gw-ttab tab" data-box="closed" data-assigner="1">🗄️ ปิดแล้ว</button>
+            </div>
+            <label id="tk-all-wrap" class="check tk-all" hidden><input id="tk-all" type="checkbox"><span>แสดงงานที่ทุกคนมอบ (superadmin)</span></label>
+            <div id="tk-list"></div>
+          </div>
+        </section>
+
+        <!-- จัดการระบบกลาง (ผู้ใช้ · คำขอ · สิทธิ์และเมนู · ออกรหัส · บันทึกการใช้งาน) -->
+        <section id="view-admin" class="view" hidden>
+          <div class="gw-card">
+            <div class="gw-hero">
+              <div><h3 id="adm-title">⚙️ จัดการระบบกลาง</h3><div id="adm-sub" class="gw-sub" hidden></div></div>
+              <div class="gw-hero-actions">
+                <button id="adm-refresh" type="button" class="gbtn">↻ รีเฟรช</button>
+                <button id="adm-back" type="button" class="gbtn">🏠 กลับเมนูหลัก</button>
+              </div>
+            </div>
+            <div id="adm-tiles" class="gw-tiles tabs" role="tablist">
+              <button type="button" class="gw-tile tab" data-tab="users">👥 จัดการผู้ใช้งาน</button>
+              <button type="button" class="gw-tile tab" data-tab="requests">📝 คำขอสมัคร <span id="adm-req-badge" class="badge" hidden></span></button>
+              <button type="button" class="gw-tile tab" data-tab="menus" data-super="1" data-group="perm">🔑 สิทธิ์และเมนู</button>
+              <button type="button" class="gw-tile tab" data-tab="bulk">🔐 ออกรหัสชุด</button>
+            </div>
+            <div id="adm-subtabs" class="gw7-subtabs" hidden>
+              <button type="button" class="gw7-subtab" data-sub="menus">ระบบงาน (เมนู)</button>
+              <button type="button" class="gw7-subtab" data-sub="perms">สิทธิ์ตามบทบาท (ดู · เพิ่ม · แก้ไข · ลบ)</button>
+              <button type="button" class="gw7-subtab" data-sub="settings">🛠 ปิดปรับปรุงระบบ</button>
+            </div>
+
+            <div id="tab-users" class="tab-panel gw-panel">
+              <div class="gw-head"><h3>👥 จัดการผู้ใช้งาน</h3><button id="adm-new" type="button" class="gbtn gbtn-green">เพิ่มผู้ใช้งาน</button></div>
+              <div class="gw-filter">
+                <label class="field grow"><span>ค้นหา</span><input id="adm-search" type="search" placeholder="ค้นหาชื่อผู้ใช้ / ชื่อ / อีเมล / ตำแหน่ง" autocomplete="off"></label>
+                <label class="field"><span>สถานะบัญชี</span>
+                  <select id="adm-filter" class="select">
+                    <option value="">ทั้งหมด</option>
+                    <option value="nopw">ยังไม่มีรหัสผ่าน</option>
+                    <option value="noemail">ยังไม่มีอีเมล</option>
+                    <option value="locked">ถูกล็อก</option>
+                    <option value="inactive">ปิดใช้งาน</option>
+                  </select></label>
+              </div>
+              <div id="adm-count" class="gw-count"></div>
+              <div class="gw-table-wrap">
+                <table class="gw-table">
+                  <thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>สังกัด</th><th>กลุ่มงาน</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                  <tbody id="adm-users"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-requests" class="tab-panel gw-panel" hidden>
+              <div class="gw-head"><h3>📝 คำขอสมัครใช้งาน</h3></div>
+              <div class="gw-table-wrap">
+                <table class="gw-table">
+                  <thead><tr><th>วันที่</th><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ชื่อผู้ใช้</th><th>อีเมล</th><th>กลุ่มงาน</th><th>เหตุผล</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                  <tbody id="adm-requests"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-perms" class="tab-panel gw-panel" hidden>
+              <div class="gw-head"><h3>🔑 สิทธิ์ตามบทบาท</h3><button id="perm-save" type="button" class="gbtn gbtn-green" disabled>บันทึกสิทธิ์</button></div>
+              <div class="gw-filter">
+                <label class="field"><span>บทบาท</span><select id="perm-role" class="select"></select></label>
+                <label class="field grow"><span>ค้นหา</span><input id="perm-search" type="search" placeholder="ค้นหาชื่อระบบ หรือรหัสเมนู" autocomplete="off"></label>
+              </div>
+              <p class="muted small">superadmin เห็นทุกเมนูเสมอ · ติ๊ก "ดู" = เห็นเมนูบนหน้าหลัก (ยังต้องอยู่ในกลุ่มงานของเมนูนั้นตามกติกาเดิม) · บันทึกแล้วมีผลทันที</p>
+              <div id="perm-dirty" class="alert info" hidden></div>
+              <div class="gw-table-wrap">
+                <table class="gw-table perm-table">
+                  <thead><tr><th>ระบบงาน</th><th>ดู</th><th>เพิ่ม</th><th>แก้ไข</th><th>ลบ</th></tr></thead>
+                  <tbody id="perm-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-logs" class="tab-panel" hidden>
+              <div id="log-alerts" class="alert" hidden></div>
+              <div class="gw-filter">
+                <label class="field"><span>ตั้งแต่วันที่</span><input id="log-from" type="text" class="th-date" required></label>
+                <label class="field"><span>ถึงวันที่</span><input id="log-to" type="text" class="th-date" required></label>
+                <label class="field"><span>เหตุการณ์</span><select id="log-action" class="select"></select></label>
+                <label class="field grow"><span>ผู้ใช้ (username)</span><input id="log-user" placeholder="เช่น somsri" autocapitalize="off"></label>
+                <label class="check"><input id="log-fail" type="checkbox"><span>เฉพาะไม่สำเร็จ</span></label>
+                <button id="log-search" type="button" class="gbtn gbtn-green">🔍 แสดง</button>
+                <button id="log-csv" type="button" class="gbtn">⬇️ CSV</button>
+              </div>
+              <div id="log-count" class="gw-count"></div>
+              <div class="gw-table-wrap">
+                <table class="gw-table">
+                  <thead><tr><th>เวลา</th><th>ผู้ใช้</th><th>เหตุการณ์</th><th>เป้าหมาย</th><th>รายละเอียด</th><th>ผล</th></tr></thead>
+                  <tbody id="log-list"></tbody>
+                </table>
+              </div>
+              <button id="log-more" type="button" class="gbtn gbtn-gray btn-block" hidden>โหลดเพิ่ม</button>
+            </div>
+
+            <div id="tab-menus" class="tab-panel gw-panel" hidden>
+              <div class="gw-head"><h3>🗂 ระบบงาน (เมนู)</h3><button id="mn-new" type="button" class="gbtn gbtn-green">➕ เพิ่มเมนู</button></div>
+              <div class="gw-filter">
+                <label class="field grow"><span>ค้นหา</span><input id="mn-search" type="search" placeholder="ค้นหาชื่อระบบ หรือรหัสเมนู" autocomplete="off"></label>
+                <label class="check"><input id="mn-inactive" type="checkbox"><span>แสดงเมนูที่ปิดใช้งาน</span></label>
+              </div>
+              <p class="muted small">ลำดับในหน้านี้ = ลำดับบนหน้าหลัก · ▲▼ เลื่อนเทียบกับเมนูในระดับเดียวกัน · เมนูใหม่ต้องให้สิทธิ์ "ดู" ในสิทธิ์ตามบทบาทก่อนผู้ใช้จะเห็น · ไม่มีการลบเมนู ใช้ "ปิดใช้งาน" แทน</p>
+              <div class="gw-table-wrap">
+                <table class="gw-table">
+                  <thead><tr><th>ระบบงาน</th><th>สถานะ</th><th>กลุ่มงานที่เห็น</th><th>ลิงก์</th><th>จัดการ</th></tr></thead>
+                  <tbody id="mn-list"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="tab-settings" class="tab-panel" hidden>
+              <div class="gw-panel">
+                <div class="gw-head"><h3>🔧 ปิดปรับปรุงทั้งระบบ</h3></div>
+                <div id="st-maint-state" class="flags"></div>
+                <p class="muted small">ระหว่างปิดปรับปรุง เข้าระบบได้เฉพาะ superadmin · ผู้ใช้อื่นจะเห็นข้อความแจ้งที่หน้าเข้าสู่ระบบ · ถ้าตั้งเวลาไว้ ระบบจะเปิดเองเมื่อถึงเวลา</p>
+                <label class="check"><input id="st-maint-on" type="checkbox"><span><b>ปิดปรับปรุงระบบ</b></span></label>
+                <div class="grid2">
+                  <label class="field"><span>เปิดระบบอัตโนมัติเวลา (ไม่บังคับ)</span><input id="st-maint-until" type="text" class="th-date" data-time="1" data-future="1"></label>
+                  <label class="field"><span>ข้อความถึงผู้ใช้ (ไม่บังคับ)</span><input id="st-maint-msg" maxlength="300" placeholder="เช่น อัปเดตระบบ ประมาณ 30 นาที"></label>
+                </div>
+                <div class="bulk-actions">
+                  <button id="st-maint-save" type="button" class="gbtn gbtn-green">บันทึก</button>
+                  <button id="st-maint-open" type="button" class="gbtn" hidden>เปิดระบบทันที</button>
+                </div>
+              </div>
+              <div class="gw-panel">
+                <div class="gw-head"><h3>🧩 ปิดปรับปรุงเฉพาะระบบ (แอพลูก)</h3></div>
+                <p class="muted small">ปิดเฉพาะแอพที่กำลังปรับปรุง แอพอื่นใช้งานได้ตามปกติ · เมนูของแอพนั้นจะขึ้นว่า "ปิดปรับปรุง"</p>
+                <div id="st-apps" class="list"></div>
+              </div>
+              <div class="gw-panel">
+                <div class="gw-head"><h3>⏱️ การเข้าสู่ระบบ</h3></div>
+                <div class="gw-filter">
+                  <label class="field"><span>อยู่ในระบบได้นาน (ชั่วโมง, 1–24)</span><input id="st-ttl" type="number" min="1" max="24" step="1"></label>
+                  <button id="st-ttl-save" type="button" class="gbtn gbtn-green">บันทึก</button>
+                </div>
+                <p class="muted small">ครบเวลาแล้วต้องเข้าสู่ระบบใหม่ · มีผลกับการเข้าสู่ระบบครั้งถัดไป</p>
+              </div>
+            </div>
+
+            <div id="tab-bulk" class="tab-panel gw-panel" hidden>
+              <div class="gw-head"><h3>🔐 ออกรหัสผ่านชั่วคราวทั้งชุด</h3></div>
+              <p class="muted">ใช้วันเปิดระบบ ออกรหัสให้ผู้ใช้ที่ <b>ยังไม่มีรหัสผ่าน</b> หรือ <b>รหัสชั่วคราวหมดอายุ</b> เท่านั้น
+                (คนที่ตั้งรหัสเองแล้วไม่ถูกแตะ) — ทุกคนต้องตั้งรหัสใหม่เมื่อเข้าระบบครั้งแรก</p>
+              <div id="bulk-summary" class="bulk-summary">กำลังโหลด...</div>
+              <div class="bulk-actions">
+                <button id="bulk-email" type="button" class="gbtn gbtn-green" disabled>📧 ส่งรหัสทางอีเมล</button>
+                <button id="bulk-print" type="button" class="gbtn" disabled>🖨️ ออกรหัสและพิมพ์ใบแจก</button>
+              </div>
+              <div id="bulk-result" class="alert info" hidden></div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-    <button id="btn-bell" type="button" class="btn btn-ghost btn-bell" aria-label="การแจ้งเตือน">
-      <span aria-hidden="true">🔔</span><span id="bell-badge" class="badge bell-badge" hidden></span>
-    </button>
-    <button id="btn-account" class="btn btn-ghost btn-account" aria-haspopup="true" aria-expanded="false">
-      <span id="acc-initial" class="avatar"></span><span id="acc-name" class="acc-name"></span>
-    </button>
-    <div id="account-menu" class="account-menu" hidden>
-      <div class="acc-head">
-        <div id="acc-full" class="acc-full"></div>
-        <div id="acc-meta" class="muted"></div>
-      </div>
-      <button id="btn-open-change" class="menu-item">🔑 เปลี่ยนรหัสผ่าน</button>
-      <button id="btn-install-menu" class="menu-item" hidden>📲 ติดตั้งแอพ</button>
-      <button id="btn-logout" class="menu-item danger">↩️ ออกจากระบบ</button>
-    </div>
-  </header>
+  </div>
 
   <main id="app">
     <!-- เข้าสู่ระบบ (หน้าตาแบบ Gateway เดิม) -->
@@ -208,190 +481,6 @@
       </form>
     </section>
 
-    <!-- จัดการระบบกลาง -->
-    <section id="view-admin" class="view" hidden>
-      <div class="admin-head">
-        <button id="adm-back" type="button" class="btn btn-ghost">↩️ กลับหน้าหลัก</button>
-        <h1 id="adm-title">⚙️ จัดการระบบกลาง</h1>
-      </div>
-      <div class="tabs" role="tablist">
-        <button type="button" class="tab active" data-tab="users">👥 ผู้ใช้งาน</button>
-        <button type="button" class="tab" data-tab="requests">📝 คำขอสมัคร <span id="adm-req-badge" class="badge" hidden></span></button>
-        <button type="button" class="tab" data-tab="perms" data-super="1">🔐 สิทธิ์เมนู</button>
-        <button type="button" class="tab" data-tab="menus" data-super="1">📋 เมนู</button>
-        <button type="button" class="tab" data-tab="logs">🧾 ประวัติ</button>
-        <button type="button" class="tab" data-tab="bulk">🔑 ออกรหัสชุด</button>
-        <button type="button" class="tab" data-tab="settings" data-super="1">⚙️ ตั้งค่า</button>
-      </div>
-
-      <div id="tab-users" class="tab-panel">
-        <div class="toolbar">
-          <label class="search">
-            <span aria-hidden="true">🔎</span>
-            <input id="adm-search" type="search" placeholder="ค้นหาชื่อ / ชื่อผู้ใช้ / อีเมล" autocomplete="off">
-          </label>
-          <select id="adm-filter" class="select">
-            <option value="">ทั้งหมด</option>
-            <option value="nopw">ยังไม่มีรหัสผ่าน</option>
-            <option value="noemail">ยังไม่มีอีเมล</option>
-            <option value="locked">ถูกล็อก</option>
-            <option value="inactive">ปิดใช้งาน</option>
-          </select>
-          <button id="adm-new" type="button" class="btn btn-add">➕ เพิ่มผู้ใช้</button>
-        </div>
-        <div id="adm-count" class="muted"></div>
-        <div id="adm-users" class="list"></div>
-      </div>
-
-      <div id="tab-requests" class="tab-panel" hidden>
-        <div id="adm-requests" class="list"></div>
-      </div>
-
-      <div id="tab-perms" class="tab-panel" hidden>
-        <div class="toolbar">
-          <label class="field inline"><span>Role</span><select id="perm-role" class="select"></select></label>
-          <label class="search"><span aria-hidden="true">🔎</span><input id="perm-search" type="search" placeholder="ค้นหาเมนู" autocomplete="off"></label>
-          <button id="perm-save" type="button" class="btn btn-primary" disabled>บันทึกสิทธิ์</button>
-        </div>
-        <p class="muted small">superadmin เห็นทุกเมนูเสมอ · ติ๊ก "ดู" = เห็นเมนูบนหน้าหลัก (ยังต้องอยู่ในกลุ่มงานของเมนูนั้นตามกติกาเดิม) · บันทึกแล้วมีผลทันที</p>
-        <div id="perm-dirty" class="alert info" hidden></div>
-        <div class="table-wrap">
-          <table class="perm-table">
-            <thead><tr><th>เมนู</th><th>ดู</th><th>เพิ่ม</th><th>แก้ไข</th><th>ลบ</th></tr></thead>
-            <tbody id="perm-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="tab-logs" class="tab-panel" hidden>
-        <div id="log-alerts" class="alert" hidden></div>
-        <div class="toolbar">
-          <label class="field inline"><span>ตั้งแต่</span><input id="log-from" type="text" class="th-date" required></label>
-          <label class="field inline"><span>ถึง</span><input id="log-to" type="text" class="th-date" required></label>
-          <label class="field inline"><span>เหตุการณ์</span><select id="log-action" class="select"></select></label>
-          <label class="field inline grow"><span>ผู้ใช้</span><input id="log-user" placeholder="ชื่อผู้ใช้" autocapitalize="off"></label>
-          <label class="check"><input id="log-fail" type="checkbox"><span>เฉพาะไม่สำเร็จ</span></label>
-          <button id="log-search" type="button" class="btn btn-primary">ค้นหา</button>
-          <button id="log-csv" type="button" class="btn btn-add">⬇️ CSV</button>
-        </div>
-        <div id="log-count" class="muted small"></div>
-        <div id="log-list" class="list"></div>
-        <button id="log-more" type="button" class="btn btn-ghost btn-block" hidden>โหลดเพิ่ม</button>
-      </div>
-
-      <div id="tab-menus" class="tab-panel" hidden>
-        <div class="toolbar">
-          <label class="search"><span aria-hidden="true">🔎</span><input id="mn-search" type="search" placeholder="ค้นหาเมนู / รหัสเมนู" autocomplete="off"></label>
-          <label class="check"><input id="mn-inactive" type="checkbox"><span>แสดงเมนูที่ปิดใช้งาน</span></label>
-          <button id="mn-new" type="button" class="btn btn-add">➕ เพิ่มเมนู</button>
-        </div>
-        <p class="muted small">ลำดับในหน้านี้ = ลำดับบนหน้าหลัก · ▲▼ เลื่อนเทียบกับเมนูในระดับเดียวกัน · เมนูใหม่ต้องให้สิทธิ์ "ดู" ในแท็บสิทธิ์เมนูก่อนผู้ใช้จะเห็น · ไม่มีการลบเมนู ใช้ "ปิดใช้งาน" แทน</p>
-        <div id="mn-list" class="list"></div>
-      </div>
-
-      <div id="tab-settings" class="tab-panel" hidden>
-        <div class="card pad section">
-          <h2>🔧 ปิดปรับปรุงทั้งระบบ</h2>
-          <div id="st-maint-state" class="flags"></div>
-          <p class="muted small">ระหว่างปิดปรับปรุง เข้าระบบได้เฉพาะ superadmin · ผู้ใช้อื่นจะเห็นข้อความแจ้งที่หน้าเข้าสู่ระบบ · ถ้าตั้งเวลาไว้ ระบบจะเปิดเองเมื่อถึงเวลา</p>
-          <label class="check"><input id="st-maint-on" type="checkbox"><span><b>ปิดปรับปรุงระบบ</b></span></label>
-          <div class="grid2">
-            <label class="field"><span>เปิดระบบอัตโนมัติเวลา (ไม่บังคับ)</span><input id="st-maint-until" type="text" class="th-date" data-time="1" data-future="1"></label>
-            <label class="field"><span>ข้อความถึงผู้ใช้ (ไม่บังคับ)</span><input id="st-maint-msg" maxlength="300" placeholder="เช่น อัปเดตระบบ ประมาณ 30 นาที"></label>
-          </div>
-          <div class="bulk-actions">
-            <button id="st-maint-save" type="button" class="btn btn-primary">บันทึก</button>
-            <button id="st-maint-open" type="button" class="btn btn-ghost" hidden>เปิดระบบทันที</button>
-          </div>
-        </div>
-        <div class="card pad section">
-          <h2>🧩 ปิดปรับปรุงแอพลูก</h2>
-          <p class="muted small">ปิดเฉพาะแอพที่กำลังปรับปรุง แอพอื่นใช้งานได้ตามปกติ · เมนูของแอพนั้นจะขึ้นว่า "ปิดปรับปรุง"</p>
-          <div id="st-apps" class="list"></div>
-        </div>
-        <div class="card pad section">
-          <h2>⏱️ การเข้าสู่ระบบ</h2>
-          <div class="toolbar">
-            <label class="field inline"><span>อยู่ในระบบได้นาน (ชั่วโมง, 1–24)</span><input id="st-ttl" type="number" min="1" max="24" step="1"></label>
-            <button id="st-ttl-save" type="button" class="btn btn-primary">บันทึก</button>
-          </div>
-          <p class="muted small">ครบเวลาแล้วต้องเข้าสู่ระบบใหม่ · มีผลกับการเข้าสู่ระบบครั้งถัดไป</p>
-        </div>
-      </div>
-
-      <div id="tab-bulk" class="tab-panel" hidden>
-        <div class="card pad">
-          <h2>🔑 ออกรหัสผ่านชั่วคราวทั้งชุด</h2>
-          <p class="muted">ใช้วันเปิดระบบ ออกรหัสให้ผู้ใช้ที่ <b>ยังไม่มีรหัสผ่าน</b> หรือ <b>รหัสชั่วคราวหมดอายุ</b> เท่านั้น
-            (คนที่ตั้งรหัสเองแล้วไม่ถูกแตะ) — ทุกคนต้องตั้งรหัสใหม่เมื่อเข้าระบบครั้งแรก</p>
-          <div id="bulk-summary" class="bulk-summary">กำลังโหลด...</div>
-          <div class="bulk-actions">
-            <button id="bulk-email" type="button" class="btn btn-primary" disabled>📧 ส่งรหัสทางอีเมล</button>
-            <button id="bulk-print" type="button" class="btn btn-add" disabled>🖨️ ออกรหัสและพิมพ์ใบแจก</button>
-          </div>
-          <div id="bulk-result" class="alert info" hidden></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- หน้าหลัก -->
-    <section id="view-home" class="view" hidden>
-      <div id="home-maint" class="alert warn" role="status" hidden></div>
-      <div class="home-head">
-        <div>
-          <h1 id="home-greet">สวัสดี</h1>
-          <p id="home-sub" class="muted"></p>
-        </div>
-        <label class="search">
-          <span aria-hidden="true">🔎</span>
-          <input id="menu-search" type="search" placeholder="ค้นหาระบบงาน" autocomplete="off">
-        </label>
-      </div>
-      <button id="home-tasks" type="button" class="task-strip" hidden>
-        <span class="task-strip-icon" aria-hidden="true">📋</span>
-        <span class="task-strip-text"><b>งานของฉัน</b><span id="home-tasks-sub"></span></span>
-        <span class="task-strip-go" aria-hidden="true">›</span>
-      </button>
-      <div id="menu-groups"></div>
-      <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
-    </section>
-
-    <!-- เวชระเบียนกลาง -->
-    <section id="view-patients" class="view" hidden>
-      <div class="admin-head">
-        <button id="pt-back" type="button" class="btn btn-ghost">↩️ กลับหน้าหลัก</button>
-        <h1>🗂️ เวชระเบียนกลาง</h1>
-      </div>
-      <div id="pt-notice" class="alert info" role="status"></div>
-      <div id="pt-overview" class="row-flags pt-overview"></div>
-      <form id="pt-form" class="pt-search" role="search" novalidate>
-        <label class="search"><span aria-hidden="true">🔎</span>
-          <input id="pt-q" type="search" placeholder="ค้นหา HN / เลขบัตร / ชื่อ-สกุล / เบอร์โทร" autocomplete="off" enterkeyhint="search"></label>
-        <button id="pt-go" type="submit" class="btn btn-primary">ค้นหา</button>
-      </form>
-      <label class="check pt-inactive"><input id="pt-inactive" type="checkbox"><span>รวมรายที่ปิดใช้งาน</span></label>
-      <p id="pt-count" class="muted"></p>
-      <div id="pt-list"><p class="empty">พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา</p></div>
-    </section>
-
-    <!-- งานบุคคล -->
-    <section id="view-tasks" class="view" hidden>
-      <div class="admin-head">
-        <button id="tk-back" type="button" class="btn btn-ghost">↩️ กลับหน้าหลัก</button>
-        <h1>📋 งานของฉัน</h1>
-        <button id="tk-new" type="button" class="btn btn-primary tk-new" hidden>➕ มอบหมายงาน</button>
-      </div>
-      <div class="tabs" role="tablist">
-        <button type="button" class="tab active" data-box="todo">📥 ต้องทำ <span class="badge" data-count="todo" hidden></span></button>
-        <button type="button" class="tab" data-box="sent">📤 ส่งแล้ว</button>
-        <button type="button" class="tab" data-box="done">✅ เสร็จแล้ว</button>
-        <button type="button" class="tab" data-box="assigned" data-assigner="1">🗂️ งานที่มอบ</button>
-        <button type="button" class="tab" data-box="review" data-assigner="1">🔎 รอตรวจรับ <span class="badge" data-count="toReview" hidden></span></button>
-        <button type="button" class="tab" data-box="closed" data-assigner="1">🗄️ ปิดแล้ว</button>
-      </div>
-      <label id="tk-all-wrap" class="check tk-all" hidden><input id="tk-all" type="checkbox"><span>แสดงงานที่ทุกคนมอบ (superadmin)</span></label>
-      <div id="tk-list"></div>
-    </section>
   </main>
 
   <!-- เปลี่ยนรหัสผ่าน -->
@@ -605,17 +694,6 @@
     </form>
   </dialog>
 
-  <!-- เวชระเบียนกลาง: แฟ้มผู้ป่วย -->
-  <dialog id="dlg-patient" class="dialog dialog-wide">
-    <div class="dlg-pad">
-      <div class="tk-dlg-head">
-        <h2 id="pt-title">แฟ้มผู้ป่วย</h2>
-        <button id="pt-close" type="button" class="btn btn-ghost btn-sm" aria-label="ปิด">✕</button>
-      </div>
-      <div id="pt-body"></div>
-    </div>
-  </dialog>
-
   <!-- แจ้งเตือน -->
   <dialog id="dlg-notif" class="dialog">
     <div class="dlg-pad">
@@ -666,6 +744,7 @@
   <script src="public.js"></script>
   <script src="admin.js"></script>
   <script src="tasks.js"></script>
+  <script src="patient-form.js"></script>
   <script src="patients.js"></script>
 </body>
 </html>

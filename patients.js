@@ -1,4 +1,5 @@
-/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.0.1) : เวชระเบียนกลาง — ค้นหา · เปิดแฟ้ม (ดูอย่างเดียวช่วงเปลี่ยนผ่าน)
+/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.1.0) : เวชระเบียนกลาง — หน้าตาแบบ Gateway เดิม
+ * การ์ดสรุป 4 ใบ · ค้นหา · ตาราง 11 คอลัมน์ (ดู / แก้ไข) · แฟ้มใต้ตาราง · เพิ่ม/แก้ด้วยฟอร์ม Patient Kit (patient-form.js)
  * ไม่เก็บข้อมูลผู้ป่วยไว้ในเครื่อง (ไม่ใช้แคช localStorage) — เก็บเฉพาะตัวเลขสรุปภาพรวม */
 (function () {
   'use strict';
@@ -11,46 +12,59 @@
     if (text !== undefined && text !== null) e.textContent = text;
     return e;
   }
-  function chip(text, kind) { return el('span', 'chip ' + (kind || ''), text); }
+  function st(text, kind) { return el('span', 'gw-st ' + (kind || 'off'), text); }
   function call(action, data) { data = data || {}; data.token = P.token(); return P.api(action, data); }
-  function openDlg(d) { if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); }
   function guard(res) {
     if (res && !res.ok && res.code === 'unauthorized') { P.showLogin(res.message); return false; }
     return true;
   }
-  var S = { q: '', seq: 0, timer: null, cur: null };
+  function inactive(p) { var s = String(p.status || '').toLowerCase(); return s === 'inactive' || s === 'ปิดใช้งาน'; }
+  var S = { seq: 0, timer: null, cur: null, ov: null, lastQ: '' };
+  var EMPTY = 'พิมพ์คำค้นหาแล้วกดค้นหา เพื่อแสดงรายการผู้ป่วย';
 
   // ---------- เปิดหน้า ----------
   function open() {
     P.show('view-patients');
+    P.setPage('patients', 'เวชระเบียนกลาง');
     try { history.pushState({ phc37View: 'patients' }, ''); } catch (e) {}
     window.scrollTo(0, 0);
     loadOverview();
     setTimeout(function () { $('pt-q').focus(); }, 50);
   }
-  function loadOverview() {
+
+  function sumCard(cls, label, value, foot) {
+    var c = el('div', 'gw-sumc ' + cls);
+    c.appendChild(el('div', 'l', label));
+    c.appendChild(el('div', 'v', value === null || value === undefined ? '-' : Number(value).toLocaleString('th-TH')));
+    c.appendChild(el('div', 'f', foot));
+    return c;
+  }
+  function loadOverview(fresh) {
     P.swr('pt.overview', function () { return call('patient.overview'); }, function (r) {
-      var box = $('pt-overview'); box.textContent = '';
+      var box = $('pt-overview'), q = $('pt-quality'), nt = $('pt-notice');
+      box.textContent = ''; q.textContent = '';
       if (!guard(r)) return;
       if (!r.ok) {
-        $('pt-notice').className = 'alert'; $('pt-notice').textContent = r.message;
-        if (r.code === 'forbidden') { $('pt-form').hidden = true; $('pt-list').textContent = ''; }
+        nt.hidden = false; nt.textContent = r.message;
+        if (r.code === 'forbidden') { $('pt-form').hidden = true; P.tableMsg($('pt-list'), r.message); }
         return;
       }
+      S.ov = r;
       $('pt-form').hidden = false;
-      $('pt-notice').className = 'alert info';
-      $('pt-notice').textContent = '🔄 ' + r.notice + (r.lastOkText ? ' · ดึงล่าสุด ' + r.lastOkText : ' · ยังไม่เคยดึงข้อมูล');
-      if (r.lastRun && r.lastRun.status === 'error') {
-        $('pt-notice').className = 'alert warn';
-        $('pt-notice').textContent += ' · ⚠️ รอบล่าสุดไม่สำเร็จ (' + (r.lastRun.startedText || '') + ')';
-      }
-      box.appendChild(chip('ทั้งหมด ' + (r.total || 0) + ' ราย', 'ok'));
-      if (r.noBirthDate) box.appendChild(chip('ไม่มีวันเกิด ' + r.noBirthDate, 'warn'));
-      if (r.noHN) box.appendChild(chip('ไม่มี HN ' + r.noHN, 'warn'));
-      if (r.invalidCID) box.appendChild(chip('เลขบัตรไม่ถูกต้อง ' + r.invalidCID, 'danger'));
-      if (r.noMainRight) box.appendChild(chip('ไม่มีสิทธิหลัก ' + r.noMainRight, ''));
-      if (r.missingInSource) box.appendChild(chip('ถูกลบจากระบบเดิม ' + r.missingInSource, ''));
-    });
+      $('pt-add').hidden = !r.canAdd;
+      box.appendChild(sumCard('total', 'ผู้ป่วยทั้งหมด', r.total, 'ทุกสถานะ'));
+      box.appendChild(sumCard('success', 'ใช้งาน', r.active, 'พร้อมใช้งาน'));
+      box.appendChild(sumCard('fail', 'ปิดใช้งาน', r.inactive, 'ปิดการใช้งาน'));
+      box.appendChild(sumCard('user', 'เพิ่มวันนี้', r.today, 'บันทึกใหม่วันนี้'));
+      if (r.noBirthDate) q.appendChild(st('ไม่มีวันเกิด ' + r.noBirthDate, 'warn'));
+      if (r.noHN) q.appendChild(st('ไม่มี HN ' + r.noHN, 'warn'));
+      if (r.invalidCID) q.appendChild(st('เลขบัตรไม่ถูกต้อง ' + r.invalidCID, 'danger'));
+      if (r.noMainRight) q.appendChild(st('ไม่มีสิทธิหลัก ' + r.noMainRight, 'off'));
+      nt.hidden = false;
+      nt.textContent = '🔄 ' + r.notice + (r.lastOkText ? ' · ดึงล่าสุด ' + r.lastOkText : ' · ยังไม่เคยดึงข้อมูล');
+      if (r.lastRun && r.lastRun.status === 'error') nt.textContent += ' · ⚠️ รอบล่าสุดไม่สำเร็จ (' + (r.lastRun.startedText || '') + ')';
+      if (S.cur) renderActions();
+    }, null, fresh === true);
   }
 
   // ---------- ค้นหา ----------
@@ -58,45 +72,52 @@
     clearTimeout(S.timer);
     var q = $('pt-q').value.trim();
     if (q.length < 2) {
-      S.seq++;
-      $('pt-count').textContent = '';
-      $('pt-list').textContent = '';
-      $('pt-list').appendChild(el('p', 'empty', 'พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา'));
+      S.seq++; $('pt-count').textContent = '';
+      P.tableMsg($('pt-list'), q ? 'พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา' : EMPTY);
       return;
     }
     if (!now) { S.timer = setTimeout(function () { search(true); }, 350); return; }
+    S.lastQ = q;
     var seq = ++S.seq, wrap = $('pt-list');
     P.skeleton(wrap, 3);
     $('pt-count').textContent = '';
-    call('patient.search', { keyword: q, limit: 50, level: 'contact', includeInactive: $('pt-inactive').checked }).then(function (r) {
+    call('patient.search', { keyword: q, limit: 50, level: 'full', includeInactive: $('pt-inactive').checked }).then(function (r) {
       if (seq !== S.seq) return;
       wrap.textContent = '';
       if (!guard(r)) return;
-      if (!r.ok) { wrap.appendChild(el('p', 'empty', r.message)); return; }
+      if (!r.ok) { P.tableMsg(wrap, r.message); return; }
       $('pt-count').textContent = 'พบ ' + r.total + ' ราย' + (r.more ? ' (แสดง ' + r.data.length + ' รายแรก — พิมพ์ให้เจาะจงขึ้น)' : '');
-      if (!r.data.length) { wrap.appendChild(el('p', 'empty', 'ไม่พบผู้ป่วยที่ตรงกับ "' + q + '"')); return; }
+      if (!r.data.length) { P.tableMsg(wrap, 'ไม่พบผู้ป่วยที่ตรงกับ "' + q + '"'); return; }
       r.data.forEach(function (p) { wrap.appendChild(row(p)); });
     });
   }
   function row(p) {
-    var b = el('button', 'row tk-row pt-row'); b.type = 'button';
-    var main = el('span', 'row-main');
-    main.appendChild(el('span', 'row-title', p.fullName || '(ไม่มีชื่อ)'));
-    var sub = [p.hn ? 'HN ' + p.hn : 'ไม่มี HN', p.cidMasked || 'ไม่มีเลขบัตร', [p.gender, p.ageText ? p.ageText.replace(/ \d+ วัน$/, '') : ''].filter(Boolean).join(' ')]
-      .filter(Boolean).join(' · ');
-    main.appendChild(el('span', 'row-sub', sub));
-    var f = el('span', 'row-flags');
-    if (p.mainRight) f.appendChild(chip(p.mainRight + (p.subRight ? ' · ' + p.subRight : ''), 'info'));
-    if (p.communityName) f.appendChild(chip(p.communityName, ''));
-    if (String(p.status).toLowerCase() === 'inactive' || p.status === 'ปิดใช้งาน') f.appendChild(chip('ปิดใช้งาน', 'danger'));
-    (p.linkedSystems || []).slice(0, 4).forEach(function (s) { f.appendChild(chip(s.name, 'ok')); });
-    main.appendChild(f);
-    b.appendChild(main);
-    b.addEventListener('click', function () { openPatient(p.patientID); });
-    return b;
+    var tr = el('tr', 'click' + (S.cur === p.patientID ? ' on' : '')); tr.dataset.id = p.patientID;
+    var id = el('td', 'nowrap'); id.appendChild(el('b', null, p.hn || '-')); id.appendChild(el('span', 'sub', p.patientID)); tr.appendChild(id);
+    tr.appendChild(el('td', null, p.fullName || '(ไม่มีชื่อ)'));
+    tr.appendChild(el('td', 'nowrap', p.birthDateBE || '-'));
+    tr.appendChild(el('td', 'nowrap', p.ageText || '-'));
+    tr.appendChild(el('td', 'nowrap', p.cidMasked || '-'));
+    tr.appendChild(el('td', 'nowrap', p.phone || '-'));
+    tr.appendChild(el('td', null, p.communityName || '-'));
+    var rt = el('td', null, p.mainRight || '-'); if (p.subRight) rt.appendChild(el('span', 'sub', p.subRight)); tr.appendChild(rt);
+    var s = el('td'); s.appendChild(inactive(p) ? st('ปิดใช้งาน', 'off') : st('ใช้งาน', 'on')); tr.appendChild(s);
+    var up = el('td', 'nowrap', p.updatedAt || p.createdAt || '-'); if (p.updatedBy || p.createdBy) up.appendChild(el('span', 'sub', p.updatedBy || p.createdBy)); tr.appendChild(up);
+    var act = el('td'), box = el('span', 'acts');
+    var v = el('button', 'gw-view', '👁️ ดู'); v.type = 'button';
+    v.addEventListener('click', function (e) { e.stopPropagation(); openPatient(p.patientID); });
+    box.appendChild(v);
+    if (S.ov && S.ov.canEdit) {
+      var ed = el('button', 'gw-edit', '✏️ แก้ไข'); ed.type = 'button';
+      ed.addEventListener('click', function (e) { e.stopPropagation(); editPatient(p.patientID); });
+      box.appendChild(ed);
+    }
+    act.appendChild(box); tr.appendChild(act);
+    tr.addEventListener('click', function () { openPatient(p.patientID); });
+    return tr;
   }
 
-  // ---------- แฟ้มผู้ป่วย ----------
+  // ---------- แฟ้มผู้ป่วย (ใต้ตาราง แบบหน้าเดิม) ----------
   function field(dl, label, value) {
     if (value === undefined || value === null || value === '') value = '—';
     var w = el('div', 'pt-f');
@@ -107,41 +128,58 @@
   }
   function section(body, title) {
     var s = el('div', 'tk-sec'); s.appendChild(el('h3', null, title));
-    var dl = el('dl', 'pt-grid'); s.appendChild(dl); body.appendChild(s);
+    var dl = el('dl', 'pt-dgrid'); s.appendChild(dl); body.appendChild(s);
     return dl;
   }
   function openPatient(pid) {
     S.cur = pid;
-    $('pt-title').textContent = 'กำลังโหลด...';
-    P.skeleton($('pt-body'), 3);
-    openDlg($('dlg-patient'));
+    Array.prototype.forEach.call(document.querySelectorAll('#pt-list tr'), function (t) { t.classList.toggle('on', t.dataset.id === pid); });
+    var box = $('pt-detail'); box.hidden = false; box.textContent = '';
+    var sk = el('div'); box.appendChild(sk); P.skeleton(sk, 4);
+    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     call('patient.getById', { patientID: pid, level: 'full' }).then(function (r) {
       if (S.cur !== pid) return;
       if (!guard(r)) return;
-      var body = $('pt-body'); body.textContent = '';
-      if (!r.ok) { $('pt-title').textContent = 'เปิดแฟ้มไม่ได้'; body.appendChild(el('p', 'empty', r.message)); return; }
+      box.textContent = '';
+      if (!r.ok) { box.appendChild(el('p', 'empty', r.message)); return; }
       render(r.data);
     });
   }
+  function closeDetail() { S.cur = null; $('pt-detail').hidden = true; $('pt-detail').textContent = '';
+    Array.prototype.forEach.call(document.querySelectorAll('#pt-list tr.on'), function (t) { t.classList.remove('on'); }); }
+  function renderActions() {
+    var a = $('pt-dacts'); if (!a || !S.cur) return;
+    a.textContent = '';
+    if (S.ov && S.ov.canEdit) {
+      var e = el('button', 'gbtn gbtn-orange gbtn-sm', '✏️ แก้ไขข้อมูล'); e.type = 'button';
+      e.addEventListener('click', function () { editPatient(S.cur); }); a.appendChild(e);
+    }
+    var c = el('button', 'gbtn gbtn-sm', '✕ ปิดแฟ้ม'); c.type = 'button'; c.addEventListener('click', closeDetail); a.appendChild(c);
+  }
   function render(p) {
-    var body = $('pt-body');
-    $('pt-title').textContent = p.fullName || '(ไม่มีชื่อ)';
-    var head = el('div', 'row-flags');
-    head.appendChild(chip(p.hn ? 'HN ' + p.hn : 'ไม่มี HN', p.hn ? 'ok' : 'warn'));
-    if (String(p.status).toLowerCase() === 'inactive' || p.status === 'ปิดใช้งาน') head.appendChild(chip('ปิดใช้งาน', 'danger'));
-    if (p.cidState === 'invalid') head.appendChild(chip('เลขบัตรไม่ถูกต้อง', 'danger'));
-    if (!p.hasBirthDate) head.appendChild(chip('ไม่มีวันเกิด', 'warn'));
+    var body = $('pt-detail');
+    var head = el('div', 'pt-detail-head');
+    var ht = el('div'); ht.appendChild(el('h4', null, '📄 ' + (p.fullName || '(ไม่มีชื่อ)')));
+    var fl = el('div', 'pt-qual');
+    fl.appendChild(st(p.hn ? 'HN ' + p.hn : 'ไม่มี HN', p.hn ? 'on' : 'warn'));
+    fl.appendChild(st('รหัส ' + p.patientID, 'off'));
+    if (inactive(p)) fl.appendChild(st('ปิดใช้งาน', 'danger'));
+    if (p.cidState === 'invalid') fl.appendChild(st('เลขบัตรไม่ถูกต้อง', 'danger'));
+    if (!p.hasBirthDate) fl.appendChild(st('ไม่มีวันเกิด', 'warn'));
+    ht.appendChild(fl); head.appendChild(ht);
+    head.appendChild(el('div', 'gw-hero-actions')).id = 'pt-dacts';
     body.appendChild(head);
-    body.appendChild(el('p', 'muted tk-meta', 'รหัสผู้ป่วย ' + p.patientID + ' · ดูอย่างเดียว (แก้ไขที่ Gateway เดิมช่วงเปลี่ยนผ่าน)'));
+    renderActions();
 
     var g = section(body, '👤 ข้อมูลทั่วไป');
     field(g, 'ชื่อ-สกุล', [p.prefix, p.firstName, p.lastName].filter(Boolean).join(' ') || p.fullName);
     field(g, 'เพศ', p.gender);
-    field(g, 'วันเกิด', p.birthDateBE ? p.birthDateBE + (p.ageText ? ' (อายุ ' + p.ageText + ')' : '') : '');
+    field(g, 'วันเกิด (พ.ศ.)', p.birthDateBE);
+    field(g, 'อายุ ณ ปัจจุบัน', p.ageText);
     var cidBox = el('span', 'pt-cid');
     cidBox.appendChild(el('span', null, p.cidMasked || '—'));
     if (p.cidMasked) {
-      var rb = el('button', 'btn btn-ghost btn-sm', '👁️ แสดงเลขบัตร'); rb.type = 'button';
+      var rb = el('button', 'gw-view', '👁️ แสดงเลขบัตร'); rb.type = 'button';
       rb.title = 'ระบบจะบันทึกประวัติการดูเลขบัตร';
       rb.addEventListener('click', function () {
         P.busy(rb, true, 'กำลังโหลด...');
@@ -151,16 +189,14 @@
           cidBox.textContent = x.cid.replace(/^(\d)(\d{4})(\d{5})(\d{2})(\d)$/, '$1-$2-$3-$4-$5');
         });
       });
-      cidBox.appendChild(rb);
+      cidBox.appendChild(document.createTextNode(' ')); cidBox.appendChild(rb);
     }
     field(g, 'เลขบัตรประชาชน', cidBox);
-    field(g, 'สถานภาพ', p.maritalStatus);
-    field(g, 'การศึกษา', p.educationLevel);
+    field(g, 'สิทธิหลัก', p.mainRight);
+    field(g, 'สิทธิย่อย', p.subRight);
+    field(g, 'สถานภาพสมรส', p.maritalStatus);
+    field(g, 'ระดับการศึกษา', p.educationLevel);
     field(g, 'อาชีพ', p.occupation);
-
-    var rt = section(body, '🏥 สิทธิการรักษา');
-    field(rt, 'สิทธิหลัก', p.mainRight);
-    field(rt, 'สิทธิย่อย', p.subRight);
 
     var ad = section(body, '🏠 ที่อยู่');
     field(ad, 'ที่อยู่', p.addressText);
@@ -171,7 +207,7 @@
     if (phones.length) {
       var ul = el('div', 'pt-phones');
       phones.forEach(function (x) {
-        var a = el('a', 'file-chip pt-phone', (x.primary ? '⭐ ' : '📞 ') + x.phone + ' · ' + x.owner + (x.name ? ' (' + x.name + ')' : ''));
+        var a = el('a', 'file-chip pt-phone', (x.primary ? '⭐ ' : '📞 ') + x.phone + ' · ' + (x.owner === 'ตนเอง' ? 'ของผู้ป่วยเอง' : 'ของ' + x.owner) + (x.name ? ' (' + x.name + ')' : ''));
         a.href = 'tel:' + String(x.phone).replace(/[^\d+]/g, '');
         ul.appendChild(a);
       });
@@ -183,10 +219,10 @@
 
     if (p.note) { var nt = section(body, '📝 หมายเหตุ'); field(nt, 'หมายเหตุ', p.note); }
 
-    var ls = el('div', 'tk-sec'); ls.appendChild(el('h3', null, '🔗 ใช้ในระบบ'));
+    var ls = el('div', 'tk-sec'); ls.appendChild(el('h3', null, '🔗 ระบบที่ใช้ข้อมูลนี้'));
     if ((p.linkedSystems || []).length) {
-      var w = el('div', 'row-flags');
-      p.linkedSystems.forEach(function (s) { w.appendChild(chip(s.name + ' · ล่าสุด ' + (s.last || '-') + (s.days ? ' · ' + s.days + ' วัน' : ''), 'ok')); });
+      var w = el('div', 'pt-qual');
+      p.linkedSystems.forEach(function (s) { w.appendChild(st(s.name + ' · ล่าสุด ' + (s.last || '-') + (s.days ? ' · ' + s.days + ' วัน' : ''), 'info')); });
       ls.appendChild(w);
     } else ls.appendChild(el('p', 'muted', 'ยังไม่มีข้อมูลการใช้ในระบบอื่น'));
     body.appendChild(ls);
@@ -197,12 +233,28 @@
     if (p.lastVisitAt) field(mt, 'มารับบริการล่าสุด', p.lastVisitAt);
   }
 
+  // ---------- เพิ่ม / แก้ไข (ฟอร์ม Patient Kit) ----------
+  function afterSave(res) {
+    loadOverview(true);
+    if (S.lastQ && $('pt-q').value.trim() === S.lastQ) search(true);
+    if (res && res.patientID) openPatient(res.patientID);
+  }
+  function editPatient(pid) {
+    if (!window.PHC37PatientForm) return P.toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรช', 'err');
+    window.PHC37PatientForm.open({ patientID: pid, onSaved: afterSave, onPick: openPatient });
+  }
+  function addPatient() {
+    if (!window.PHC37PatientForm) return P.toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรช', 'err');
+    window.PHC37PatientForm.open({ onSaved: afterSave, onPick: openPatient });
+  }
+
   // ---------- เหตุการณ์ ----------
   $('pt-form').addEventListener('submit', function (e) { e.preventDefault(); search(true); });
   $('pt-q').addEventListener('input', function () { search(false); });
   $('pt-inactive').addEventListener('change', function () { if ($('pt-q').value.trim().length >= 2) search(true); });
-  $('pt-close').addEventListener('click', function () { $('dlg-patient').close(); });
-  $('dlg-patient').addEventListener('close', function () { S.cur = null; $('pt-body').textContent = ''; });
+  $('pt-clear').addEventListener('click', function () { $('pt-q').value = ''; search(true); closeDetail(); $('pt-q').focus(); });
+  $('pt-refresh').addEventListener('click', function () { loadOverview(true); if ($('pt-q').value.trim().length >= 2) search(true); });
+  $('pt-add').addEventListener('click', addPatient);
   $('pt-back').addEventListener('click', function () {
     if (history.state && history.state.phc37View === 'patients') { history.back(); return; }
     leave();
@@ -212,10 +264,12 @@
   });
   function leave() {
     S.seq++;
-    $('pt-q').value = ''; $('pt-list').textContent = ''; $('pt-count').textContent = '';
-    $('pt-list').appendChild(el('p', 'empty', 'พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา'));
+    $('pt-q').value = ''; $('pt-count').textContent = '';
+    P.tableMsg($('pt-list'), EMPTY);
+    closeDetail();
+    if (window.PHC37PatientForm) window.PHC37PatientForm.close();
     P.goHome();
   }
 
-  window.PHC37Patients = { open: open, openPatient: openPatient };
+  window.PHC37Patients = { open: open, openPatient: openPatient, edit: editPatient, add: addPatient };
 })();
