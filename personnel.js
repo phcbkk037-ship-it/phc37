@@ -1,4 +1,4 @@
-/* PHC37 PWA — personnel.js (PHC37-PWA-PERSONNEL-1.0.0) : ทะเบียนบุคลากรกลาง — หน้าในแอป หน้าตาและการใช้งานตามระบบเดิม
+/* PHC37 PWA — personnel.js (PHC37-PWA-PERSONNEL-1.1.0 · เมนูของเว็บลูกด้านซ้ายแบบเดิม) : ทะเบียนบุคลากรกลาง — หน้าในแอป หน้าตาและการใช้งานตามระบบเดิม
  * การ์ดสรุป 5 ใบ (กดกรองได้) · ค้นหา + ระดับสิทธิ์ + กลุ่มงาน · ตาราง 9 คอลัมน์ (ดูงาน / ดู-แก้ / ปิดสถานะ) · 15 แถวต่อหน้า
  * ฟอร์ม 5 ส่วน: บัญชีผู้ใช้ · ข้อมูลบุคลากร · กลุ่มงาน/ตำแหน่ง · ชุมชนที่รับผิดชอบ (กลุ่มงานเยี่ยมบ้าน) · การแจ้งเตือน
  * ไม่เก็บข้อมูลบุคลากรไว้ในเครื่อง — เก็บเฉพาะตัวเลขการ์ดสรุป */
@@ -67,7 +67,17 @@
   function build() {
     if (S.built) return;
     S.built = true;
-    var v = $('view-personnel');
+    var root = $('view-personnel');
+    // เมนูของเว็บลูก (แบบระบบเดิม): กลับเมนูหลัก + หัวข้อ
+    var lay = el('div', 'psn-layout'), side = el('nav', 'psn-topic'); side.setAttribute('aria-label', 'เมนูงานทะเบียนบุคลากร');
+    var back = el('button', 'psn-topic-back', '↩️ กลับเมนูหลัก'); back.type = 'button'; back.id = 'psn-back';
+    back.addEventListener('click', function () { P.goHome(); });
+    side.appendChild(back);
+    var tb = el('button', 'psn-topic-btn on'); tb.type = 'button'; tb.setAttribute('aria-current', 'page');
+    tb.appendChild(el('span', 'ic', '👥')); tb.appendChild(el('span', null, 'รายชื่อบุคลากร')); tb.appendChild(el('span', 'ar', '›'));
+    side.appendChild(tb);
+    var v = el('div', 'psn-maincol');
+    lay.appendChild(side); lay.appendChild(v); root.appendChild(lay);
     v.appendChild(el('div', 'psn-notice')).id = 'psn-notice';
     $('psn-notice').hidden = true;
     var k = el('section', 'psn-kpis'); k.id = 'psn-kpis'; k.setAttribute('aria-label', 'สรุปทะเบียนบุคลากร');
@@ -87,7 +97,6 @@
     var note = el('span', 'psn-note'); note.id = 'psn-note'; note.setAttribute('role', 'status');
     ht.appendChild(title); ht.appendChild(note); head.appendChild(ht);
     var acts = el('div', 'psn-actions');
-    acts.appendChild(btn('🏠 กลับเมนูหลัก', '', function () { P.goHome(); }));
     var rf = btn('รีเฟรช', '', function () { loadOverview(true); search(); }); rf.id = 'psn-refresh'; acts.appendChild(rf);
     var add = btn('+ เพิ่มบุคลากร', 'pri', function () { openForm(null); }); add.id = 'psn-add'; add.hidden = true; acts.appendChild(add);
     head.appendChild(acts); panel.appendChild(head);

@@ -283,3 +283,7 @@ body.pf-lock { overflow: hidden; }
 .gw7-mv-ic { width: 34px; height: 30px; border-radius: 8px; background: var(--gw7-teal-tint); display: flex; align-items: center; justify-content: center; flex: none; }
 .gw7-mv-key { display: block; font-size: 12.5px; color: var(--gw7-ink2); }
 .gw-table .acts .gw-view { min-width: 36px; }
+
+/* หน้าเว็บลูก (2.1.0): เว็บลูกมีเมนูของตัวเองพร้อมปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway */
+.gw7-shell.gw7-child .gw7-side, .gw7-shell.gw7-child .gw7-scrim, .gw7-shell.gw7-child .gw7-burger { display: none !important; }
+.gw7-shell.gw7-child { background: var(--gw7-ground); }

@@ -145,3 +145,17 @@ button.psn-kpi:hover { border-color: var(--psn-green-b); }
 .mr-frame { display: block; width: 100%; height: calc(100vh - 74px); border: 0; background: #F4F6F4; }
 .mr-note { padding: 8px 16px; background: #FFF4E5; color: #8A4B00; border-bottom: 1px solid #E8C48F; font-size: 14px; font-family: Sarabun, "Noto Sans Thai", Arial, sans-serif; }
 @media (max-width: 900px) { .gw7-container > .mr-view { margin: -14px -12px -32px; } }
+
+/* เมนูของเว็บลูก (แบบระบบบุคลากรเดิม: การ์ดซ้าย 280px) */
+.psn-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: start; }
+.psn-topic { position: sticky; top: 92px; padding: 14px; background: #fff; border: 1px solid #D8DED9; border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(23,32,26,.06), 0 4px 12px rgba(23,32,26,.06); font-family: Sarabun, "Noto Sans Thai", Arial, sans-serif; }
+.psn-topic-back { display: block; width: 100%; min-height: 44px; margin: 0 0 8px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent;
+  color: #4A5550; font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+.psn-topic-back:hover { background: #F4F6F4; }
+.psn-topic-btn { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #EAF6EC; border-radius: 12px;
+  background: #EAF6EC; color: #0E5A2E; font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: default; }
+.psn-topic-btn .ic { font-size: 18px; }
+.psn-topic-btn .ar { margin-left: auto; opacity: .7; }
+@media (max-width: 1100px) { .psn-layout { grid-template-columns: 1fr; } .psn-topic { position: static; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .psn-topic-back { width: auto; margin: 0; } .psn-topic-btn { width: auto; } }

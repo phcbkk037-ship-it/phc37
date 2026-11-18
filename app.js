@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.1.0 · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป) */
-var PHC37_APP_VERSION = '2.1.0';
+/* PHC37 PWA — app.js (PHC37-PWA-2.1.1 · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
+var PHC37_APP_VERSION = '2.1.1';
 (function () {
   'use strict';
 
@@ -155,12 +155,15 @@ var PHC37_APP_VERSION = '2.1.0';
   }
 
   // ---------- UI helpers ----------
+  var CHILD_VIEWS = ['view-personnel', 'view-material'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
   var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material'];
   function show(view) {
     bootHide();
     ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
+    // เว็บลูกมีเมนูของตัวเอง + ปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway (ผู้ใช้กำหนด 18 พ.ย.)
+    $('shell').classList.toggle('gw7-child', CHILD_VIEWS.indexOf(view) >= 0);
     closeAccountMenu(); closeSide();
     if (view === 'view-home') setPage('home', 'หน้าหลัก');
   }
