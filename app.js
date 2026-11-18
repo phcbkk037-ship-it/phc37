@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.9.1) */
-var PHC37_APP_VERSION = '1.9.1';
+/* PHC37 PWA — app.js (PHC37-PWA-2.0.0 · หน้าทะเบียนบุคลากรกลางในแอป) */
+var PHC37_APP_VERSION = '2.0.0';
 (function () {
   'use strict';
 
@@ -155,10 +155,10 @@ var PHC37_APP_VERSION = '1.9.1';
   }
 
   // ---------- UI helpers ----------
-  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients'];
+  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel'];
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
     closeAccountMenu(); closeSide();
@@ -590,6 +590,8 @@ var PHC37_APP_VERSION = '1.9.1';
     var k = String(m.key || '').toLowerCase(), u = String(m.url || '').trim().toLowerCase();
     return ['medical_records', 'patient_master', 'patients'].indexOf(k) >= 0 || u === '#patient_master' || u === '#medical_records';
   }
+  /** ทะเบียนบุคลากรกลาง — เปิดเป็นหน้าในแอป (2.0.0) */
+  function isPersonnelMenu(m) { return String(m.key || '').toLowerCase() === 'personnel_master'; }
   function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
   function canManage() {
     var r = state.profile && state.profile.user && state.profile.user.role;
@@ -679,6 +681,10 @@ var PHC37_APP_VERSION = '1.9.1';
       el = makeTile(iconOf(m, '🗂️'), m.name, groupNote(m), '', function () {
         if (window.PHC37Patients) window.PHC37Patients.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
+    } else if (isPersonnelMenu(m)) {
+      el = makeTile(iconOf(m, '👥'), m.name, groupNote(m), '', function () {
+        if (window.PHC37Personnel) window.PHC37Personnel.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else if (isRealUrl(m.url)) {
       var ready = !m.requireGateway;
       el = makeTile(iconOf(m, '📌'), m.name, ready ? groupNote(m) : 'กำลังย้ายมาระบบใหม่',
@@ -750,7 +756,7 @@ var PHC37_APP_VERSION = '1.9.1';
     var box = $('gw7-apps'); box.textContent = '';
     var menus = allMenus(), n = 0;
     menus.forEach(function (m) {
-      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || !isRealUrl(m.url)) return;
+      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m))) return;
       var b = document.createElement('button'); b.type = 'button'; b.className = 'gw7-app';
       var ic = document.createElement('span'); ic.className = 'gw7-app-ic'; ic.textContent = iconOf(m, '📌'); ic.setAttribute('aria-hidden', 'true');
       var t = document.createElement('span'); t.className = 'gw7-nav-text'; t.textContent = m.name;
@@ -971,7 +977,7 @@ var PHC37_APP_VERSION = '1.9.1';
   // ให้ admin.js ใช้ร่วม
   window.PHC37 = {
     api: api, toast: toast, busy: busy, setAlert: setAlert, loading: loading, skeleton: skeleton, show: show, emailOk: emailOk,
-    setPage: setPage, hasPatientMenu: hasPatientMenu, tableMsg: tableMsg,
+    setPage: setPage, hasPatientMenu: hasPatientMenu, tableMsg: tableMsg, openMenu: openMenu,
     token: function () { return sget(KEY_TOKEN); },
     showLogin: showLogin, bindRules: bindRules, rulesOk: rulesOk,
     comboFill: comboFill, comboValue: comboValue, comboSet: comboSet, isMainAffiliation: isMainAffiliation,

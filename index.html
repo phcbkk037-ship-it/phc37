@@ -17,6 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="gw7.css">
+  <link rel="stylesheet" href="psn.css">
   <script src="config.js"></script>
 </head>
 <body>
@@ -121,6 +122,9 @@
             <p id="menu-empty" class="empty" hidden>ไม่พบระบบงานที่ค้นหา</p>
           </div>
         </section>
+
+        <!-- ทะเบียนบุคลากรกลาง (หน้าตาตามระบบเดิม · สร้างโดย personnel.js) -->
+        <section id="view-personnel" class="view psn" hidden></section>
 
         <!-- เวชระเบียนกลาง -->
         <section id="view-patients" class="view" hidden>
@@ -746,5 +750,6 @@
   <script src="tasks.js"></script>
   <script src="patient-form.js"></script>
   <script src="patients.js"></script>
+  <script src="personnel.js"></script>
 </body>
 </html>
