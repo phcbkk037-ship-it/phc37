@@ -1,4 +1,4 @@
-/* PHC37 PWA — patient-form.js (PHC37-PWA-PATIENTFORM-1.0.0) : ฟอร์มผู้ป่วยมาตรฐาน = Patient Kit ของเว็บลูก
+/* PHC37 PWA — patient-form.js (PHC37-PWA-PATIENTFORM-1.1.0) : ฟอร์มผู้ป่วยมาตรฐาน = Patient Kit ของเว็บลูก
  * ส่วน PK ด้านล่างคัดลอกจาก PHC37_PatientKit.html (PHC37-PATIENTKIT-1.0.1) ตรงตัว — ช่อง ลำดับ กติกา เหมือนทุกเว็บลูก
  * หน้าต่าง/ปุ่ม/การบันทึก (PHC37PatientForm) เป็นของระบบใหม่: ข้อมูลตั้งต้นจาก patient.formData · บันทึกด้วย patient.save
  * (Edge → Gateway เดิม → ดึงรายนั้นกลับทันที) · ไม่เก็บข้อมูลผู้ป่วยไว้ในเครื่อง */
@@ -213,7 +213,9 @@ window.PHC37PatientForm = (function () {
   function commOpt(d) { return { list: (F.data.communities || []).map(function (c) { return { CommunityName: c.CommunityName }; }), value: d.CommunityName || '' }; }
 
   /**
-   * เปิดฟอร์ม · opts = { patientID (แก้ไข) | prefill (เพิ่มใหม่), onSaved(res), onPick(patientID) }
+   * เปิดฟอร์ม · opts = { patientID (แก้ไข) | prefill (เพิ่มใหม่), onSaved(res), onPick(patientID),
+   *   onPending(draft) + onFailed(message, draft) = แก้ไขแบบแสดงผลทันที (ปิดฟอร์มก่อน บันทึกเบื้องหลัง),
+   *   draft = { person, phones } เปิดฟอร์มพร้อมค่าที่เคยกรอก (หลังบันทึกไม่สำเร็จ) }
    */
   function open(opts) {
     F.opts = opts || {}; F.mode = F.opts.patientID ? 'edit' : 'new'; F.dup = []; F.open = true; F.busy = false;
@@ -227,7 +229,14 @@ window.PHC37PatientForm = (function () {
         if (r.code === 'unauthorized') { close(); P.showLogin(r.message); return; }
         $('pf-body').innerHTML = '<div class="alert-row d">' + esc(r.message) + '</div>'; return;
       }
-      F.data = r; PK.setLists(r.lists); render(r.patient || F.opts.prefill || {});
+      F.data = r; PK.setLists(r.lists);
+      var x = r.patient || F.opts.prefill || {};
+      if (F.opts.draft) {   // ค่าที่ผู้ใช้กรอกไว้ก่อนบันทึกไม่สำเร็จ
+        var dp = F.opts.draft.person || {};
+        x = Object.assign({}, x, dp, { CIDMasked: x.CIDMasked, PatientID: x.PatientID, Phones: F.opts.draft.phones || x.Phones });
+      }
+      render(x);
+      if (F.opts.draftError) msg(F.opts.draftError);
     });
   }
 
@@ -267,9 +276,29 @@ window.PHC37PatientForm = (function () {
     if (cname && !person.CommunityKey) { msg('ชุมชน "' + cname + '" ไม่อยู่ในรายการ กรุณาเลือกใหม่'); return; }
     person.Status = $('pfStatus').value; person.Note = $('pfNote').value.trim();
     msg('');
-    var btn = $('pf-save'); P.busy(btn, true, 'กำลังบันทึก...'); F.busy = true;
-    P.api('patient.save', { token: P.token(), patientID: F.opts.patientID || '', person: person, phones: r.phones, forceCreate: force === true }).then(function (res) {
-      F.busy = false; P.busy(btn, false);
+    var req = { token: P.token(), patientID: F.opts.patientID || '', person: person, phones: r.phones, forceCreate: force === true };
+    var draft = { person: person, phones: r.phones };
+    // แก้ไข: ปิดฟอร์มทันที แสดงค่าใหม่ บันทึกเบื้องหลัง (ช่วงเปลี่ยนผ่านต้องรอ Gateway เดิม 2–5 วิ)
+    if (F.mode === 'edit' && F.opts.onPending) {
+      var o = F.opts;
+      close();
+      o.onPending(draft);
+      P.api('patient.save', req).then(function (res) {
+        if (res.ok) { if (o.onSaved) o.onSaved(res); return; }
+        if (res.code === 'unauthorized') { P.showLogin(res.message); return; }
+        if (o.onFailed) o.onFailed(res.message || 'บันทึกไม่สำเร็จ', draft); else P.toast(res.message, 'err');
+      });
+      return;
+    }
+    // เพิ่มใหม่: ต้องรอผลตรวจซ้ำ → บอกขั้นตอนบนปุ่ม
+    var btn = $('pf-save'); P.busy(btn, true, 'กำลังตรวจข้อมูล...'); F.busy = true;
+    var t0 = Date.now(), tick = setInterval(function () {
+      var sec = (Date.now() - t0) / 1000, lab = btn.lastChild;
+      if (!F.busy || !lab || lab.nodeType !== 3) { clearInterval(tick); return; }
+      lab.nodeValue = sec < 1 ? 'กำลังตรวจข้อมูล...' : (sec < 6 ? 'ตรวจซ้ำและบันทึกลงเวชระเบียนกลาง... ' + Math.floor(sec) + ' วิ' : 'ใกล้เสร็จแล้ว... ' + Math.floor(sec) + ' วิ');
+    }, 250);
+    P.api('patient.save', req).then(function (res) {
+      F.busy = false; clearInterval(tick); P.busy(btn, false);
       if (!F.open) return;
       if (res.duplicate) {
         F.dup = res.matches || [];
@@ -278,9 +307,10 @@ window.PHC37PatientForm = (function () {
         return;
       }
       if (!res.ok) { if (res.code === 'unauthorized') { close(); P.showLogin(res.message); return; } msg(res.message); return; }
+      var cb = F.opts.onSaved;
       close();
       P.toast(res.message + (res.warn ? ' · ' + res.warn : ''), res.warn ? 'err' : 'ok');
-      if (F.opts.onSaved) F.opts.onSaved(res);
+      if (cb) cb(res);
     });
   }
   function dupPick(i) {

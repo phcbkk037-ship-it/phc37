@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-1.9.0) */
-var PHC37_APP_VERSION = '1.9.0';
+/* PHC37 PWA — app.js (PHC37-PWA-1.9.1) */
+var PHC37_APP_VERSION = '1.9.1';
 (function () {
   'use strict';
 

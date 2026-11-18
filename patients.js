@@ -1,4 +1,4 @@
-/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.1.0) : เวชระเบียนกลาง — หน้าตาแบบ Gateway เดิม
+/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.2.0) : เวชระเบียนกลาง — หน้าตาแบบ Gateway เดิม
  * การ์ดสรุป 4 ใบ · ค้นหา · ตาราง 11 คอลัมน์ (ดู / แก้ไข) · แฟ้มใต้ตาราง · เพิ่ม/แก้ด้วยฟอร์ม Patient Kit (patient-form.js)
  * ไม่เก็บข้อมูลผู้ป่วยไว้ในเครื่อง (ไม่ใช้แคช localStorage) — เก็บเฉพาะตัวเลขสรุปภาพรวม */
 (function () {
@@ -19,7 +19,7 @@
     return true;
   }
   function inactive(p) { var s = String(p.status || '').toLowerCase(); return s === 'inactive' || s === 'ปิดใช้งาน'; }
-  var S = { seq: 0, timer: null, cur: null, ov: null, lastQ: '' };
+  var S = { seq: 0, timer: null, cur: null, ov: null, lastQ: '', rec: null, pending: null, meta: null };
   var EMPTY = 'พิมพ์คำค้นหาแล้วกดค้นหา เพื่อแสดงรายการผู้ป่วย';
 
   // ---------- เปิดหน้า ----------
@@ -142,8 +142,17 @@
       if (!guard(r)) return;
       box.textContent = '';
       if (!r.ok) { box.appendChild(el('p', 'empty', r.message)); return; }
-      render(r.data);
+      S.meta = null; render(r.data);
     });
+  }
+  /** แสดงแฟ้มจากข้อมูลที่มีอยู่แล้ว (ไม่โหลดซ้ำ) */
+  function show(rec, meta) {
+    S.cur = rec.patientID; S.meta = meta || null;
+    var box = $('pt-detail'); box.hidden = false; box.textContent = '';
+    render(rec);
+    var tr = document.querySelector('#pt-list tr[data-id="' + rec.patientID + '"]');
+    if (tr) tr.parentNode.replaceChild(row(rec), tr);
+    Array.prototype.forEach.call(document.querySelectorAll('#pt-list tr'), function (t) { t.classList.toggle('on', t.dataset.id === rec.patientID); });
   }
   function closeDetail() { S.cur = null; $('pt-detail').hidden = true; $('pt-detail').textContent = '';
     Array.prototype.forEach.call(document.querySelectorAll('#pt-list tr.on'), function (t) { t.classList.remove('on'); }); }
@@ -152,11 +161,13 @@
     a.textContent = '';
     if (S.ov && S.ov.canEdit) {
       var e = el('button', 'gbtn gbtn-orange gbtn-sm', '✏️ แก้ไขข้อมูล'); e.type = 'button';
+      if (S.pending === S.cur) { e.disabled = true; e.title = 'รอบันทึกครั้งก่อนให้เสร็จก่อน'; }
       e.addEventListener('click', function () { editPatient(S.cur); }); a.appendChild(e);
     }
     var c = el('button', 'gbtn gbtn-sm', '✕ ปิดแฟ้ม'); c.type = 'button'; c.addEventListener('click', closeDetail); a.appendChild(c);
   }
   function render(p) {
+    S.rec = p;
     var body = $('pt-detail');
     var head = el('div', 'pt-detail-head');
     var ht = el('div'); ht.appendChild(el('h4', null, '📄 ' + (p.fullName || '(ไม่มีชื่อ)')));
@@ -166,9 +177,21 @@
     if (inactive(p)) fl.appendChild(st('ปิดใช้งาน', 'danger'));
     if (p.cidState === 'invalid') fl.appendChild(st('เลขบัตรไม่ถูกต้อง', 'danger'));
     if (!p.hasBirthDate) fl.appendChild(st('ไม่มีวันเกิด', 'warn'));
+    var m = S.meta;
+    if (m && m.pending) fl.appendChild(st('⏳ กำลังบันทึก...', 'warn'));
+    if (m && m.saved) fl.appendChild(st('✓ บันทึกแล้ว · ' + secs(m.saved.total) + (m.saved.oldGateway ? ' (ระบบเดิม ' + secs(m.saved.oldGateway) + ')' : ''), 'on'));
     ht.appendChild(fl); head.appendChild(ht);
-    head.appendChild(el('div', 'gw-hero-actions')).id = 'pt-dacts';
-    body.appendChild(head);
+    if (m && m.error) {
+      var er = el('div', 'alert error pt-err');
+      er.appendChild(el('span', null, '⚠️ บันทึกไม่สำเร็จ — ' + m.error + ' · ข้อมูลยังเป็นค่าเดิม '));
+      var again = el('button', 'gbtn gbtn-orange gbtn-sm', '✏️ แก้ไขอีกครั้ง (ค่าที่กรอกไว้ยังอยู่)'); again.type = 'button';
+      again.addEventListener('click', function () { editPatient(p.patientID, m.draft, m.error); });
+      er.appendChild(again);
+      body.appendChild(head); body.appendChild(er); head = null;
+    }
+    var hd = head || body.querySelector('.pt-detail-head');
+    hd.appendChild(el('div', 'gw-hero-actions')).id = 'pt-dacts';
+    if (head) body.appendChild(head);
     renderActions();
 
     var g = section(body, '👤 ข้อมูลทั่วไป');
@@ -234,14 +257,50 @@
   }
 
   // ---------- เพิ่ม / แก้ไข (ฟอร์ม Patient Kit) ----------
+  function secs(ms) { return (Math.round((ms || 0) / 100) / 10).toLocaleString('th-TH') + ' วิ'; }
+  /** แฟ้มที่บันทึกแล้วจาก patient.save (ไม่ต้องโหลดซ้ำ) */
   function afterSave(res) {
-    loadOverview(true);
-    if (S.lastQ && $('pt-q').value.trim() === S.lastQ) search(true);
-    if (res && res.patientID) openPatient(res.patientID);
+    S.pending = null;
+    loadOverview(true);   // ตัวเลขสรุปอัปเดตเบื้องหลัง
+    if (res && res.record) show(res.record, { saved: res.timing });
+    else if (res && res.patientID) openPatient(res.patientID);
   }
-  function editPatient(pid) {
+  // ---- แก้ไขแบบแสดงผลทันที ----
+  function bdBE(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + (+m[1] + 543) : ''; }
+  function draftRec(base, d) {
+    var x = d.person || {}, r = Object.assign({}, base || {});
+    var map = { prefix: 'Prefix', firstName: 'FirstName', lastName: 'LastName', gender: 'Gender', houseNo: 'HouseNo', addressDetail: 'AddressDetail',
+      moo: 'Moo', soi: 'Soi', road: 'Road', subDistrict: 'SubDistrict', district: 'District', province: 'Province', zipCode: 'ZipCode',
+      mainRight: 'MainRight', subRight: 'SubRight', maritalStatus: 'MaritalStatus', educationLevel: 'EducationLevel', occupation: 'Occupation',
+      communityName: 'CommunityName', status: 'Status', note: 'Note', phone: 'Phone' };
+    Object.keys(map).forEach(function (k) { if (x[map[k]] !== undefined) r[k] = x[map[k]]; });
+    r.fullName = [r.prefix, r.firstName, r.lastName].filter(Boolean).join(' ');
+    if (x.BirthDate && x.BirthDate !== r.birthDate) { r.birthDate = x.BirthDate; r.birthDateBE = bdBE(x.BirthDate); r.ageText = ''; r.hasBirthDate = true; }
+    r.addressText = [r.houseNo, r.addressDetail, r.moo ? 'หมู่ ' + r.moo : '', r.soi ? 'ซ.' + r.soi : '', r.road ? 'ถ.' + r.road : '',
+      r.subDistrict ? 'แขวง' + r.subDistrict : '', r.district ? 'เขต' + r.district : '', r.province, r.zipCode].filter(Boolean).join(' ');
+    r.phones = (d.phones || []).map(function (p) { return { phone: p.phone, owner: p.owner, name: p.name, primary: p.primary }; });
+    r.contacts = [];
+    r.updatedAt = 'กำลังบันทึก...'; r.updatedBy = '';
+    return r;
+  }
+  function editPatient(pid, draft, draftError) {
     if (!window.PHC37PatientForm) return P.toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรช', 'err');
-    window.PHC37PatientForm.open({ patientID: pid, onSaved: afterSave, onPick: openPatient });
+    var prev = null;
+    window.PHC37PatientForm.open({
+      patientID: pid, draft: draft, draftError: draftError, onPick: openPatient,
+      onPending: function (d) {
+        prev = S.rec && S.rec.patientID === pid ? S.rec : null;
+        S.pending = pid;
+        if (prev) show(draftRec(prev, d), { pending: true });
+      },
+      onSaved: afterSave,
+      onFailed: function (message, d) {
+        S.pending = null;
+        P.toast('บันทึกไม่สำเร็จ: ' + message, 'err');
+        if (prev) show(prev, { error: message, draft: d });
+        else editPatient(pid, d, message);
+      }
+    });
   }
   function addPatient() {
     if (!window.PHC37PatientForm) return P.toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรช', 'err');
