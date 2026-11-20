@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.8.0 · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
-var PHC37_APP_VERSION = '2.8.0';
+/* PHC37 PWA — app.js (PHC37-PWA-2.9.0 · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
+var PHC37_APP_VERSION = '2.9.0';
 (function () {
   'use strict';
 
@@ -155,11 +155,11 @@ var PHC37_APP_VERSION = '2.8.0';
   }
 
   // ---------- UI helpers ----------
-  var CHILD_VIEWS = ['view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
-  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd'];
+  var CHILD_VIEWS = ['view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
+  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc'];
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
     // เว็บลูกมีเมนูของตัวเอง + ปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway (ผู้ใช้กำหนด 18 พ.ย.)
@@ -608,6 +608,7 @@ var PHC37_APP_VERSION = '2.8.0';
   function isAdpMenu(m) { return String(m.key || '').toLowerCase() === 'socialwork_adultdiapersupport'; }
   function isScrMenu(m) { return String(m.key || '').toLowerCase() === 'social_work_client_record'; }
   function isNcdMenu(m) { return String(m.key || '').toLowerCase() === 'ncd_care_management'; }
+  function isWbcMenu(m) { return String(m.key || '').toLowerCase() === 'opd_well_baby_clinic'; }
   function isLtcMenu(m) { return String(m.key || '').toLowerCase() === 'ltc_hhc_palliativecare'; }
   function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
   function canManage() {
@@ -734,6 +735,10 @@ var PHC37_APP_VERSION = '2.8.0';
       el = makeTile(iconOf(m, '🩺'), m.name, groupNote(m), '', function () {
         if (window.PHC37Ncd) window.PHC37Ncd.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
+    } else if (isWbcMenu(m)) {
+      el = makeTile(iconOf(m, '👶'), m.name, groupNote(m), '', function () {
+        if (window.PHC37Wbc) window.PHC37Wbc.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else if (isOssMenu(m)) {
       el = makeTile(iconOf(m, '🧑‍🤝‍🧑'), m.name, groupNote(m), '', function () {
         if (window.PHC37Oss) window.PHC37Oss.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
@@ -825,7 +830,7 @@ var PHC37_APP_VERSION = '2.8.0';
     var box = $('gw7-apps'); box.textContent = '';
     var menus = allMenus(), n = 0;
     menus.forEach(function (m) {
-      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m) && !isMaterialMenu(m) && !isItAssetMenu(m) && !isCnrMenu(m) && !isLtcMenu(m) && !isOssMenu(m) && !isCdcMenu(m) && !isLvsMenu(m) && !isEldMenu(m) && !isRefMenu(m) && !isImcMenu(m) && !isAdpMenu(m) && !isScrMenu(m) && !isNcdMenu(m))) return;
+      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m) && !isMaterialMenu(m) && !isItAssetMenu(m) && !isCnrMenu(m) && !isLtcMenu(m) && !isOssMenu(m) && !isCdcMenu(m) && !isLvsMenu(m) && !isEldMenu(m) && !isRefMenu(m) && !isImcMenu(m) && !isAdpMenu(m) && !isScrMenu(m) && !isNcdMenu(m) && !isWbcMenu(m))) return;
       var b = document.createElement('button'); b.type = 'button'; b.className = 'gw7-app';
       var ic = document.createElement('span'); ic.className = 'gw7-app-ic'; ic.textContent = iconOf(m, '📌'); ic.setAttribute('aria-hidden', 'true');
       var t = document.createElement('span'); t.className = 'gw7-nav-text'; t.textContent = m.name;
