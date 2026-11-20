@@ -5,7 +5,7 @@
 <script src="config.js"></script>
 <link rel="icon" href="icons/icon-192.png">
 <script>
-/* PHC37 PWA 2.9.0 — หน้า LINE คลินิกเด็กดี (WBC1-1.4.2) บนระบบใหม่ · ไม่ต้องเข้าสู่ระบบ
+/* PHC37 PWA 2.9.1 — หน้า LINE คลินิกเด็กดี (WBC1-1.4.2) บนระบบใหม่ · ไม่ต้องเข้าสู่ระบบ
  * ข้อมูลหน้า: Edge wbc.pub linePage(mode, พารามิเตอร์ใน URL) · google.script.run.<ฟังก์ชันเดิม> → Edge wbc.pub (ตรวจลายเซ็นโทเคนเดิมทุกบรรทัด) */
 (function () {
   var CFG = window.PHC37_CONFIG || {};
@@ -539,16 +539,36 @@ function renderSelf(note){
   (D.months||[]).forEach(function(m,i){ mons+='<option value="'+(i+1)+'">'+esc(m)+'</option>'; });
   for(var y=y0;y>=y0-7;y--) yrs+='<option>'+y+'</option>';
   var who=(D.relations||[]).map(function(r,i){ return '<button class="phc-btn'+(i>1?' phc-btn--secondary':'')+'" onclick="selfGo('+i+')">ฉันเป็น'+(i>1?'<br>':' ')+esc(r)+'</button>'; }).join('');
+  var linked=!!(D.kids&&D.kids.length), form=selfFormHtml_(who,days,mons,yrs);
   $('box').innerHTML=(note?'<div class="st '+(note.ok?'ok':'err')+'">'+(note.ok?'✅ ':'')+esc(note.text)+'</div>':'')
     +card('<div class="profile">'+(D.picture?'<img alt="" src="'+esc(D.picture)+'">':'')+'<div><b>'+esc(D.lineName)+'</b><div class="small">บัญชี LINE ที่เข้าสู่ระบบ</div></div></div>'
-    +(D.kids&&D.kids.length?'<div class="st ok">LINE นี้เชื่อมแล้ว:<ul class="kids">'+D.kids.map(function(k){ return '<li>'+esc(k.name)+' ('+esc(k.relation)+')</li>'; }).join('')+'</ul></div>':'')
-    +'<div style="font-weight:700;font-size:17px">กรอกข้อมูลเด็ก ให้ตรงกับที่ให้ไว้กับคลินิก</div>'
+    +(linked?linkedBox():'')
+    +(linked&&!SELF_FORM?'<div class="acts"><button class="phc-btn phc-btn--secondary" onclick="SELF_FORM=true;renderSelf()">เชื่อมลูกคนอื่นเพิ่ม</button></div>'+friendBox()+'<div id="msg" class="msg"></div>':form));
+}
+/* 21/11/2569: LINE ที่เชื่อมแล้ว = แสดงเด็ก + นัดที่รออยู่ · ไม่ต้องกรอกซ้ำ (ฟอร์มซ่อนหลังปุ่ม "เชื่อมลูกคนอื่นเพิ่ม") */
+var SELF_FORM=false;
+function linkedBox(){
+  var h='<div class="st ok">LINE นี้เชื่อมกับคลินิกแล้ว ไม่ต้องกรอกข้อมูลอีก</div>';
+  D.kids.forEach(function(k){
+    h+='<div class="card appt"><h3>'+esc(k.name)+'</h3><div class="small">ท่านเป็น '+esc(k.relation)+'</div>';
+    if(!k.appts||!k.appts.length) h+='<div class="what">ไม่มีนัดที่รออยู่</div>';
+    else k.appts.forEach(function(a){
+      var badge=a.response==='CONFIRM'?' <span class="badge ok">✓ ยืนยันนัดแล้ว</span>':(a.response==='RESCHEDULE'?' <span class="badge mv">เลื่อนนัดแล้ว</span>':'');
+      h+='<div style="margin-top:10px"><div class="date">'+esc(a.dateText)+'</div><div class="what">นัดเรื่อง: '+esc(a.what)+badge+'</div></div>';
+    });
+    if(k.apptTotal>(k.appts||[]).length) h+='<p class="small">และอีก '+(k.apptTotal-k.appts.length)+' นัด</p>';
+    h+='</div>';
+  });
+  return h+'<p class="small">ทุกวันอาทิตย์ '+esc(D.parentTime)+' น. จะได้ข้อความนัดของสัปดาห์ถัดไป · ยืนยัน / เลื่อน / ยกเลิกนัด กดปุ่มในข้อความนัด หรือพิมพ์ "นัดของลูก" ในแชต · ปิดหน้านี้ได้</p>';
+}
+function selfFormHtml_(who,days,mons,yrs){
+  return '<div style="font-weight:700;font-size:17px">กรอกข้อมูลเด็ก ให้ตรงกับที่ให้ไว้กับคลินิก</div>'
     +'<div class="fld"><label for="hn">HN ของเด็ก</label><input id="hn" inputmode="text" autocomplete="off" placeholder="เช่น 817/69"><div class="hint">ดูในสมุดนัด / บัตรนัด หรือถามเจ้าหน้าที่</div></div>'
     +'<div class="fld"><label>วันเกิดของเด็ก</label><div class="bd"><select id="bd" aria-label="วัน">'+days+'</select><select id="bm" aria-label="เดือน">'+mons+'</select><select id="by" aria-label="ปี พ.ศ.">'+yrs+'</select></div></div>'
     +'<div class="fld"><label for="ph">เบอร์โทร 4 ตัวท้าย (เบอร์ที่ให้ไว้กับคลินิก)</label><input id="ph" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="เช่น 5238"></div>'
     +'<div style="font-weight:700;margin-top:14px">แล้วแตะปุ่มเดียว 👇</div><div class="who" id="who">'+who+'</div>'
     +'<div class="consent">การกดปุ่มถือว่ายินยอมให้คลินิกเด็กดี ศบส.37 ส่งข้อความแจ้งนัดของเด็ก (ชื่อ · วันนัด · นัดเรื่อง) มาที่ LINE นี้ · ข้อมูลไม่ตรง ให้เจ้าหน้าที่ออก QR ให้ หรือโทร '+esc(D.phone)+'</div>'
-    +friendBox()+'<div id="msg" class="msg"></div>');
+    +friendBox()+'<div id="msg" class="msg"></div>';
 }
 function selfGo(ri){
   var d=$('bd').value, m=$('bm').value, y=$('by').value, msg=$('msg');
@@ -561,8 +581,8 @@ function selfGo(ri){
   google.script.run.withSuccessHandler(function(r){
     btns.forEach(function(x){ x.disabled=false; });
     if(!r||!r.ok){ msg.innerHTML='<div class="st err">'+esc((r&&r.message)||'บันทึกไม่สำเร็จ')+'</div>'; return; }
-    D.kids=r.kids; renderSelf({ok:true,text:r.message});
-    $('box').insertAdjacentHTML('afterbegin', card(howTo(r.chat)+'<p class="small">มีลูกอีกคน กรอกข้อมูลด้านล่างได้เลย · ถ้าไม่มี ปิดหน้านี้ได้</p>'));
+    D.kids=r.kids; SELF_FORM=false; renderSelf({ok:true,text:r.message});
+    $('box').insertAdjacentHTML('afterbegin', card(howTo(r.chat)+'<p class="small">มีลูกอีกคน กดปุ่ม "เชื่อมลูกคนอื่นเพิ่ม" ด้านล่าง · ถ้าไม่มี ปิดหน้านี้ได้</p>'));
     window.scrollTo(0,0);
   }).withFailureHandler(function(e){ btns.forEach(function(x){ x.disabled=false; }); msg.innerHTML='<div class="st err">'+esc(e&&e.message?e.message:e)+'</div>'; }).wbcLineSelfLink(D.token,p);
 }
