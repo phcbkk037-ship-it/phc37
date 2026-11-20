@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<!-- Index.html — ระบบบันทึกผู้ใช้บริการสังคมสงเคราะห์ ศบส.37 (SWCR3-3.0.0 · 22/10/2569)
+     ข้อกำหนดไฟล์นี้: ไม่มี regex literal และไม่มีเครื่องหมายทับสองตัวติดกันในโค้ด JavaScript -->
+<html lang="th">
+<head>
+<script>
+/* PHC37 PWA 2.7.0 — หน้าเดิมของแบบบันทึกผู้ใช้บริการสังคมสงเคราะห์ (SWCR3-3.0.2) ทำงานบนระบบใหม่
+ * google.script.run.<ฟังก์ชันเดิม>(...) → Edge scr.call ผ่านแอปแม่ (ตรรกะเดิมทุกบรรทัด · ข้อมูลระบุตัวตนเข้ารหัสที่ Edge) */
+(function () {
+  var P = null; try { P = window.parent && window.parent !== window ? window.parent.PHC37 : null; } catch (e) { P = null; }
+  function send(fn, args) {
+    if (!P) return Promise.reject(new Error('เปิดหน้านี้จากแอป PHC37 เท่านั้น'));
+    return P.api('scr.call', { token: P.token(), fn: fn, args: args }).then(function (r) {
+      if (r && r.code === 'unauthorized') return new Promise(function () {});   // แอปแม่พาไปหน้าเข้าสู่ระบบ
+      if (r && r.code === 'network') throw new Error(r.message);
+      return r;
+    });
+  }
+  function runner(ok, fail) {
+    return new Proxy({}, { get: function (t, k) {
+      if (k === 'withSuccessHandler') return function (f) { return runner(f, fail); };
+      if (k === 'withFailureHandler') return function (f) { return runner(ok, f); };
+      if (k === 'withUserObject') return function () { return runner(ok, fail); };
+      return function () {
+        var args = [].slice.call(arguments);
+        send(String(k), args).then(function (r) { if (ok) ok(r); }, function (e) { if (fail) fail(e); });
+      };
+    } });
+  }
+  window.google = { script: { run: runner(null, null), host: { close: function () {} },
+    url: { getLocation: function (cb) { try { cb({ hash: '', parameter: {}, parameters: {} }); } catch (e) {} } },
+    history: { replace: function () {}, push: function () {}, setChangeHandler: function () {} } } };
+})();
+</script>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ระบบบันทึกผู้ใช้บริการสังคมสงเคราะห์</title>
+<!-- ==========================================================
+  PHC37_UIKit.html — มาตรฐานหน้าตาเว็บแอป ศบส.37
+  Version: PHC37-UIKIT-1.2.0 — วันที่ 23/10/2569
+  1.2.0: เพิ่มชุด Loading กลาง (PHC37Load) ใช้ร่วมกับ Gateway: ปุ่มแสดงสถานะ · เส้นวิ่งด้านบน · โครงเทา ·
+         ข้อความแจ้งพร้อมปุ่มลองใหม่ · หน้าเปิดระบบ · ขั้นตอนเข้าสู่ระบบ
+  1.1.0: ฟอนต์หน้าจอเป็น Sarabun (มีหัว ทางการ ชุดเดียวกับ PDF), ขนาดฐาน 16px,
+         เพิ่มปุ่ม phc-btn--edit (ส้มอ่อน) และ phc-btn--danger-soft (แดงอ่อน สำหรับปุ่มลบในตาราง)
+  ไฟล์นี้ต้องเหมือนกันทุกระบบ ห้ามแก้เฉพาะระบบใดระบบหนึ่ง
+  ถ้าต้องแก้ ให้แก้ต้นฉบับ เปลี่ยนเวอร์ชัน แล้วคัดลอกไปทับทุกระบบ
+  ใส่เข้าหน้าเว็บด้วย phc37InjectUiKit_(html) ใน PHC37UiKit.gs
+
+  ประกอบด้วย
+  1) Token สี ตัวอักษร มุมโค้ง ระยะห่าง (--phc-*)
+  2) ส่วนประกอบมาตรฐาน (คลาสขึ้นต้นด้วย phc-) สำหรับหน้าจอใหม่หรือหน้าที่ปรับแล้ว
+  ระบบเดิมผูกตัวแปรสีของตัวเองเข้ากับ token เหล่านี้ (ทีละระบบ)
+=========================================================== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+<style id="phc37-uikit">
+:root{
+  --phc-uikit-version:"PHC37-UIKIT-1.2.0";
+
+  /* สีหลักจากตรา ศบส.37 */
+  --phc-primary:#15703A;
+  --phc-primary-hover:#0E5A2E;
+  --phc-primary-tint:#EAF6EC;
+  --phc-brand:#3DA852;            /* ตกแต่งเท่านั้น ห้ามใช้เป็นสีตัวอักษรบนพื้นขาว */
+
+  /* สีพื้นและตัวอักษร */
+  --phc-ink:#17201A;
+  --phc-ink-2:#4A5550;
+  --phc-border:#D8DED9;
+  --phc-border-input:#A9B3AD;
+  --phc-ground:#F4F6F4;
+  --phc-surface:#FFFFFF;
+  --phc-surface-2:#F8FAF8;
+  --phc-disabled-bg:#C9D1CC;
+
+  /* สีสถานะ (ตัวอักษร / พื้น) */
+  --phc-info:#1D5FBF;    --phc-info-bg:#E8F0FC;
+  --phc-warning:#8A4B00; --phc-warning-bg:#FFF4E5;
+  --phc-danger:#B42318;  --phc-danger-bg:#FDECEB;  --phc-danger-hover:#8F1B12;
+  --phc-success:#15703A; --phc-success-bg:#EAF6EC;
+  --phc-neutral:#4A5550; --phc-neutral-bg:#EEF1EF;
+
+  /* ตัวอักษร */
+  --phc-font:'Sarabun','TH Sarabun New','Leelawadee UI',Tahoma,sans-serif;
+  --phc-font-print:'Sarabun','TH Sarabun New',serif;
+  --phc-mono:ui-monospace,Menlo,Consolas,monospace;
+  --phc-text-xs:13px; --phc-text-sm:14px; --phc-text-md:16px; --phc-text-lg:19px; --phc-text-xl:23px; --phc-text-2xl:30px;
+
+  /* รูปทรง */
+  --phc-radius-sm:8px; --phc-radius:12px; --phc-radius-lg:16px; --phc-radius-pill:999px;
+  --phc-space-1:4px; --phc-space-2:8px; --phc-space-3:12px; --phc-space-4:16px; --phc-space-5:24px; --phc-space-6:32px;
+  --phc-shadow:0 1px 2px rgba(23,32,26,.06),0 4px 12px rgba(23,32,26,.06);
+  --phc-shadow-lg:0 12px 28px rgba(23,32,26,.16);
+  --phc-touch:44px;
+  --phc-focus:0 0 0 3px rgba(21,112,58,.35);
+
+  /* ตรา (สัญลักษณ์กากบาท) สำหรับแถบหัว */
+  --phc-logo-mark:url("data:image/png;base64,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");
+}
+
+/* ---------- พื้นฐาน (ใช้เฉพาะคลาส phc- ไม่แตะ element ทั่วไปของระบบเดิม) ---------- */
+.phc-app{font-family:var(--phc-font);color:var(--phc-ink);background:var(--phc-ground);font-size:var(--phc-text-md);line-height:1.6}
+.phc-app :focus-visible{outline:none;box-shadow:var(--phc-focus)}
+
+/* ---------- ตรา ---------- */
+.phc-brand-mark{display:inline-block;width:36px;height:36px;flex:0 0 auto;background:var(--phc-logo-mark) center/contain no-repeat}
+.phc-appbar{display:flex;align-items:center;gap:var(--phc-space-3);padding:10px 20px;background:var(--phc-surface);border-bottom:1px solid var(--phc-border);box-shadow:inset 0 4px 0 var(--phc-brand)}
+.phc-appbar-title{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.phc-appbar-title b{font-size:16px;font-weight:700}
+.phc-appbar-title span{font-size:var(--phc-text-xs);color:var(--phc-ink-2)}
+
+/* ---------- ปุ่ม ---------- */
+.phc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--phc-touch);padding:0 20px;border:1px solid transparent;border-radius:var(--phc-radius-sm);font:inherit;font-weight:600;cursor:pointer;text-decoration:none;background:var(--phc-primary);color:#fff;transition:background-color .15s}
+.phc-btn:hover{background:var(--phc-primary-hover)}
+.phc-btn:focus-visible{outline:none;box-shadow:var(--phc-focus)}
+.phc-btn--secondary{background:var(--phc-surface);color:var(--phc-ink);border-color:var(--phc-border-input)}
+.phc-btn--secondary:hover{background:var(--phc-surface-2)}
+.phc-btn--ghost{background:transparent;color:var(--phc-primary);padding:0 12px}
+.phc-btn--ghost:hover{background:var(--phc-primary-tint)}
+.phc-btn--danger{background:var(--phc-danger);color:#fff}
+.phc-btn--danger:hover{background:var(--phc-danger-hover)}
+.phc-btn--sm{min-height:36px;padding:0 14px;font-size:14px}
+.phc-btn--icon{width:var(--phc-touch);padding:0}
+.phc-btn--sm.phc-btn--icon{width:36px}
+.phc-btn--edit{background:var(--phc-warning-bg);color:var(--phc-warning);border-color:#E8C48F}
+.phc-btn--edit:hover{background:#FDE8C8}
+.phc-btn--danger-soft{background:var(--phc-danger-bg);color:var(--phc-danger);border-color:#F5C2BD}
+.phc-btn--danger-soft:hover{background:#F9DAD7}
+.phc-btn:disabled,.phc-btn[aria-disabled="true"]{background:var(--phc-disabled-bg);color:var(--phc-ink-2);border-color:transparent;cursor:not-allowed}
+
+/* ---------- ฟอร์ม ---------- */
+.phc-field{display:flex;flex-direction:column;gap:6px}
+.phc-label{font-size:14px;font-weight:600;color:var(--phc-ink)}
+.phc-required{color:var(--phc-danger)}
+.phc-input,.phc-select,.phc-textarea{min-height:var(--phc-touch);padding:0 12px;border:1px solid var(--phc-border-input);border-radius:var(--phc-radius-sm);font:inherit;color:var(--phc-ink);background:var(--phc-surface);box-sizing:border-box;width:100%}
+.phc-textarea{padding:10px 12px;resize:vertical}
+.phc-input:focus,.phc-select:focus,.phc-textarea:focus{outline:none;border-color:var(--phc-primary);box-shadow:var(--phc-focus)}
+.phc-input[aria-invalid="true"],.phc-select[aria-invalid="true"],.phc-textarea[aria-invalid="true"]{border:2px solid var(--phc-danger)}
+.phc-help{font-size:var(--phc-text-sm);color:var(--phc-ink-2)}
+.phc-error{font-size:var(--phc-text-sm);color:var(--phc-danger);font-weight:600}
+
+/* ---------- ป้ายสถานะ ---------- */
+.phc-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 12px;border-radius:var(--phc-radius-pill);font-size:var(--phc-text-sm);font-weight:700;line-height:1.6;white-space:nowrap;background:var(--phc-neutral-bg);color:var(--phc-neutral)}
+.phc-badge--info{background:var(--phc-info-bg);color:var(--phc-info)}
+.phc-badge--warning{background:var(--phc-warning-bg);color:var(--phc-warning)}
+.phc-badge--danger{background:var(--phc-danger-bg);color:var(--phc-danger)}
+.phc-badge--success{background:var(--phc-success-bg);color:var(--phc-success)}
+
+/* ---------- ข้อความแจ้ง ---------- */
+.phc-alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;color:var(--phc-ink);background:var(--phc-info-bg)}
+.phc-alert b{color:var(--phc-info)}
+.phc-alert--success{background:var(--phc-success-bg)}.phc-alert--success b{color:var(--phc-success)}
+.phc-alert--warning{background:var(--phc-warning-bg)}.phc-alert--warning b{color:var(--phc-warning)}
+.phc-alert--danger{background:var(--phc-danger-bg)}.phc-alert--danger b{color:var(--phc-danger)}
+.phc-toast{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;background:var(--phc-ink);color:#fff;font-size:14px;box-shadow:var(--phc-shadow-lg)}
+.phc-toast a{color:#9FE0AE;font-weight:600}
+
+/* ---------- การ์ด / ตาราง ---------- */
+.phc-card{background:var(--phc-surface);border:1px solid var(--phc-border);border-radius:var(--phc-radius);padding:var(--phc-space-5)}
+.phc-stat{display:flex;flex-direction:column;gap:4px}
+.phc-stat-label{font-size:14px;color:var(--phc-ink-2)}
+.phc-stat-value{font-size:32px;line-height:40px;font-weight:700}
+.phc-table-wrap{background:var(--phc-surface);border:1px solid var(--phc-border);border-radius:var(--phc-radius);overflow-x:auto}
+.phc-table{width:100%;border-collapse:collapse;font-size:14px}
+.phc-table th{background:var(--phc-ground);text-align:left;font-weight:700;padding:12px 16px;border-bottom:1px solid var(--phc-border);white-space:nowrap}
+.phc-table td{padding:12px 16px;border-bottom:1px solid #EEF1EF;vertical-align:top}
+.phc-table .phc-num{text-align:right;font-variant-numeric:tabular-nums}
+.phc-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 20px;border:1px dashed var(--phc-border-input);border-radius:var(--phc-radius);background:var(--phc-surface);color:var(--phc-ink-2)}
+
+/* ---------- หน้ายืนยัน ---------- */
+.phc-dialog{background:var(--phc-surface);border:1px solid var(--phc-border);border-radius:var(--phc-radius);padding:20px;box-shadow:var(--phc-shadow-lg);display:flex;flex-direction:column;gap:12px}
+.phc-dialog-title{margin:0;font-size:var(--phc-text-lg);font-weight:700}
+.phc-dialog-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+@media (prefers-reduced-motion:reduce){.phc-btn{transition:none}}
+</style>
+<style id="phc37-load">
+/* ---------- PHC37 Loading (UI Kit 1.2.0 · 23/10/2569) ---------- */
+@keyframes phcLdSpin{to{transform:rotate(360deg)}}
+@keyframes phcLdShim{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes phcLdLine{0%{width:0}20%{width:35%}60%{width:70%}100%{width:88%}}
+@keyframes phcLdRun{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
+@keyframes phcLdFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes phcLdPop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:none}}
+.phc-spin{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(21,112,58,.2);border-top-color:#15703A;animation:phcLdSpin .7s linear infinite;box-sizing:border-box;vertical-align:-3px}
+.phc-spin--light{border-color:rgba(255,255,255,.35);border-top-color:#FFFFFF}
+.phc-sk{display:block;background:linear-gradient(90deg,#E4E9E5 0%,#E4E9E5 35%,#F3F6F3 50%,#E4E9E5 65%,#E4E9E5 100%);background-size:300% 100%;animation:phcLdShim 1.4s linear infinite;border-radius:6px;height:13px}
+.phc-sk--dark{background:linear-gradient(90deg,#24473A 0%,#24473A 35%,#35604F 50%,#24473A 65%,#24473A 100%);background-size:300% 100%}
+.phc-sk-card{background:#FFFFFF;border:1px solid #D8DED9;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:96px;box-sizing:border-box}
+.phc-sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.phc-sk-lines{display:flex;flex-direction:column;gap:12px;padding:6px 0}
+.phc-fade-in{animation:phcLdFade .3s ease both}
+.phc-ld-line{position:fixed;left:0;top:0;height:3px;width:0;z-index:2147483000;pointer-events:none;opacity:0;border-radius:0 2px 2px 0;background:linear-gradient(90deg,#15703A,#3DA852);box-shadow:0 0 8px rgba(61,168,82,.6)}
+.phc-ld-line.is-run{opacity:1;animation:phcLdLine 2.4s cubic-bezier(.1,.6,.3,1) forwards}
+.phc-ld-line.is-done{opacity:0;width:100%;transition:opacity .45s ease .15s}
+.phc-ld-line.is-err{opacity:1;width:100%;background:#B42318;box-shadow:none}
+[aria-busy="true"].phc-is-busy,.phc-is-busy{cursor:progress!important;opacity:.85}
+.phc-is-idle-wait{opacity:.5;pointer-events:none}
+.phc-ld-toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483001;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:calc(100% - 32px);pointer-events:none}
+.phc-ld-toasts .phc-toast{pointer-events:auto;animation:phcLdFade .25s ease both;font-size:15px;max-width:100%;box-sizing:border-box}
+.phc-ld-toasts .phc-toast--error{background:#B42318}
+.phc-ld-toasts .phc-toast--ok{background:#15703A}
+.phc-ld-toasts .phc-toast button{border:0;background:transparent;color:#FFFFFF;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:4px;min-height:32px}
+.phc-ld-over{position:fixed;inset:0;z-index:2147482990;background:#F4F6F4;display:flex;align-items:center;justify-content:center;padding:16px;transition:opacity .4s ease;font-family:var(--phc-font,'Sarabun',Tahoma,sans-serif);color:#17201A}
+.phc-ld-over.is-hide{opacity:0;pointer-events:none}
+.phc-ld-card{width:100%;max-width:370px;background:#FFFFFF;border:1px solid #D8DED9;border-radius:16px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:14px;box-sizing:border-box;text-align:center;box-shadow:0 18px 40px -18px rgba(18,52,30,.35)}
+.phc-ld-logo{position:relative;width:92px;height:92px;display:flex;align-items:center;justify-content:center}
+.phc-ld-ring{position:absolute;inset:0;border-radius:50%;border:3px solid #EAF6EC;border-top-color:#3DA852;animation:phcLdSpin 1.4s linear infinite}
+.phc-ld-card.is-err .phc-ld-ring{border-top-color:#B42318;animation:none}
+.phc-ld-mark{width:58px;height:58px;border-radius:16px;background:#EAF6EC;display:flex;align-items:center;justify-content:center}
+.phc-ld-title{font-weight:700;font-size:17px}
+.phc-ld-bar{position:relative;width:100%;height:6px;border-radius:999px;background:#E4E9E5;overflow:hidden}
+.phc-ld-bar span{position:absolute;top:0;bottom:0;left:0;width:38%;border-radius:999px;background:linear-gradient(90deg,#15703A,#3DA852);animation:phcLdRun 1.3s cubic-bezier(.45,.05,.55,.95) infinite}
+.phc-ld-card.is-err .phc-ld-bar span{width:100%;animation:none;background:#B42318}
+.phc-ld-msg{font-size:15px;color:#4A5550}
+.phc-ld-card.is-err .phc-ld-msg{color:#B42318;font-weight:600}
+.phc-ld-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;width:100%;text-align:left}
+.phc-ld-steps li{display:flex;align-items:center;gap:12px;font-size:16px;color:#4A5550}
+.phc-ld-steps li.is-act{color:#17201A;font-weight:600}
+.phc-ld-steps li.is-done{color:#17201A}
+.phc-ld-ic{flex:none;width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:2px solid #D8DED9;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.phc-ld-steps li.is-act .phc-ld-ic{border-color:#EAF6EC;border-top-color:#15703A;animation:phcLdSpin .8s linear infinite}
+.phc-ld-steps li.is-done .phc-ld-ic{border:0;background:#15703A;color:#FFFFFF;animation:phcLdPop .3s ease}
+.phc-ld-steps li.is-err .phc-ld-ic{border:0;background:#B42318;color:#FFFFFF}
+@media (prefers-reduced-motion:reduce){.phc-sk,.phc-ld-bar span{animation-duration:3s}.phc-fade-in,.phc-ld-toasts .phc-toast,.phc-ld-steps li.is-done .phc-ld-ic{animation:none}.phc-ld-line.is-run{animation-duration:4s}}
+</style>
+<script>
+/* PHC37 Loading — UI Kit 1.2.0 · ใช้ร่วมกันทุกระบบและ Gateway (ไม่มี regex literal และไม่มีคอมเมนต์แบบทับสองตัว)
+   PHC37Load.busy(ปุ่ม, 'กำลังบันทึก…')      → คืนฟังก์ชันคืนสภาพปุ่ม
+   PHC37Load.clicked()                       → ปุ่มที่เพิ่งกดแสดงวงหมุน (ใช้ในตัวเรียกเซิร์ฟเวอร์กลางของระบบ) · คืนฟังก์ชันคืนสภาพ
+   PHC37Load.line.start() / .done() / .fail() → เส้นวิ่งด้านบน (ขึ้นเมื่อรอเกิน 0.3 วินาที · ค้างอย่างน้อย 0.3 วินาที)
+   PHC37Load.skeleton(ที่ใส่, { kind:'table'|'cards'|'lines', cols, rows }) → โครงเทาขนาดเท่าของจริง
+   PHC37Load.toast(ข้อความ, { type:'error'|'ok', retry: ฟังก์ชัน })
+   PHC37Load.boot.show(ข้อความ) / .fail(ข้อความ, ลองใหม่) / .hide()
+   PHC37Load.steps(['ขั้น 1','ขั้น 2']) → { set(i,'act'|'done'|'err'), close() }
+   PHC37Load.call(ชื่อฟังก์ชัน, [args], { btn, busyText, line, skeleton, retry, errText, isError }) → Promise */
+window.PHC37Load = window.PHC37Load || (function() {
+  var VERSION = 'PHC37-LOAD-1.2.0', DELAY = 300, MIN = 300;
+  function el(x) { return typeof x === 'string' ? document.getElementById(x) : x; }
+  function esc(s) { return String(s == null ? '' : s).split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;'); }
+  function now() { return new Date().getTime(); }
+  function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function body(fn) { if (document.body) fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  var MARK = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#15703A" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg>';
+
+  /* ปุ่ม: แสดงสถานะ + กดซ้ำไม่ได้ */
+  function busy(btn, text, opts) {
+    btn = el(btn); opts = opts || {};
+    if (!btn || btn.getAttribute('data-phc-busy') === '1') return function() {};
+    var keep = btn.innerHTML, wasDis = btn.disabled, label = text || btn.textContent;
+    var bg = window.getComputedStyle ? window.getComputedStyle(btn).backgroundColor : '';
+    var light = bg && bg.indexOf('255, 255, 255') < 0 && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+    btn.setAttribute('data-phc-busy', '1'); btn.setAttribute('aria-busy', 'true'); btn.disabled = true; btn.classList.add('phc-is-busy');
+    btn.innerHTML = '<span class="phc-spin' + (light ? ' phc-spin--light' : '') + '" aria-hidden="true"></span> ' + esc(String(label).trim());
+    var others = [];
+    if (opts.group) Array.prototype.forEach.call(el(opts.group).querySelectorAll('button'), function(b) { if (b !== btn && !b.disabled) { b.disabled = true; b.classList.add('phc-is-idle-wait'); others.push(b); } });
+    var done = false;
+    return function() {
+      if (done) return; done = true;
+      btn.innerHTML = keep; btn.disabled = wasDis; btn.removeAttribute('aria-busy'); btn.removeAttribute('data-phc-busy'); btn.classList.remove('phc-is-busy');
+      others.forEach(function(b) { b.disabled = false; b.classList.remove('phc-is-idle-wait'); });
+    };
+  }
+
+  /* ปุ่มที่ผู้ใช้เพิ่งกด (ภายใน 1.5 วินาที) แสดงวงหมุนจนกว่างานเสร็จ · ปุ่มเปลี่ยนหน้า/แท็บ/เมนูไม่หมุน */
+  var CLK = { b: null, at: 0 }, NAVP = ['show', 'go', 'open', 'switch', 'setPage', 'setTab', 'toggle', 'close', 'cancel', 'gw7Go', 'tab'];
+  function clickable(b) {
+    if (!b || b.hasAttribute('data-no-busy') || b.hasAttribute('data-page') || b.hasAttribute('data-tab')) return false;
+    if (b.closest && b.closest('nav, aside, [role="tablist"], .menu, .sidebar, .side, .tabs, .modal-head')) return false;
+    var oc = String(b.getAttribute('onclick') || '').trim();
+    return !NAVP.some(function(p) { return oc.indexOf(p) === 0; });
+  }
+  document.addEventListener('click', function(e) { var b = e.target && e.target.closest ? e.target.closest('button') : null; CLK.b = b && clickable(b) ? b : null; CLK.at = new Date().getTime(); }, true);
+  function clicked() {
+    var b = CLK.b; CLK.b = null;
+    if (!b || now() - CLK.at > 1500 || !document.body.contains(b) || b.getAttribute('aria-busy') === 'true') return function() {};
+    var was = b.disabled, bg = window.getComputedStyle ? window.getComputedStyle(b).backgroundColor : '';
+    var sp = mk('span', 'phc-spin' + (bg && bg.indexOf('255, 255, 255') < 0 && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' ? ' phc-spin--light' : ''));
+    sp.setAttribute('aria-hidden', 'true'); sp.style.marginRight = '6px';
+    b.insertBefore(sp, b.firstChild); b.setAttribute('aria-busy', 'true'); b.classList.add('phc-is-busy'); b.disabled = true;
+    var done = false;
+    return function() { if (done) return; done = true; if (sp.parentNode) sp.parentNode.removeChild(sp); b.removeAttribute('aria-busy'); b.classList.remove('phc-is-busy'); b.disabled = was; };
+  }
+
+  /* เส้นวิ่งด้านบน */
+  var L = { n: 0, node: null, timer: null, shownAt: 0, hideT: null };
+  function lineNode() { if (!L.node) { L.node = mk('div', 'phc-ld-line'); L.node.setAttribute('aria-hidden', 'true'); body(function() { document.body.appendChild(L.node); }); } return L.node; }
+  function lineStart() {
+    L.n++; if (L.n > 1) return;
+    var n = lineNode(); clearTimeout(L.hideT); clearTimeout(L.timer); L.shownAt = 0;
+    L.timer = setTimeout(function() { if (overShown()) return; n.className = 'phc-ld-line'; void n.offsetWidth; n.className = 'phc-ld-line is-run'; L.shownAt = now(); }, DELAY);
+  }
+  function lineEnd(ok) {
+    if (L.n <= 0) return; L.n--; if (L.n > 0 && ok) return; L.n = 0;
+    var n = lineNode(); clearTimeout(L.timer);
+    if (!L.shownAt) { if (!ok) { n.className = 'phc-ld-line is-err'; L.hideT = setTimeout(function() { n.className = 'phc-ld-line'; }, 900); } return; }
+    var wait = Math.max(0, MIN - (now() - L.shownAt));
+    L.hideT = setTimeout(function() { n.className = 'phc-ld-line ' + (ok ? 'is-done' : 'is-err'); L.hideT = setTimeout(function() { n.className = 'phc-ld-line'; }, ok ? 700 : 900); L.shownAt = 0; }, wait);
+  }
+
+  /* ระหว่างการ์ดเปิดระบบ/ขั้นตอนแสดงอยู่ ไม่ต้องมีเส้นวิ่งซ้อน */
+  function overShown() {
+    var o = document.querySelectorAll('.phc-ld-over'), i; for (i = 0; i < o.length; i++) if (o[i].style.display !== 'none' && !o[i].classList.contains('is-hide')) return true;
+    o = document.querySelectorAll('[data-phc-boot]'); for (i = 0; i < o.length; i++) if (!o[i].classList.contains('hidden') && !o[i].hidden && window.getComputedStyle(o[i]).display !== 'none') return true;
+    return false;
+  }
+
+  /* โครงเทา */
+  function skeleton(target, o) {
+    target = el(target); o = o || {}; if (!target) return;
+    var kind = o.kind || 'lines', h = '', i, j, W = ['70%', '45%', '60%', '35%', '55%', '40%', '65%', '50%'];
+    if (kind === 'table') {
+      var cols = o.cols || 4, rows = o.rows || 5;
+      for (i = 0; i < rows; i++) { h += '<tr class="phc-sk-row">'; for (j = 0; j < cols; j++) h += '<td style="padding:14px 12px"><span class="phc-sk" style="width:' + W[(i + j) % W.length] + '"></span></td>'; h += '</tr>'; }
+    } else if (kind === 'cards') {
+      var c = o.count || 6; h = '<div class="phc-sk-grid" style="' + (o.min ? 'grid-template-columns:repeat(auto-fill,minmax(' + o.min + 'px,1fr))' : '') + '">';
+      for (i = 0; i < c; i++) h += '<div class="phc-sk-card"><span class="phc-sk" style="width:44px;height:44px;border-radius:12px"></span><span class="phc-sk" style="width:70%;height:14px"></span><span class="phc-sk" style="width:85%;height:12px"></span></div>';
+      h += '</div>';
+    } else {
+      var n = o.rows || 4; h = '<div class="phc-sk-lines">';
+      for (i = 0; i < n; i++) h += '<span class="phc-sk" style="height:' + (o.height || 14) + 'px;width:' + W[i % W.length].split('%')[0] * 1.3 + '%"></span>';
+      h += '</div>';
+    }
+    target.innerHTML = h; target.setAttribute('aria-busy', 'true');
+    if (o.label) target.setAttribute('aria-label', o.label);
+  }
+  function ready(target) { target = el(target); if (!target) return; target.removeAttribute('aria-busy'); target.classList.remove('phc-fade-in'); void target.offsetWidth; target.classList.add('phc-fade-in'); }
+
+  /* ข้อความแจ้ง */
+  var host = null;
+  function toast(msg, o) {
+    o = o || {}; if (!host) { host = mk('div', 'phc-ld-toasts'); host.setAttribute('role', 'status'); host.setAttribute('aria-live', 'polite'); body(function() { document.body.appendChild(host); }); }
+    var t = mk('div', 'phc-toast' + (o.type ? ' phc-toast--' + o.type : ''));
+    t.appendChild(mk('span', '', esc(msg)));
+    var close = function() { if (t.parentNode) t.parentNode.removeChild(t); };
+    if (typeof o.retry === 'function') { var b = mk('button', '', 'ลองใหม่'); b.type = 'button'; b.onclick = function() { close(); o.retry(); }; t.appendChild(b); }
+    host.appendChild(t); setTimeout(close, o.ms || (o.retry ? 8000 : 4500));
+    return close;
+  }
+
+  /* เปิดเว็บ / F5 */
+  var bootEl = null;
+  function bootCard() {
+    if (bootEl) return bootEl;
+    bootEl = mk('div', 'phc-ld-over');
+    bootEl.innerHTML = '<div class="phc-ld-card" role="status"><div class="phc-ld-logo"><span class="phc-ld-ring"></span><div class="phc-ld-mark">' + MARK + '</div></div>'
+      + '<span class="phc-ld-title"></span><div class="phc-ld-bar" role="progressbar" aria-label="กำลังโหลด"><span></span></div><span class="phc-ld-msg"></span><div class="phc-ld-act"></div></div>';
+    body(function() { document.body.appendChild(bootEl); });
+    return bootEl;
+  }
+  var boot = {
+    show: function(msg, title) {
+      var b = bootCard(), c = b.querySelector('.phc-ld-card'); b.classList.remove('is-hide'); b.style.display = ''; c.classList.remove('is-err');
+      b.querySelector('.phc-ld-title').textContent = title || 'ศูนย์บริการสาธารณสุข 37'; b.querySelector('.phc-ld-msg').textContent = msg || 'กำลังเปิดระบบ…'; b.querySelector('.phc-ld-act').innerHTML = '';
+    },
+    fail: function(msg, retry) {
+      var b = bootCard(), c = b.querySelector('.phc-ld-card'); b.classList.remove('is-hide'); b.style.display = ''; c.classList.add('is-err');
+      b.querySelector('.phc-ld-msg').textContent = msg || 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วกดลองใหม่';
+      var a = b.querySelector('.phc-ld-act'); a.innerHTML = '';
+      if (typeof retry === 'function') { var btn = mk('button', 'phc-btn phc-btn--secondary', '↻ ลองใหม่'); btn.type = 'button'; btn.onclick = retry; a.appendChild(btn); }
+    },
+    hide: function() { if (!bootEl) return; var b = bootEl; b.querySelector('.phc-ld-msg').textContent = 'พร้อมใช้งาน'; b.classList.add('is-hide'); setTimeout(function() { if (b.classList.contains('is-hide')) b.style.display = 'none'; }, 450); }
+  };
+
+  /* ขั้นตอนตามจริง (หลังกดเข้าสู่ระบบ) · ✓ ขึ้นเมื่อขั้นนั้นเสร็จจริงเท่านั้น */
+  function steps(labels, title) {
+    var o = mk('div', 'phc-ld-over');
+    o.innerHTML = '<div class="phc-ld-card" role="status"><div class="phc-ld-mark" style="width:48px;height:48px;border-radius:12px">' + MARK + '</div><span style="font-size:12px;letter-spacing:.14em;color:#4A5550;font-weight:600">' + esc(title || 'PHC37') + '</span><ol class="phc-ld-steps">'
+      + labels.map(function(l) { return '<li><span class="phc-ld-ic" aria-hidden="true"></span><span>' + esc(l) + '</span></li>'; }).join('') + '</ol></div>';
+    body(function() { document.body.appendChild(o); });
+    var lis = o.querySelectorAll('li');
+    return {
+      set: function(i, st) { var li = lis[i]; if (!li) return; li.className = 'is-' + st; li.querySelector('.phc-ld-ic').textContent = st === 'done' ? '✓' : (st === 'err' ? '!' : ''); },
+      close: function(delay) { setTimeout(function() { o.classList.add('is-hide'); setTimeout(function() { if (o.parentNode) o.parentNode.removeChild(o); }, 450); }, delay == null ? 350 : delay); }
+    };
+  }
+
+  /* เรียกเซิร์ฟเวอร์พร้อมสถานะครบชุด */
+  function call(fn, args, o) {
+    o = o || {};
+    return new Promise(function(resolve, reject) {
+      var restore = o.btn ? busy(o.btn, o.busyText, { group: o.group }) : function() {};
+      var useLine = o.line !== false; if (useLine) lineStart();
+      if (o.skeleton) skeleton(o.skeleton.target, o.skeleton);
+      var fail = function(err) {
+        restore(); if (useLine) lineEnd(false);
+        var m = (err && err.message) ? err.message : String(err || 'ไม่สำเร็จ');
+        if (o.toast !== false) toast((o.errText ? o.errText + ': ' : '') + m, { type: 'error', retry: o.retry === true ? function() { call(fn, args, o).then(resolve, reject); } : o.retry });
+        reject(err instanceof Error ? err : new Error(m));
+      };
+      try {
+        google.script.run.withSuccessHandler(function(res) {
+          if (typeof o.isError === 'function' && o.isError(res)) { fail(new Error((res && res.message) || 'ไม่สำเร็จ')); return; }
+          restore(); if (useLine) lineEnd(true); if (o.skeleton) ready(o.skeleton.target); resolve(res);
+        }).withFailureHandler(fail)[fn].apply(null, args || []);
+      } catch (e) { fail(e); }
+    });
+  }
+
+  return { VERSION: VERSION, busy: busy, clicked: clicked, line: { start: lineStart, done: function() { lineEnd(true); }, fail: function() { lineEnd(false); } },
+    skeleton: skeleton, ready: ready, toast: toast, boot: boot, steps: steps, call: call };
+})();
+</script>
+
+<!-- ==========================================================
+  PHC37_Print.html — แม่แบบเอกสารพิมพ์ / PDF มาตรฐาน ศบส.37
+  Version: PHC37-PRINT-1.0.3 — วันที่ 07/10/2569
+  1.0.3: ท้ายกระดาษบรรทัดเดียว ตัวเล็ก (ชื่อย่อระบบ · ผู้พิมพ์ เวลา · ข้อความข้อมูลส่วนบุคคล | หน้า) ยกห่างขอบล่าง
+         หัวกระดาษ (ตรา ชื่อหน่วยงาน ที่อยู่ เลขที่เอกสาร) ซ้ำทุกหน้า · ชื่อเอกสารใหญ่อยู่หน้าแรก
+         เพิ่ม systemShort (ชื่อย่อในท้ายกระดาษ) ถ้าไม่ระบุ ใช้ข้อความในวงเล็บท้าย systemName เช่น (NCDs)
+  1.0.1: ตัวเลขในตาราง (.phc-p-num) ชิดขวาได้จริง
+  1.0.2: ข้อความ "เอกสารนี้มีข้อมูลส่วนบุคคล..." ย้ายไปท้ายกระดาษทุกหน้า (ไม่ตกหน้าเดี่ยวอีก)
+         เพิ่ม paper: 'A5' (ค่าเริ่มต้น A4) ย่อหัวกระดาษ/ตัวอักษรให้พอดี A5 เอง
+  ไฟล์นี้ต้องเหมือนกันทุกระบบ (ใส่เข้าหน้าเว็บด้วย phc37InjectUiKit_)
+
+  ใช้งานในหน้าเว็บ:
+    var html = PHC37Print.document({
+      title: 'แบบบันทึก...',              // ชื่อเอกสาร (บังคับ)
+      systemName: 'ระบบ...',              // ชื่อระบบที่พิมพ์
+      systemShort: 'NCDs',                // ชื่อย่อในท้ายกระดาษ (ถ้าไม่ระบุ ใช้ข้อความในวงเล็บท้าย systemName)
+      docNo: 'RF-0001',                   // เลขที่เอกสาร (ถ้ามี)
+      docDate: '05/10/2569',              // วันที่เอกสาร (ถ้ามี)
+      meta: [['CaseSN','C-001']],         // ข้อมูลอ้างอิงเพิ่มที่มุมขวาบน (ถ้ามี)
+      printedBy: 'ชื่อผู้พิมพ์',
+      orientation: 'portrait'|'landscape',
+      paper: 'A4'|'A5',                   // ขนาดกระดาษ (ค่าเริ่มต้น A4)
+      density: 'standard'|'compact',      // compact = แบบฟอร์มข้อมูลแน่น (ตัวอักษร 9pt)
+      bodyHtml: '...',                    // เนื้อหา (ต้อง escape ข้อมูลเองแล้ว)
+      signatures: ['ผู้บันทึก','ผู้ตรวจสอบ'], // ช่องลงนามท้ายเอกสาร (ถ้ามี)
+      extraCss: '...'                     // CSS เฉพาะเอกสาร (ถ้ามี)
+    });
+    PHC37Print.print(html, {onDone: fn});
+
+  คลาสที่ใช้ในเนื้อหา: .phc-p-section (หัวข้อ h2 + ตาราง), .phc-p-kv (ตารางหัวข้อ-ค่า),
+  .phc-p-table (ตารางข้อมูล), .phc-p-num (ตัวเลขชิดขวา), .phc-p-grid2 (2 คอลัมน์),
+  .phc-p-avoid (ไม่ตัดกลางหน้า), .phc-p-note (หมายเหตุ)
+=========================================================== -->
+<script>
+(function(){
+  'use strict';
+  var LOGO = 'data:image/png;base64,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';
+  var ORG = {
+    name: 'ศูนย์บริการสาธารณสุข 37 ประสงค์-สุดสาคร ตู้จินดา',
+    parent: 'สำนักอนามัย กรุงเทพมหานคร',
+    address: '2044 ถนนพัฒนาการ แขวงสวนหลวง เขตสวนหลวง กรุงเทพมหานคร 10250',
+    phone: '02-362-5238'
+  };
+  var CONFIDENTIAL = 'เอกสารนี้มีข้อมูลส่วนบุคคล ใช้เพื่อการดูแลรักษาเท่านั้น ห้ามเผยแพร่';
+
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  // ข้อความใน CSS content: "..." (หลบ \ และ ")
+  function cssStr(v){
+    return '"' + String(v == null ? '' : v).replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/[\r\n]+/g,' ') + '"';
+  }
+  // ชื่อย่อระบบในท้ายกระดาษ: systemShort > ข้อความในวงเล็บท้าย systemName > systemName
+  function systemShort(o){
+    if (o.systemShort) return String(o.systemShort);
+    var n = String(o.systemName || 'ระบบ ศบส.37');
+    var m = n.match(/\(([^()]+)\)\s*$/);
+    return m ? m[1] : n;
+  }
+  function thaiNow(){
+    var d = new Date(), p = function(n){ return String(n).padStart(2,'0'); };
+    return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+(d.getFullYear()+543)+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }
+
+  function baseCss(o){
+    var compact = o.density === 'compact';
+    var landscape = o.orientation === 'landscape';
+    var a5 = String(o.paper || '').toUpperCase() === 'A5';
+    var body = a5 ? (compact ? '10.5px' : '12px') : (compact ? '12px' : '16px');
+    var footerLeft = systemShort(o) + ' · พิมพ์' + (o.printedBy ? 'โดย ' + o.printedBy + ' ' : ' ') + (o.printedAt || thaiNow()) + ' · ' + CONFIDENTIAL;
+    var margin = a5 ? '7mm 8mm 12mm' : (compact ? '12mm 12mm 16mm' : '18mm 18mm 20mm');
+    var footFont = a5 ? '6.8pt' : '7.5pt';
+    // ท้ายกระดาษทุกหน้า: บรรทัดเดียว ตัวเล็ก ชิดด้านบนของขอบล่าง (ห่างขอบกระดาษ)
+    var footStyle = ';font-family:Sarabun,serif;font-size:' + footFont + ';color:#4A5550;line-height:1.25;vertical-align:top;padding-top:' + (a5 ? '2.5mm' : '3.5mm');
+    return ''
+      + '@page{size:' + (a5 ? 'A5 ' : 'A4 ') + (landscape ? 'landscape' : 'portrait') + ';margin:' + margin + ';'
+      +   '@bottom-left{content:' + cssStr(footerLeft) + footStyle + ';width:86%}'
+      +   '@bottom-right{content:"หน้า " counter(page) "/" counter(pages)' + footStyle + ';white-space:nowrap}'
+      + '}'
+      + '*{box-sizing:border-box}'
+      + 'html,body{margin:0;background:#fff}'
+      + 'body{font-family:var(--phc-font-print,"Sarabun","TH Sarabun New",serif);font-family:"Sarabun","TH Sarabun New",serif;color:#17201A;font-size:' + body + ';line-height:' + (compact ? '1.35' : '1.5') + ';-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      + '.phc-p-page{width:100%}'
+      + 'table.phc-p-frame{width:100%;border-collapse:collapse;border:0;margin:0}'
+      + 'table.phc-p-frame>thead>tr>td,table.phc-p-frame>tbody>tr>td{padding:0!important;border:0!important;background:none!important;vertical-align:top;text-align:left}'
+      + 'table.phc-p-frame>thead{display:table-header-group}'
+      + '.phc-p-head{display:flex;align-items:center;gap:' + (compact ? '10px' : '16px') + ';padding-bottom:' + (compact ? '6px' : '10px') + ';border-bottom:2px solid #15703A;margin-bottom:' + (compact ? '8px' : '12px') + '}'
+      + '.phc-p-logo{width:' + (compact ? '48px' : '64px') + ';height:' + (compact ? '48px' : '64px') + ';object-fit:contain;flex:0 0 auto}'
+      + '.phc-p-org{display:flex;flex-direction:column;flex:1;line-height:1.3;min-width:0}'
+      + '.phc-p-org b{font-size:' + (compact ? '15px' : '19px') + ';color:#0E5A2E}'
+      + '.phc-p-org span{font-size:' + (compact ? '12px' : '15px') + '}'
+      + '.phc-p-org small{font-size:12px;color:#4A5550}'
+      + '.phc-p-ref{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:12px;text-align:right;white-space:nowrap}'
+      + '.phc-p-ref b{font-weight:700}'
+      + '.phc-p-title{margin:' + (compact ? '2px 0 8px' : '4px 0 14px') + ';text-align:center;font-size:' + (compact ? '18px' : '24px') + ';line-height:1.3;font-weight:700}'
+      + 'h2,.phc-p-section>h2{font-size:' + (compact ? '13px' : '18px') + ';font-weight:700;color:#0E5A2E;margin:' + (compact ? '6px 0 3px' : '12px 0 6px') + '}'
+      + 'table{width:100%;border-collapse:collapse}'
+      + '.phc-p-kv th,.phc-p-kv td,.phc-p-table th,.phc-p-table td{border:1px solid #A9B3AD;padding:' + (compact ? '3px 6px' : '5px 8px') + ';text-align:left;vertical-align:top}'
+      + '.phc-p-kv th{width:26%;background:#F4F6F4;font-weight:600}'
+      + '.phc-p-table th{background:#F4F6F4;font-weight:700}'
+      + '.phc-p-num,.phc-p-table .phc-p-num,.phc-p-kv .phc-p-num{text-align:right;font-variant-numeric:tabular-nums}'
+      + '.phc-p-grid2{display:grid;grid-template-columns:1fr 1fr;gap:' + (compact ? '8px' : '14px') + ';align-items:start}'
+      + '.phc-p-avoid,.phc-p-section{break-inside:avoid;page-break-inside:avoid}'
+      + '.phc-p-note{font-size:12px;color:#4A5550}'
+      + '.phc-p-sign{display:grid;grid-template-columns:repeat(var(--phc-p-sign-cols,2),1fr);gap:40px;margin-top:' + (compact ? '18px' : '32px') + ';break-inside:avoid;page-break-inside:avoid}'
+      + '.phc-p-sign div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:' + (compact ? '12px' : '15px') + '}'
+      + '.phc-p-confidential{margin-top:' + (compact ? '10px' : '18px') + ';padding-top:6px;border-top:1px solid #A9B3AD;font-size:11px;color:#4A5550}'
+      + '.phc-p-bar{height:8px;border-radius:999px;background:#EEF1EF;overflow:hidden}.phc-p-bar>i{display:block;height:100%;background:#3DA852}'
+      + (a5 ? a5Css() : '');
+  }
+
+  // กระดาษ A5: ย่อหัวกระดาษและหัวข้อให้พอดีหน้า
+  function a5Css(){
+    return '.phc-p-head{gap:8px;padding-bottom:4px;margin-bottom:5px;border-bottom-width:1.5px}'
+      + '.phc-p-logo{width:34px;height:34px}'
+      + '.phc-p-org b{font-size:12px}.phc-p-org span{font-size:9.5px}.phc-p-org small{font-size:8.5px}'
+      + '.phc-p-ref{font-size:9px}'
+      + '.phc-p-title{font-size:14px;margin:0 0 5px}'
+      + 'h2,.phc-p-section>h2{font-size:11px;margin:4px 0 2px}'
+      + '.phc-p-note{font-size:9px}'
+      + '.phc-p-sign{gap:20px;margin-top:12px}.phc-p-sign div{font-size:10px}';
+  }
+
+  function letterhead(o){
+    var ref = '';
+    if (o.docNo) ref += '<b>เลขที่ ' + esc(o.docNo) + '</b>';
+    if (o.docDate) ref += '<span>วันที่ ' + esc(o.docDate) + '</span>';
+    (o.meta || []).forEach(function(m){
+      if (m && m[1] != null && String(m[1]).trim() !== '') ref += '<span>' + esc(m[0]) + ' ' + esc(m[1]) + '</span>';
+    });
+    return '<header class="phc-p-head">'
+      + '<img class="phc-p-logo" src="' + LOGO + '" alt="ตรา ศบส.37">'
+      + '<div class="phc-p-org"><b>' + esc(ORG.name) + '</b><span>' + esc(ORG.parent) + '</span>'
+      + '<small>' + esc(ORG.address) + ' · โทร ' + esc(ORG.phone) + '</small></div>'
+      + (ref ? '<div class="phc-p-ref">' + ref + '</div>' : '')
+      + '</header>';
+  }
+
+  function signatures(list){
+    if (!list || !list.length) return '';
+    return '<div class="phc-p-sign" style="--phc-p-sign-cols:' + Math.min(list.length, 3) + '">'
+      + list.map(function(role){
+          return '<div><span>ลงชื่อ ........................................ </span>'
+            + '<span>( ........................................ )</span>'
+            + '<span>' + esc(role) + '</span>'
+            + '<span>วันที่ ....... / ....... / ...........</span></div>';
+        }).join('')
+      + '</div>';
+  }
+
+  function documentHtml(o){
+    o = o || {};
+    if (!o.title) throw new Error('PHC37Print.document: ต้องระบุ title');
+    return '<!doctype html><html lang="th"><head><meta charset="utf-8">'
+      + '<title>' + esc(o.title) + (o.docNo ? ' ' + esc(o.docNo) : '') + '</title>'
+      + '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+      + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">'
+      + '<style>' + baseCss(o) + (o.extraCss || '') + '</style></head><body>'
+      + '<div class="phc-p-page">'
+      // หัวกระดาษอยู่ใน thead: เบราว์เซอร์พิมพ์ซ้ำทุกหน้า
+      + '<table class="phc-p-frame" role="presentation"><thead><tr><td>' + letterhead(o) + '</td></tr></thead><tbody><tr><td>'
+      + '<h1 class="phc-p-title">' + esc(o.title) + '</h1>'
+      + (o.bodyHtml || '')
+      + signatures(o.signatures)
+      + '</td></tr></tbody></table>'
+      + '</div></body></html>';
+  }
+
+  // พิมพ์ผ่าน iframe ซ่อน รอฟอนต์โหลดก่อนสั่งพิมพ์ (ฟอนต์ไม่มาภายใน 2.5 วินาทีก็พิมพ์ต่อ)
+  function printHtml(html, opts){
+    opts = opts || {};
+    var frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.setAttribute('title', 'พิมพ์เอกสาร');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    document.body.appendChild(frame);
+    var doc = frame.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    var done = false;
+    var go = function(){
+      if (done) return; done = true;
+      try {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        if (typeof opts.onDone === 'function') opts.onDone(null);
+      } catch (err) {
+        if (typeof opts.onDone === 'function') opts.onDone(err);
+      }
+      setTimeout(function(){ try { frame.remove(); } catch (e) {} }, 60000);
+    };
+    var waitFonts = function(){
+      try {
+        if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function(){ setTimeout(go, 50); });
+        else setTimeout(go, 400);
+      } catch (e) { setTimeout(go, 400); }
+      setTimeout(go, 2500);
+    };
+    if (doc.readyState === 'complete') waitFonts();
+    else frame.onload = waitFonts;
+  }
+
+  window.PHC37Print = {
+    VERSION: 'PHC37-PRINT-1.0.3',
+    CONFIDENTIAL: CONFIDENTIAL,
+    ORG: ORG,
+    LOGO: LOGO,
+    esc: esc,
+    thaiNow: thaiNow,
+    document: documentHtml,
+    print: printHtml
+  };
+})();
+</script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--phc-font);font-size:16px;color:var(--phc-ink);background:var(--phc-ground);line-height:1.55}
+button,input,select,textarea{font:inherit}
+.hidden{display:none!important}
+.muted{color:var(--phc-ink-2)}
+.small{font-size:14px}
+.xs{font-size:13px}
+.nowrap{white-space:nowrap}
+.ok-t{color:var(--phc-success)}.bad-t{color:var(--phc-danger);font-weight:700}
+
+/* เปิดระบบ */
+.gate{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:24px;background:var(--phc-ground)}
+.gate-card{width:min(440px,100%);text-align:center;background:#fff;border:1px solid var(--phc-border);border-radius:16px;padding:32px;box-shadow:var(--phc-shadow)}
+.gate-card h2{margin:14px 0 6px;font-size:21px}
+.spinner{width:40px;height:40px;margin:auto;border:4px solid var(--phc-primary-tint);border-top-color:var(--phc-primary);border-radius:50%;animation:spin .8s linear infinite}
+.spinner.sm{width:18px;height:18px;border-width:3px;display:inline-block;vertical-align:middle;margin:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* โครงหน้า */
+.app{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow:auto;background:#fff;border-right:1px solid var(--phc-border);box-shadow:inset 0 4px 0 var(--phc-brand);padding:16px 12px;display:flex;flex-direction:column;z-index:40}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 6px 14px;border-bottom:1px solid var(--phc-border);margin-bottom:8px}
+.brand .phc-brand-mark{width:40px;height:40px;flex:0 0 auto}
+.brand b{display:block;font-size:16px;line-height:1.3}
+.brand span{font-size:13px;color:var(--phc-ink-2)}
+.nav-sep{border-top:1px solid var(--phc-border);margin:6px 0}
+.nav button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--phc-ink);text-align:left;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer;min-height:44px}
+.nav button:hover{background:var(--phc-surface-2)}
+.nav button.active{background:var(--phc-primary-tint);color:var(--phc-primary-hover);box-shadow:inset 3px 0 0 var(--phc-primary)}
+.nav .ico{width:24px;text-align:center;font-size:18px}
+.nav .count{margin-left:auto;min-width:24px;padding:0 7px;border-radius:999px;background:var(--phc-danger);color:#fff;font-size:13px;text-align:center}
+.side-user{margin-top:auto;border-top:1px solid var(--phc-border);padding:12px 6px 0;display:flex;gap:10px;align-items:center}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--phc-primary-tint);color:var(--phc-primary);font-weight:700;flex:0 0 auto}
+.side-user b{display:block;font-size:15px;line-height:1.3}
+.side-user span{font-size:13px;color:var(--phc-ink-2)}
+.main{min-width:0}
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 22px;background:#fff;border-bottom:1px solid var(--phc-border)}
+.topbar h1{margin:0;font-size:20px;flex:1}
+.backdrop{display:none}
+.hamb{display:none;border:1px solid var(--phc-border);background:#fff;border-radius:8px;width:44px;height:44px;font-size:20px;cursor:pointer}
+.content{padding:20px 22px 60px;max-width:1320px}
+.page-head{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.page-head h2{margin:0;font-size:23px}
+.page-head p{margin:2px 0 0;color:var(--phc-ink-2)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.card{background:#fff;border:1px solid var(--phc-border);border-radius:12px;padding:16px;min-width:0}
+.card h3{margin:0 0 10px;font-size:18px}
+.card-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.card-head h3{margin:0}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.stat{background:#fff;border:1px solid var(--phc-border);border-radius:12px;padding:14px 16px}
+.stat.link{cursor:pointer}.stat.link:hover{border-color:var(--phc-primary)}
+.stat span{display:block;color:var(--phc-ink-2);font-size:14px}
+.stat b{display:block;font-size:28px;line-height:1.3}
+.stat i{display:block;font-style:normal;font-size:13px;color:var(--phc-ink-2)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px}
+.toolbar .phc-field{margin:0}
+.toolbar .phc-input,.toolbar .phc-select{min-width:150px}
+.toolbar .grow{flex:1;min-width:220px}
+.table-wrap{background:#fff;border:1px solid var(--phc-border);border-radius:12px;overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+table.t th{background:var(--phc-surface-2);text-align:left;font-weight:700;font-size:14px;color:var(--phc-ink-2);padding:9px 12px;border-bottom:1px solid var(--phc-border);white-space:nowrap}
+table.t td{padding:9px 12px;border-bottom:1px solid #EEF1EF;vertical-align:top}
+table.t td small{display:block;color:var(--phc-ink-2);font-size:13px}
+table.t tr.click{cursor:pointer}
+table.t tr.click:hover td{background:var(--phc-surface-2)}
+table.t .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t td.reason{max-width:340px;overflow-wrap:anywhere}
+.empty{padding:26px;text-align:center;color:var(--phc-ink-2)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;line-height:1.6}
+.chip+.chip{margin-left:4px}
+.tone-success{background:var(--phc-success-bg);color:var(--phc-success)}
+.tone-info{background:var(--phc-info-bg);color:var(--phc-info)}
+.tone-warning{background:var(--phc-warning-bg);color:var(--phc-warning)}
+.tone-danger{background:var(--phc-danger-bg);color:var(--phc-danger)}
+.tone-neutral{background:var(--phc-neutral-bg);color:var(--phc-neutral)}
+.alert-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:11px 14px;border-radius:10px;font-size:15px}
+.alert-row .go{margin-left:auto}
+.alert-row.d{background:var(--phc-danger-bg)}.alert-row.w{background:var(--phc-warning-bg)}.alert-row.i{background:var(--phc-info-bg)}.alert-row.s{background:var(--phc-success-bg)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--phc-border-input);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:transparent;padding:6px 14px;font-size:14px;cursor:pointer;min-height:40px;color:var(--phc-ink);white-space:nowrap}
+.seg button+button{border-left:1px solid var(--phc-border)}
+.seg button.on{background:var(--phc-primary);color:#fff;font-weight:700}
+.pick{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;text-align:left;border:1px solid var(--phc-border);border-radius:10px;padding:12px 14px;background:#fff;cursor:pointer;width:100%;font:inherit;color:inherit}
+.pick:hover{border-color:var(--phc-primary);background:var(--phc-surface-2)}
+.pick b{display:block;font-size:17px}
+.pick span{font-size:14px;color:var(--phc-ink-2)}
+.pick .r{text-align:right;flex:0 0 auto}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 12px;font-size:15px}
+.kv>span{color:var(--phc-ink-2)}
+.kv>div{min-width:0;overflow-wrap:anywhere}
+.kv a{color:var(--phc-primary-hover);font-weight:700;text-decoration:none}
+.sync-line{margin-top:10px;font-size:13px;color:var(--phc-success)}
+.pt-head{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;justify-content:space-between}
+.pt-head h2{margin:0;font-size:24px}
+.pt-head .sub{color:var(--phc-ink-2);font-size:15px}
+.ct-view{border:1px solid var(--phc-border);border-radius:10px;padding:8px 12px;margin-bottom:8px}
+.ct-view b{font-size:15px}
+.ct-view a{color:var(--phc-primary-hover);font-weight:700;text-decoration:none;margin-right:10px;white-space:nowrap}
+.ref-card{border:1px solid var(--phc-border);border-left:4px solid var(--phc-info);border-radius:12px;background:#fff;padding:14px 16px;margin-bottom:12px}
+.ref-card.done{border-left-color:var(--phc-success)}
+.ref-card.fail{border-left-color:var(--phc-danger)}
+.ref-card h3{margin:0;font-size:18px}
+.ref-card .meta{font-size:14px;color:var(--phc-ink-2)}
+.ref-card .rs{margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.ref-banner{border:1px solid var(--phc-info);background:var(--phc-info-bg);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+
+/* ฟอร์ม */
+.form-wrap{max-width:1040px}
+.form-sec{background:#fff;border:1px solid var(--phc-border);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.form-sec h4{margin:0 0 10px;font-size:17px}
+.form-sec h4 small{font-weight:400;color:var(--phc-ink-2);font-size:14px;margin-left:6px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form-grid.g3f{grid-template-columns:repeat(3,minmax(0,1fr))}
+.form-grid .full{grid-column:1/-1}
+.form-sub{font-weight:700;font-size:14px;color:var(--phc-ink-2);border-top:1px dashed var(--phc-border);padding-top:8px;margin-top:2px}
+.phc-field{min-width:0}
+.hint{font-size:13px;color:var(--phc-ink-2);margin-top:2px}
+.chk-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #EEF1EF}
+.chk-row:last-child{border-bottom:0}
+.chk-row>label{display:flex;gap:10px;align-items:center;font-weight:600;cursor:pointer;min-height:36px;min-width:240px}
+.chk-row input[type=checkbox],.chk-inline input{width:20px;height:20px;accent-color:var(--phc-primary);flex:0 0 auto}
+.chk-row .det{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.chk-inline{display:inline-flex;gap:8px;align-items:center;font-weight:600;cursor:pointer;min-height:40px}
+.guard-note{margin:0 0 10px}
+.ctc{border:1px solid var(--phc-border);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--phc-surface-2)}
+.ctc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.ctc-head .phc-select{width:auto;min-width:130px}
+.ctc-head .rel{flex:1;min-width:160px}
+.ctc-head .xbtn{margin-left:auto}
+.ctc-name{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr);gap:8px;margin-bottom:8px}
+.ph-row{display:grid;grid-template-columns:minmax(0,260px) auto 40px;gap:8px;align-items:center;margin-bottom:6px}
+.ph-pri{display:flex;align-items:center;gap:4px;font-size:14px;white-space:nowrap;cursor:pointer}.ph-pri input{width:18px;height:18px;accent-color:var(--phc-primary)}
+.ct-add{display:flex;flex-wrap:wrap;gap:6px}
+.save-bar{position:sticky;bottom:0;z-index:20;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;margin-top:12px;background:#fff;border:1px solid var(--phc-border);border-radius:12px;box-shadow:var(--phc-shadow)}
+.save-bar .grow{flex:1}
+.dup{border:1px solid var(--phc-warning);background:#FFFBF2;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+
+/* หน้าต่าง */
+.modal-wrap{position:fixed;inset:0;z-index:200;background:rgba(23,32,26,.45);display:flex;align-items:flex-start;justify-content:center;padding:28px 14px;overflow:auto}
+.modal{width:min(920px,100%);background:#fff;border-radius:14px;box-shadow:var(--phc-shadow-lg);display:flex;flex-direction:column;max-height:calc(100vh - 56px)}
+.modal.sm{width:min(560px,100%)}
+.modal-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--phc-border)}
+.modal-head h3{margin:0;font-size:20px;flex:1}
+.modal-body{padding:16px 18px;overflow:auto}
+.modal-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--phc-border)}
+.modal-foot .left{margin-right:auto;display:flex;gap:8px;flex-wrap:wrap}
+.xbtn{border:0;background:var(--phc-surface-2);width:40px;height:40px;border-radius:8px;font-size:18px;cursor:pointer;flex:0 0 auto}
+.dsec{border:1px solid var(--phc-border);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.dsec h4{margin:0 0 6px;font-size:16px}
+.toast-box{position:fixed;right:16px;bottom:16px;z-index:400;display:grid;gap:8px;max-width:min(420px,calc(100vw - 32px))}
+.toast-box .phc-toast.err{background:var(--phc-danger)}
+.toast-box .phc-toast.warn{background:var(--phc-warning)}
+
+/* ปฏิทิน พ.ศ. */
+.date-field{display:flex;gap:6px}
+.date-field input{flex:1;cursor:pointer;background:#fff;min-width:0}
+.date-field .xbtn{width:44px;height:44px}
+.cal{position:fixed;z-index:500;background:#fff;border:1px solid var(--phc-border);border-radius:12px;box-shadow:var(--phc-shadow-lg);padding:10px;width:300px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-head b{font-size:16px}
+.cal-head button{border:1px solid var(--phc-border);background:#fff;border-radius:8px;width:36px;height:36px;cursor:pointer}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-grid span{font-size:13px;color:var(--phc-ink-2);padding:4px 0}
+.cal-grid button{border:0;background:#fff;border-radius:8px;height:36px;cursor:pointer}
+.cal-grid button:hover{background:var(--phc-surface-2)}
+.cal-grid button.sel{background:var(--phc-primary);color:#fff}
+.cal-grid button.today{box-shadow:inset 0 0 0 1px var(--phc-primary)}
+.cal-grid button.we{color:#B42318}
+.cal-grid button:disabled{color:#C9D1CC;cursor:not-allowed;background:#fff}
+.cal-foot{display:flex;justify-content:space-between;margin-top:6px}
+
+/* รายงาน */
+.rpt-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 16px;background:#fff;border:1px solid var(--phc-border);border-radius:12px;margin-bottom:14px}
+.rpt-filters .phc-field{margin:0;min-width:150px}
+.rpt-body{display:flex;flex-direction:column;gap:14px}
+.rpt-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.rpt-kpi{text-align:left;background:#fff;border:1px solid var(--phc-border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:2px;font:inherit;color:inherit;cursor:pointer}
+.rpt-kpi:hover{border-color:var(--phc-brand)}
+.rpt-kpi-label{font-size:15px;color:var(--phc-ink-2);font-weight:600}
+.rpt-kpi-value{font-size:36px;line-height:1.15;font-weight:700;font-variant-numeric:tabular-nums}
+.rpt-kpi-unit{font-size:16px;color:var(--phc-ink-2);font-weight:400;margin-left:6px}
+.rpt-kpi-delta{font-size:14px;color:var(--phc-ink-2)}
+.rpt-kpi-delta b{color:var(--phc-ink)}
+.rpt-row{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px}
+.rpt-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rpt-card{background:#fff;border:1px solid var(--phc-border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.rpt-card-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 12px}
+.rpt-card-head h3{margin:0;font-size:19px}
+.rpt-card-head span{font-size:14px;color:var(--phc-ink-2)}
+.rpt-chart{position:relative;height:250px;display:flex;align-items:flex-end;gap:8px;padding:0 4px 28px;border-bottom:1px solid var(--phc-border-input);background-image:linear-gradient(#EEF1EF 1px,transparent 1px);background-size:100% 55px}
+.rpt-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;position:relative;min-width:0}
+.rpt-col-v{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.rpt-col-bar{width:100%;max-width:44px;background:var(--phc-primary);border-radius:6px 6px 0 0;min-height:2px}
+.rpt-col-bar.is-max{background:var(--phc-primary-hover);outline:2px solid var(--phc-brand);outline-offset:1px}
+.rpt-col-l{position:absolute;bottom:-26px;font-size:13px;color:var(--phc-ink-2);white-space:nowrap}
+.rpt-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--phc-ink-2)}
+.rpt-dot{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--phc-primary);margin-right:6px;vertical-align:-1px}
+.rpt-dot.is-max{background:var(--phc-primary-hover);outline:2px solid var(--phc-brand);outline-offset:1px}
+.rpt-table{width:100%;border-collapse:collapse;font-size:16px}
+.rpt-table th,.rpt-table td{padding:9px 8px;border-bottom:1px solid var(--phc-border);text-align:right;font-variant-numeric:tabular-nums}
+.rpt-table th:first-child,.rpt-table td:first-child{text-align:left}
+.rpt-table thead th{border-bottom:2px solid var(--phc-border-input);font-weight:700}
+.rpt-table tfoot th,.rpt-table tfoot td{background:var(--phc-ground);font-weight:700;border-bottom:0}
+.rpt-sub{display:block;font-size:13px;color:var(--phc-ink-2);font-weight:400}
+.rpt-bars{display:flex;flex-direction:column;gap:2px}
+.rpt-bar{display:grid;grid-template-columns:minmax(0,1fr) 48px 56px;gap:12px;align-items:center;min-height:44px;padding:4px 8px;border:0;border-radius:8px;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+.rpt-bar:hover{background:var(--phc-surface-2)}
+.rpt-bar-name{display:flex;flex-direction:column;gap:4px;min-width:0}
+.rpt-bar-name>span:first-child{overflow-wrap:anywhere}
+.rpt-track{display:block;height:10px;border-radius:999px;background:#EEF1EF;overflow:hidden}
+.rpt-fill{display:block;height:100%;border-radius:999px;background:var(--phc-brand)}
+.rpt-bar:first-child .rpt-fill{background:var(--phc-primary)}
+.rpt-bar-v{text-align:right;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.rpt-bar-p{text-align:right;font-size:14px;color:var(--phc-ink-2);font-variant-numeric:tabular-nums}
+.rpt-note{font-size:14px;color:var(--phc-ink-2);margin:0}
+
+@media(max-width:1100px){.rpt-row,.rpt-grid2{grid-template-columns:1fr}}
+@media(max-width:1000px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.rpt-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:860px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:-290px;width:280px;transition:left .2s}
+  .sidebar.open{left:0}
+  .hamb{display:block}
+  .backdrop.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:35}
+  .content{padding:14px 12px 40px}
+  .form-grid,.form-grid.g3f,.g2{grid-template-columns:1fr}
+  .topbar{padding:8px 12px}
+  .hide-sm{display:none}
+  table.rt thead{display:none}
+  table.rt tr{display:grid;grid-template-columns:1fr;gap:4px;padding:10px 12px;border-bottom:1px solid #EEF1EF}
+  table.rt td{display:block;padding:0;border:0;max-width:none}
+  table.rt td.hide-sm{display:none}
+  .kv{grid-template-columns:110px minmax(0,1fr)}
+  .ctc-name{grid-template-columns:1fr 1fr}
+  .ph-row{grid-template-columns:minmax(0,1fr) auto 40px}
+  .chk-row{flex-direction:column;gap:4px}
+  .chk-row>label{min-width:0}
+  .chk-row .det{width:100%}
+  .rpt-chart{height:210px;gap:3px}
+  .rpt-col-v{font-size:11px}
+  .rpt-col-l{font-size:10px}
+  .rpt-kpi-value{font-size:28px}
+  .rpt-bar{grid-template-columns:minmax(0,1fr) 40px 50px;gap:8px}
+  .modal-wrap{padding:10px 6px}
+  .modal{max-height:calc(100vh - 20px)}
+}
+@media(max-width:560px){.g4,.g3{grid-template-columns:1fr 1fr}.toolbar .phc-field,.toolbar .phc-input,.toolbar .phc-select{min-width:0;width:100%}.toolbar>*{flex:1 1 100%}.stat b{font-size:24px}.rpt-kpis{grid-template-columns:1fr 1fr;gap:8px}.rpt-kpi{padding:12px}.rpt-kpi-value{font-size:24px}}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body class="phc-app">
+<script>
+/* ถ้าโค้ดหน้าเว็บโหลดไม่สำเร็จ ให้แสดงข้อความแทนการค้างที่หน้า "กำลังเปิดระบบ" */
+window.addEventListener('error',function(e){ try{ if(window.__swBooted) return; var g=document.getElementById('gate'),eg=document.getElementById('errGate'),t=document.getElementById('errText'); if(!eg||!t) return; if(g) g.className+=' hidden'; t.textContent='โหลดหน้าเว็บไม่สำเร็จ: '+(e&&e.message?e.message:'ไม่ทราบสาเหตุ'); eg.className=eg.className.split(' hidden').join(''); }catch(x){} });
+</script>
+<div id="gate" class="gate" data-phc-boot><div class="gate-card"><div class="phc-ld-logo" style="margin:0 auto"><span class="phc-ld-ring"></span><div class="phc-ld-mark"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#15703A" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg></div></div><h2>กำลังเปิดระบบผ่าน Gateway</h2><div class="phc-ld-bar" role="progressbar" aria-label="กำลังโหลด" style="margin:4px 0"><span></span></div><p class="muted">กรุณารอสักครู่</p></div></div>
+<div id="errGate" class="gate hidden" data-phc-boot><div class="gate-card"><div class="phc-brand-mark" style="width:52px;height:52px;margin:auto"></div><h2>ไม่สามารถเปิดระบบได้</h2><p id="errText" class="muted"></p><button class="phc-btn" type="button" onclick="goGateway()">↩️ กลับหน้าหลัก</button><button class="phc-btn phc-btn--secondary" onclick="phcRetryBoot()" style="margin-top:8px">↻ ลองใหม่</button></div></div>
+
+<div id="app" class="app hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="phc-brand-mark" role="img" aria-label="ตรา ศบส.37"></div><div><b>บันทึกผู้ใช้บริการสังคมสงเคราะห์</b><span>ศบส.37</span></div></div>
+    <nav class="nav" id="nav">
+      <button type="button" onclick="goGateway()"><span class="ico">↩️</span>กลับหน้าหลัก</button>
+      <div class="nav-sep"></div>
+      <button type="button" data-page="home"><span class="ico">📊</span>ภาพรวม</button>
+      <button type="button" data-page="clients"><span class="ico">👤</span>ผู้ใช้บริการ</button>
+      <button type="button" data-page="history"><span class="ico">🗂️</span>ประวัติงาน</button>
+      <button type="button" data-page="inbox"><span class="ico">📥</span>รับจากระบบส่งต่อ<span class="count hidden" id="cntInbox"></span></button>
+      <button type="button" data-page="report"><span class="ico">📈</span>รายงาน</button>
+      <button type="button" data-page="settings" id="navSettings" class="hidden"><span class="ico">⚙️</span>ตั้งค่า</button>
+    </nav>
+    <div class="side-user"><div class="avatar" id="avatar">-</div><div><b id="uName">-</b><span id="uMeta">-</span></div></div>
+  </aside>
+  <div class="backdrop" id="backdrop" onclick="toggleSide(false)"></div>
+  <main class="main">
+    <header class="topbar"><button class="hamb" type="button" onclick="toggleSide(true)" aria-label="เมนู">☰</button><h1 id="pageTitle">ภาพรวม</h1><span class="chip tone-success" id="fyBadge"></span></header>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div class="toast-box" id="toasts" aria-live="polite"></div>
+
+<script>
+const BOOT = {"version":"SWCR3-3.0.2","appName":"แบบบันทึกผู้ใช้บริการสังคมสงเคราะห์","launchToken":"pwa","gatewayReturnUrl":""};
+const S = { token:'', user:null, lists:{}, settings:{}, dw:null, home:null, page:'home', file:null, found:null, q:'', form:null, hist:null, inbox:null, report:null, rptMode:'fiscal', pendingRef:null, guardAdded:false };
+const TH_M = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_MS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TITLES = {home:'ภาพรวม',clients:'ผู้ใช้บริการ',history:'ประวัติงาน',inbox:'รับจากระบบส่งต่อ',report:'รายงาน',settings:'ตั้งค่า'};
+const ESC = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+const $ = id => document.getElementById(id);
+function esc(v){ const s=String(v==null?'':v); let o=''; for(const ch of s) o+=ESC[ch]||ch; return o; }
+function digits(s){ return String(s==null?'':s).split('').filter(ch=>ch>='0'&&ch<='9').join(''); }
+function has(s, part){ return String(s||'').indexOf(part)>=0; }
+function cidOk(c){ c=digits(c); if(c.length!==13) return false; let t=0; for(let i=0;i<12;i++) t+=Number(c[i])*(13-i); return (11-t%11)%10===Number(c[12]); }
+function pad2(n){ return ('0'+n).slice(-2); }
+function num(n){ return Number(n||0).toLocaleString('th-TH'); }
+
+/* ---------- วันที่ (key = yyyy-MM-dd ค.ศ. · แสดง พ.ศ.) ---------- */
+function todayKey(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
+function isKey(v){ const p=String(v||'').split('-'); return p.length===3&&p[0].length===4&&p[1].length===2&&p[2].length===2; }
+/** "dd/MM/yyyy(พ.ศ.) HH:mm:ss" → key */
+function beKey(t){ t=String(t||'').trim(); if(!t) return ''; if(isKey(t.slice(0,10))) return t.slice(0,10); const p=t.split(' ')[0].split('/'); if(p.length!==3) return ''; let y=Number(p[2]); if(y>2400) y-=543; if(!y) return ''; return y+'-'+pad2(Number(p[1]))+'-'+pad2(Number(p[0])); }
+function timeOf(t){ const p=String(t||'').trim().split(' '); return p.length>1?p[1].slice(0,5):''; }
+function thDate(k,full){ if(!k) return '-'; const p=k.split('-').map(Number); return p[2]+' '+(full?TH_M:TH_MS)[p[1]-1]+' '+(p[0]+543); }
+function shortDate(k){ if(!k) return ''; const p=k.split('-'); return p[2]+'/'+p[1]+'/'+(Number(p[0])+543); }
+function keyToBE(k){ return k?shortDate(k):''; }
+function birthKeyFromBE(t){ t=String(t||'').trim(); if(!t) return ''; const p=t.split('/'); if(p.length!==3) return null; let d=Number(p[0]),m=Number(p[1]),y=Number(p[2]); if(!d||!m||!y) return null; if(y>2400) y-=543; if(y<1890||m<1||m>12||d<1||d>31) return null; const dt=new Date(Date.UTC(y,m-1,d)); if(dt.getUTCDate()!==d) return null; return y+'-'+pad2(m)+'-'+pad2(d); }
+function ageYears(k){ if(!k) return null; const a=k.split('-').map(Number), t=todayKey().split('-').map(Number); return t[0]-a[0]-((t[1]<a[1]||(t[1]===a[1]&&t[2]<a[2]))?1:0); }
+function fyOfKey(k){ const p=k.split('-').map(Number); return p[0]+543+(p[1]>=10?1:0); }
+function fyRange(fy){ return {from:(fy-544)+'-10-01', to:(fy-543)+'-09-30'}; }
+
+/* ---------- เรียกเซิร์ฟเวอร์ ---------- */
+function callRaw_(fn, ...args){
+  return new Promise((resolve,reject)=>{
+    google.script.run.withSuccessHandler(r=>{
+      if(!r){ reject(new Error('ไม่ได้รับข้อมูลจากเซิร์ฟเวอร์')); return; }
+      if(!r.ok){ reject(new Error(r.message||'เกิดข้อผิดพลาด')); return; }
+      resolve(r.data);
+    }).withFailureHandler(e=>reject(new Error(e&&e.message?e.message:String(e))))[fn](...args);
+  });
+}
+/* PHC37Load (UI Kit 1.2.0): เส้นวิ่งด้านบนระหว่างรอเซิร์ฟเวอร์ (ขึ้นเมื่อรอเกิน 0.3 วินาที) */
+function call(fn, ...args){
+  const L=window.PHC37Load; if(L) L.line.start();
+  return callRaw_(fn, ...args).then(v=>{ if(L) L.line.done(); return v; }, e=>{ if(L) L.line.fail(); throw e; });
+}
+/* โครงเทาแบบรายการ (UI Kit 1.2.0) */
+function phcSk(n){ let h='<div class="phc-sk-lines" aria-busy="true"><span class="sr-only" role="status">กำลังโหลด…</span>'; const W=[92,78,85,70,88,64]; for(let k=0;k<(n||4);k++) h+='<span class="phc-sk" style="height:16px;width:'+W[k%W.length]+'%"></span>'; return h+'</div>'; }
+function api(fn, ...args){ return call(fn, S.token, ...args); }
+
+/* ---------- ทั่วไป ---------- */
+function toast(msg, kind){ const el=document.createElement('div'); el.className='phc-toast'+(kind===true||kind==='err'?' err':(kind==='warn'?' warn':'')); el.textContent=msg; $('toasts').appendChild(el); setTimeout(()=>el.remove(), kind?8000:3800); }
+function setBusy(btn, on, text){ if(!btn) return;
+  if(on){ if(btn.dataset.busy==='1') return; btn.dataset.busy='1'; btn.dataset.t=btn.innerHTML; btn.disabled=true; btn.setAttribute('aria-busy','true');
+    const plain=btn.classList.contains('phc-btn--secondary')||btn.classList.contains('phc-btn--ghost')||btn.classList.contains('phc-btn--edit')||btn.classList.contains('phc-btn--danger-soft')||!btn.classList.contains('phc-btn');
+    const t=text||'กำลังบันทึก…'; btn.innerHTML=String(t).indexOf('spinner')>=0?t:'<span class="phc-spin'+(plain?'':' phc-spin--light')+'" aria-hidden="true"></span> '+t; }
+  else { btn.disabled=false; btn.removeAttribute('aria-busy'); delete btn.dataset.busy; if(btn.dataset.t) btn.innerHTML=btn.dataset.t; } }
+function openModal(title, body, foot, size){ $('modalRoot').innerHTML='<div class="modal-wrap" onclick="if(event.target===this)closeModal()"><div class="modal '+(size||'')+'" role="dialog" aria-modal="true"><div class="modal-head"><h3>'+esc(title)+'</h3><button class="xbtn" type="button" onclick="closeModal()" aria-label="ปิด">×</button></div><div class="modal-body">'+body+'</div>'+(foot?'<div class="modal-foot">'+foot+'</div>':'')+'</div></div>'; }
+function closeModal(){ closeCal(); $('modalRoot').innerHTML=''; }
+function confirmBox(title, html, okText, danger){
+  return new Promise(res=>{
+    const root=document.createElement('div');
+    root.innerHTML='<div class="modal-wrap" style="z-index:250"><div class="modal sm"><div class="modal-head"><h3>'+esc(title)+'</h3></div><div class="modal-body">'+html+'</div><div class="modal-foot"><button class="phc-btn phc-btn--secondary" type="button" data-a="0">ยกเลิก</button><button class="phc-btn '+(danger?'phc-btn--danger':'')+'" type="button" data-a="1">'+esc(okText||'ยืนยัน')+'</button></div></div></div>';
+    document.body.appendChild(root);
+    root.addEventListener('click',e=>{ const a=e.target.getAttribute&&e.target.getAttribute('data-a'); if(a===null||a===undefined) return; root.remove(); res(a==='1'); });
+  });
+}
+function reasonBox(title, html, label, okText){
+  return new Promise(res=>{
+    const root=document.createElement('div');
+    root.innerHTML='<div class="modal-wrap" style="z-index:250"><div class="modal sm"><div class="modal-head"><h3>'+esc(title)+'</h3></div><div class="modal-body">'+html+'<div class="phc-field" style="margin-top:10px"><label class="phc-label">'+esc(label)+' <span class="phc-required">*</span></label><textarea class="phc-textarea" id="rbText" rows="3" placeholder="อย่างน้อย 3 ตัวอักษร"></textarea></div><div class="xs bad-t" id="rbErr"></div></div><div class="modal-foot"><button class="phc-btn phc-btn--secondary" type="button" data-a="0">ยกเลิก</button><button class="phc-btn phc-btn--danger" type="button" data-a="1">'+esc(okText||'ยืนยัน')+'</button></div></div></div>';
+    document.body.appendChild(root);
+    root.addEventListener('click',e=>{ const a=e.target.getAttribute&&e.target.getAttribute('data-a'); if(a===null||a===undefined) return; const v=root.querySelector('#rbText').value.trim(); if(a==='1'&&v.length<3){ root.querySelector('#rbErr').textContent='กรุณาระบุเหตุผลอย่างน้อย 3 ตัวอักษร'; return; } root.remove(); res(a==='1'?v:null); });
+  });
+}
+function chip(text, tone){ return '<span class="chip tone-'+esc(tone||'neutral')+'">'+esc(text)+'</span>'; }
+function field(label, inner, cls, req, hint){ return '<div class="phc-field '+(cls||'')+'"><label class="phc-label">'+esc(label)+(req?' <span class="phc-required">*</span>':'')+'</label>'+inner+(hint?'<div class="hint">'+hint+'</div>':'')+'</div>'; }
+function opt(v,t,sel){ return '<option value="'+esc(v)+'" '+(sel?'selected':'')+'>'+esc(t)+'</option>'; }
+function selectHtml(id, list, cur, blank, attr){ list=list||[]; return '<select class="phc-select" id="'+id+'" '+(attr||'')+'>'+(blank!==false?opt('',blank||'ไม่ระบุ'):'')+list.map(x=>opt(x,x,x===cur)).join('')+(cur&&list.indexOf(cur)<0?opt(cur,cur,true):'')+'</select>'; }
+function inputHtml(id, val, attr){ return '<input class="phc-input" id="'+id+'" value="'+esc(val||'')+'" '+(attr||'')+'>'; }
+function val(id){ const el=$(id); return el?String(el.value||'').trim():''; }
+function checked(id){ const el=$(id); return !!(el&&el.checked); }
+function toggleSide(on){ $('sidebar').classList.toggle('open',on); $('backdrop').classList.toggle('show',on); }
+function goGateway(){ const url=String(BOOT.gatewayReturnUrl||''); if(url.indexOf('https:')===0&&url.indexOf('script.google.com')>0) window.open(url,'_top'); }
+function canAdd(){ return !!(S.user&&S.user.canAdd); }
+function canEdit(){ return !!(S.user&&S.user.canEdit); }
+function isAdmin(){ return !!(S.user&&S.user.isAdmin); }
+function loading(msg){ const m=(typeof msg!=='undefined'&&msg)||'กำลังโหลด…'; let rows=''; for(let k=0;k<6;k++) rows+='<span class="phc-sk" style="height:16px;width:'+[92,78,85,70,88,64][k]+'%"></span>';
+  $('content').innerHTML='<div aria-busy="true" style="display:flex;flex-direction:column;gap:16px"><span class="sr-only" role="status">'+esc(m)+'</span>'
+    +'<span class="phc-sk" style="height:22px;width:220px"></span>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">'+[1,2,3].map(()=>'<div class="phc-sk-card" style="min-height:92px"><span class="phc-sk" style="width:60%"></span><span class="phc-sk" style="height:26px;width:35%"></span></div>').join('')+'</div>'
+    +'<div class="card" style="display:flex;flex-direction:column;gap:14px">'+rows+'</div></div>'; }
+function errBox(e, retry){ $('content').innerHTML='<div class="card empty"><p>'+esc(e.message||e)+'</p><button class="phc-btn phc-btn--secondary" type="button" onclick="'+(retry||'go(S.page)')+'">ลองใหม่</button></div>'; }
+function segHtml(id, items, cur, onchange){ return '<div class="seg" id="'+id+'">'+items.map(x=>'<button type="button" data-v="'+esc(x[0])+'" class="'+(x[0]===cur?'on':'')+'" onclick="segPick(this);'+(onchange||'')+'">'+esc(x[1])+'</button>').join('')+'</div>'; }
+function segPick(b){ b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); }
+function segVal(id){ const b=document.querySelector('#'+id+' button.on'); return b?b.dataset.v:''; }
+
+/* ---------- ปฏิทิน พ.ศ. ---------- */
+let CAL=null;
+function dateField(id, key, o){ o=o||{}; return '<div class="date-field"><input class="phc-input" id="'+id+'" data-key="'+esc(key||'')+'" data-max="'+esc(o.max||'')+'" data-min="'+esc(o.min||'')+'" value="'+(key?esc(shortDate(key)):'')+'" readonly placeholder="'+esc(o.ph||'วว/ดด/ปปปป')+'" onclick="openCal(\''+id+'\')">'+(o.clear?'<button type="button" class="xbtn" title="ล้างวันที่" aria-label="ล้างวันที่" onclick="setDate(\''+id+'\',\'\')">✕</button>':'')+'</div>'; }
+function dateVal(id){ const el=$(id); return el?(el.dataset.key||''):''; }
+function setDate(id,k){ const el=$(id); if(!el) return; el.dataset.key=k||''; el.value=k?shortDate(k):''; el.dispatchEvent(new Event('change')); closeCal(); }
+function openCal(id){ closeCal(); const el=$(id); let k=el.dataset.key||todayKey(); if(el.dataset.max&&k>el.dataset.max) k=el.dataset.max; const p=k.split('-').map(Number); CAL={id:id,y:p[0],m:p[1]}; renderCal(); }
+function closeCal(){ const c=document.getElementById('calPop'); if(c) c.remove(); CAL=null; }
+function calMove(n){ let m=CAL.m+n,y=CAL.y; if(m<1){m=12;y--;} if(m>12){m=1;y++;} CAL.y=y; CAL.m=m; renderCal(); }
+function renderCal(){
+  let c=document.getElementById('calPop'); if(!c){ c=document.createElement('div'); c.id='calPop'; c.className='cal'; document.body.appendChild(c); }
+  const el=$(CAL.id), sel=el.dataset.key, t=todayKey(), mx=el.dataset.max||'', mn=el.dataset.min||'', first=new Date(Date.UTC(CAL.y,CAL.m-1,1)).getUTCDay(), days=new Date(Date.UTC(CAL.y,CAL.m,0)).getUTCDate();
+  let h='<div class="cal-head"><button type="button" onclick="calMove(-1)" aria-label="เดือนก่อน">‹</button><b>'+TH_M[CAL.m-1]+' '+(CAL.y+543)+'</b><button type="button" onclick="calMove(1)" aria-label="เดือนถัดไป">›</button></div><div class="cal-grid">'+['อา','จ','อ','พ','พฤ','ศ','ส'].map(x=>'<span>'+x+'</span>').join('');
+  for(let i=0;i<first;i++) h+='<span></span>';
+  for(let d=1;d<=days;d++){ const k=CAL.y+'-'+pad2(CAL.m)+'-'+pad2(d), w=(first+d-1)%7, dis=(mx&&k>mx)||(mn&&k<mn); h+='<button type="button" '+(dis?'disabled':'')+' class="'+(k===sel?'sel ':'')+(k===t?'today ':'')+(w===0||w===6?'we':'')+'" onclick="setDate(\''+CAL.id+'\',\''+k+'\')">'+d+'</button>'; }
+  h+='</div><div class="cal-foot"><button type="button" class="phc-btn phc-btn--ghost phc-btn--sm" '+((mx&&t>mx)||(mn&&t<mn)?'disabled':'')+' onclick="setDate(\''+CAL.id+'\',\''+t+'\')">วันนี้</button><button type="button" class="phc-btn phc-btn--secondary phc-btn--sm" onclick="closeCal()">ปิด</button></div>';
+  c.innerHTML=h;
+  const r=el.getBoundingClientRect(); let top=r.bottom+4, left=r.left; if(top+340>innerHeight) top=Math.max(8,r.top-344); if(left+300>innerWidth) left=Math.max(8,innerWidth-308); c.style.top=top+'px'; c.style.left=left+'px';
+}
+document.addEventListener('mousedown',e=>{ const c=document.getElementById('calPop'); if(c&&!c.contains(e.target)&&!(e.target.closest&&e.target.closest('.date-field'))) closeCal(); });
+
+/* ---------- เปิดระบบ ---------- */
+function phcRetryBoot(){ $('errGate').classList.add('hidden'); $('gate').classList.remove('hidden'); boot(); }
+async function boot(){
+  try{
+    const r=await call('swApiBootstrap', BOOT.launchToken);
+    S.token=r.sessionToken; S.user=r.user; S.lists=r.lists||{}; S.settings=r.settings||{}; S.dw=r.dateWindow; S.home=r.home;
+    $('uName').textContent=S.user.fullName; $('avatar').textContent=initial(S.user.fullName);
+    $('uMeta').textContent=[S.user.workGroup, S.user.isAdmin?'ผู้ดูแลระบบ':(S.user.canEdit?'แก้ไขได้':(S.user.canAdd?'บันทึกได้':'ดูอย่างเดียว'))].filter(Boolean).join(' · ');
+    $('navSettings').classList.toggle('hidden',!S.user.isAdmin);
+    $('fyBadge').textContent='ปีงบประมาณ '+S.dw.fy;
+    document.querySelectorAll('#nav button[data-page]').forEach(b=>b.addEventListener('click',()=>{ toggleSide(false); go(b.dataset.page); }));
+    window.__swBooted=true; $('gate').classList.add('hidden'); $('app').classList.remove('hidden');
+    let last='home'; try{ last=sessionStorage.getItem('swcr3.page')||'home'; }catch(e){}
+    go(TITLES[last]&&(last!=='settings'||isAdmin())?last:'home');
+    refreshInboxBadge();
+  }catch(e){ $('gate').classList.add('hidden'); $('errText').textContent=e.message; $('errGate').classList.remove('hidden'); }
+}
+function initial(name){ let n=String(name||'?'); ['นางสาว','นาย','นาง','ดร.'].forEach(p=>{ if(n.indexOf(p)===0) n=n.slice(p.length); }); return n.trim().charAt(0)||'?'; }
+function go(page, keep){
+  S.page=page; try{ sessionStorage.setItem('swcr3.page',page); }catch(e){}
+  document.querySelectorAll('#nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  $('pageTitle').textContent=TITLES[page]; closeModal(); window.scrollTo(0,0);
+  ({home:renderHome,clients:()=>renderClients(keep),history:()=>renderHistory(keep),inbox:renderInbox,report:renderReport,settings:renderSettings}[page])();
+}
+
+/* =====================================================================
+ * ภาพรวม
+ * ===================================================================== */
+async function renderHome(){
+  if(!S.home) loading();
+  else drawHome();
+  try{ S.home=await api('swApiHome'); if(S.page==='home') drawHome(); }catch(e){ if(!S.home) errBox(e); }
+}
+function drawHome(){
+  const h=S.home, k=h.kpi||{}, alerts=[];
+  if(h.referPending) alerts.push(['d','📤 ส่งผลกลับระบบส่งต่อไม่สำเร็จ '+h.referPending+' งาน','กดส่งอีกครั้งได้ที่หน้า "รับจากระบบส่งต่อ"',"go('inbox')",'ไปส่งผลกลับ']);
+  if(S.inboxNew) alerts.push(['i','📥 มีใบส่งต่อถึงงานสังคมสงเคราะห์ '+S.inboxNew+' รายการ','รับงานและบันทึกผลได้ทันที',"go('inbox')",'ดูรายการ']);
+  if(S.dw&&S.dw.allowPrev) alerts.push(['w','📅 ยังบันทึกย้อนหลังเข้าปีงบ '+(S.dw.fy-1)+' ได้ถึง '+thDate(S.dw.prevUntil,true),'เลือก "วันที่รับเรื่อง" ในฟอร์มบันทึกงาน','','']);
+  $('content').innerHTML='<div class="page-head"><div><h2>ภาพรวม</h2><p>ปีงบประมาณ '+h.fy+' · วันนี้ '+esc(thDate(h.today,true))+'</p></div><div class="actions">'+(canAdd()?'<button class="phc-btn" type="button" onclick="go(\'clients\')">📝 บันทึกงาน</button>':'')+'</div></div>'
+    +'<div class="grid g4">'
+    +'<div class="stat link" onclick="histPreset({fy:'+h.fy+'})"><span>การให้บริการปีงบนี้</span><b>'+num(k.visits)+' ครั้ง</b><i>เดือนนี้ '+num(k.monthVisits)+' ครั้ง</i></div>'
+    +'<div class="stat"><span>ผู้ใช้บริการปีงบนี้</span><b>'+num(k.patients)+' คน</b><i>เคสใหม่ '+num(k.newCase)+' ราย</i></div>'
+    +'<div class="stat link" onclick="histPreset({from:\''+h.today+'\',to:\''+h.today+'\'})"><span>บันทึกวันนี้</span><b>'+num(k.todayVisits)+' งาน</b><i>ของฉัน '+num(k.myToday)+' งาน</i></div>'
+    +'<div class="stat link" onclick="go(\'inbox\')"><span>ใบส่งต่อรอดำเนินการ</span><b id="homeInbox">'+(S.inboxNew==null?'…':num(S.inboxNew))+'</b><i>จากระบบส่งต่อกลาง</i></div>'
+    +'</div>'
+    +(alerts.length?'<div class="grid" style="gap:8px;margin-top:12px">'+alerts.map(t=>'<div class="alert-row '+t[0]+'"><b>'+esc(t[1])+'</b>'+(t[2]?'<span>'+esc(t[2])+'</span>':'')+(t[3]?'<button class="phc-btn phc-btn--secondary phc-btn--sm go" type="button" onclick="'+t[3]+'">'+esc(t[4])+'</button>':'')+'</div>').join('')+'</div>':'')
+    +'<div class="card" style="margin-top:14px"><div class="card-head"><h3>งานล่าสุด</h3><button class="phc-btn phc-btn--ghost phc-btn--sm" type="button" onclick="go(\'history\')">ดูประวัติงานทั้งหมด</button></div>'+visitTable(h.recent||[], 'ยังไม่มีงานที่บันทึก')+'</div>';
+}
+/** ตารางงาน (ใช้ร่วม: ภาพรวม · ประวัติ · แฟ้ม · รายงาน) */
+function visitTable(rows, emptyText, noPatient){
+  if(!rows.length) return '<div class="empty">'+esc(emptyText||'ไม่พบข้อมูล')+'</div>';
+  return '<div class="table-wrap"><table class="t rt"><thead><tr><th>วันที่รับเรื่อง</th>'+(noPatient?'':'<th>ผู้ใช้บริการ</th>')+'<th>เรื่อง</th><th>กลุ่มเป้าหมาย</th><th class="hide-sm">เลขที่</th><th class="hide-sm">ผู้บันทึก</th></tr></thead><tbody>'
+    +rows.map(r=>'<tr class="click" onclick="openVisit(\''+esc(r.VisitID)+'\')"><td><b class="nowrap">'+esc(thDate(r.ReceivedKey))+'</b><small>'+esc(timeOf(r.CaseReceivedAt))+' · ครั้งที่ '+esc(r.VisitNo||'-')+'</small></td>'
+      +(noPatient?'':'<td><b>'+esc(r.PatientName||'-')+'</b><small>'+(r.HN?'HN '+esc(r.HN):'')+(r.CIDMasked?' · '+esc(r.CIDMasked):'')+'</small></td>')
+      +'<td class="reason">'+esc(r.ServiceReason||'-')+refChip(r)+'</td><td>'+(r.TargetGroup?esc(r.TargetGroup):'-')+(r.WelfareGroup?'<small>สวัสดิการ: '+esc(r.WelfareGroup)+'</small>':'')+'</td>'
+      +'<td class="hide-sm nowrap">'+esc(r.VisitSN||'')+'<small>เคส '+esc(r.CaseSN||'')+'</small></td><td class="hide-sm">'+esc(r.CreatedByName||'-')+'</td></tr>').join('')
+    +'</tbody></table></div>';
+}
+function refChip(r){ if(!r.RefReferralSN) return ''; const st=r.RefResultStatus; return '<div style="margin-top:4px">'+chip('📥 '+r.RefReferralSN, 'info')+(st==='FAILED'?chip('ส่งผลกลับไม่สำเร็จ','danger'):(st==='SENT'?chip('ส่งผลกลับแล้ว','success'):''))+'</div>'; }
+
+/* =====================================================================
+ * ผู้ใช้บริการ: ค้นหา → แฟ้ม
+ * ===================================================================== */
+function renderClients(keep){
+  if(keep==='file'&&S.file){ drawFile(); return; }
+  if(keep==='form'&&S.form){ drawForm(); return; }
+  S.form=null;
+  $('content').innerHTML='<div class="page-head"><div><h2>ค้นหาผู้ใช้บริการ</h2><p>ค้นจากเวชระเบียนกลาง ด้วย HN / เลขบัตรประชาชน / ชื่อ–นามสกุล</p></div><div class="actions">'+(canAdd()?'<button class="phc-btn phc-btn--secondary" type="button" onclick="newPatientForm()">➕ เพิ่มผู้ป่วยใหม่</button>':'')+'</div></div>'
+    +(S.pendingRef?'<div class="ref-banner"><b>📥 กำลังบันทึกงานจากใบส่งต่อ '+esc(S.pendingRef.ReferralSN)+'</b> — '+esc(S.pendingRef.PatientName||'')+(S.pendingRef.HN?' (HN '+esc(S.pendingRef.HN)+')':'')+'<br><span class="small">ค้นหาและเลือกผู้ป่วยให้ตรงกับใบส่งต่อ แล้วกด "บันทึกงานใหม่"</span> <button class="phc-btn phc-btn--ghost phc-btn--sm" type="button" onclick="S.pendingRef=null;renderClients()">ยกเลิกใบส่งต่อ</button></div>':'')
+    +'<div class="card"><form class="toolbar" onsubmit="event.preventDefault();doSearch()" style="margin:0"><input class="phc-input grow" id="q" value="'+esc(S.q)+'" placeholder="พิมพ์ HN / เลขบัตร 13 หลัก / ชื่อ หรือ นามสกุล" autocomplete="off"><button class="phc-btn" type="submit" id="qBtn">🔍 ค้นหา</button></form></div>'
+    +'<div id="found" style="margin-top:12px"></div>';
+  if(S.found) drawFound(); setTimeout(()=>{ const q=$('q'); if(q) q.focus(); },30);
+}
+async function doSearch(){
+  const q=val('q'); S.q=q;
+  if(q.length<2){ toast('กรุณาพิมพ์อย่างน้อย 2 ตัวอักษร',true); return; }
+  const b=$('qBtn'); setBusy(b,true,'<span class="spinner sm"></span> กำลังค้นหา…');
+  try{ S.found=await api('swApiSearch', q); drawFound(); }catch(e){ toast(e.message,true); }
+  finally{ setBusy(b,false); }
+}
+function drawFound(){
+  const box=$('found'); if(!box) return; const rows=S.found||[];
+  box.innerHTML=rows.length?'<div class="muted small" style="margin-bottom:6px">พบ '+rows.length+' คน'+(rows.length>=30?' (แสดง 30 คนแรก พิมพ์ให้เจาะจงขึ้น)':'')+'</div><div class="grid" style="gap:8px">'+rows.map(p=>'<button type="button" class="pick" onclick="openFile(\''+esc(p.PatientID)+'\')"><div><b>'+esc(p.FullName)+'</b><span>'+[p.HN?'HN '+p.HN:'', p.CIDMasked, p.Gender, p.AgeText].filter(Boolean).map(esc).join(' · ')+'</span><br><span>'+esc(p.AddressText||'ไม่มีที่อยู่')+(p.Phone?' · 📞 '+esc(p.Phone):'')+'</span></div><div class="r">'+(p.sw?chip('เคยรับบริการ '+p.sw.visits+' ครั้ง','success')+'<br><span>ล่าสุด '+esc(thDate(p.sw.last))+'</span>':chip('ยังไม่เคยรับบริการ','neutral'))+'</div></button>').join('')+'</div>'
+    :'<div class="card empty"><p>ไม่พบในเวชระเบียนกลาง</p>'+(canAdd()?'<button class="phc-btn" type="button" onclick="newPatientForm()">➕ เพิ่มผู้ป่วยใหม่</button>':'')+'</div>';
+}
+async function openFile(pid, quiet){
+  if(!quiet) loading('กำลังดึงข้อมูลล่าสุดจากเวชระเบียนกลาง…');
+  try{ S.file=await api('swApiPatient', pid); S.form=null; if(S.page!=='clients'){ go('clients','file'); } else drawFile(); }
+  catch(e){ errBox(e, "openFile('"+esc(pid)+"')"); }
+}
+function adpChip(a){ if(!a||!a.found) return a&&a.error?chip('อ่านข้อมูลผ้าอ้อมไม่ได้','neutral'):''; return chip('🩲 ผ้าอ้อม: '+a.text, a.status==='ACTIVE'?(a.validNow?'success':'warning'):(a.status==='RESERVE'?'info':'neutral'))+(a.status==='ACTIVE'?(a.validNow?'<span class="xs muted"> ผลประเมินถึง '+esc(thDate(a.validUntil))+'</span>':'<span class="xs muted"> ยังไม่มีผลประเมินที่ใช้ได้</span>'):''); }
+function contactsView(list){
+  if(!list||!list.length) return '<div class="muted">ยังไม่มีข้อมูลผู้ติดต่อ</div>';
+  return list.map(c=>'<div class="ct-view"><b>'+esc(c.RoleTH)+(c.Relation?' ('+esc(c.Relation)+')':'')+'</b>'+(c.Name?' · '+esc(c.Name):'')+(c.hasCID?' <span class="xs muted">'+esc(c.CIDMasked)+'</span>':'')+'<div>'+(c.Phones.length?c.Phones.map(p=>'<a href="tel:'+esc(digits(p))+'">📞 '+esc(p)+'</a>'+(c.PrimaryPhone&&digits(c.PrimaryPhone)===digits(p)?chip('เบอร์หลัก','success'):'')).join(' '):'<span class="muted small">ไม่มีเบอร์</span>')+'</div>'+(c.Note?'<div class="xs muted">'+esc(c.Note)+'</div>':'')+'</div>').join('');
+}
+function drawFile(){
+  const f=S.file, c=f.central, minor=c.AgeYears!=null&&c.AgeYears<18;
+  $('content').innerHTML='<div class="page-head"><div><button class="phc-btn phc-btn--ghost phc-btn--sm" type="button" onclick="S.file=null;renderClients()">← กลับไปค้นหา</button></div><div class="actions">'
+      +(canAdd()?'<button class="phc-btn" type="button" onclick="newVisit()">📝 บันทึกงานใหม่</button>':'')
+      +(canAdd()||canEdit()?'<button class="phc-btn phc-btn--secondary" type="button" onclick="editPatientForm()">✏️ แก้ไขข้อมูลส่วนตัว / ผู้ติดต่อ</button>':'')+'</div></div>'
+    +(S.pendingRef?'<div class="ref-banner"><b>📥 ใบส่งต่อ '+esc(S.pendingRef.ReferralSN)+'</b> — '+esc(S.pendingRef.PatientName||'')+' · กด "บันทึกงานใหม่" เพื่อบันทึกผลของใบส่งต่อนี้</div>':'')
+    +'<div class="grid g2" style="align-items:start">'
+    +'<div class="card"><div class="pt-head"><div><h2>'+esc(c.FullName)+'</h2><div class="sub">'+[c.HN?'HN '+c.HN:'', c.CIDMasked, c.Gender, c.AgeText?'อายุ '+c.AgeText:''].filter(Boolean).map(esc).join(' · ')+'</div></div><div>'+adpChip(f.adp)+'</div></div>'
+      +'<div class="kv" style="margin-top:12px"><span>วันเกิด</span><div>'+esc(c.BirthDate||'-')+'</div><span>สิทธิการรักษา</span><div>'+esc(c.MainRight||'-')+(c.SubRight?' · '+esc(c.SubRight):'')+'</div>'
+      +'<span>ที่อยู่</span><div>'+esc(f.addressText||'-')+'</div><span>เบอร์ (กลาง)</span><div>'+(c.Phone?'<a href="tel:'+esc(digits(c.Phone))+'">'+esc(c.Phone)+'</a>':'-')+'</div>'
+      +(c.MaritalStatus||c.EducationLevel||c.Occupation?'<span>สถานภาพ / การศึกษา / อาชีพ</span><div>'+[c.MaritalStatus,c.EducationLevel,c.Occupation].map(x=>esc(x||'-')).join(' · ')+'</div>':'')
+      +(f.defaults&&f.defaults.WelfareGroup?'<span>กลุ่มสิทธิสวัสดิการ</span><div>'+esc(f.defaults.WelfareGroup)+' <span class="xs muted">(จากงานล่าสุด)</span></div>':'')+'</div>'
+      +'<div class="sync-line">🔄 ข้อมูลส่วนตัวจากเวชระเบียนกลาง ณ '+esc(f.at)+'</div></div>'
+    +'<div class="card"><div class="card-head"><h3>ผู้ติดต่อ</h3>'+(minor&&!f.contacts.some(x=>x.Role!=='SELF')?chip('อายุต่ำกว่า 18 ปี ยังไม่มีข้อมูลบิดา/มารดา/ญาติ','warning'):'')+'</div>'+contactsView(f.contacts)+'</div>'
+    +'</div>'
+    +'<div class="card" style="margin-top:14px"><div class="card-head"><h3>ประวัติการรับบริการ ('+f.visits.length+' ครั้ง)</h3></div>'+visitTable(f.visits,'ยังไม่เคยรับบริการงานสังคมสงเคราะห์',true)+'</div>';
+}
+
+/* ---------- ฟอร์มข้อมูลส่วนตัว (ช่องเดียวกับเวชระเบียนกลาง) ---------- */
+function personForm(d, mode){
+  d=d||{}; const L=S.lists;
+  const cidPh=mode==='edit'?(d.hasCID?'เดิม '+(d.CIDMasked||'')+' · กรอกเฉพาะเมื่อต้องการแก้':'ยังไม่มีเลขบัตร · กรอกได้'):'13 หลัก';
+  return '<div class="form-grid">'
+    +field('คำนำหน้า',selectHtml('pPre',L.prefixes,d.Prefix,'-'))+field('เพศ',selectHtml('pSex',L.genders,d.Gender),'',mode==='new'?1:0)
+    +field('ชื่อ',inputHtml('pFn',d.FirstName),'',1)+field('นามสกุล',inputHtml('pLn',d.LastName),'',1)
+    +field('HN',inputHtml('pHn',d.HN,'placeholder="เช่น 1234/69-37"'))
+    +field('เลขบัตรประชาชน',inputHtml('pCid',mode==='new'?d.CID:'','inputmode="numeric" maxlength="13" placeholder="'+esc(cidPh)+'" oninput="cidHint()"')+'<div class="hint" id="pCidMsg">'+(mode==='edit'?esc(cidPh):'')+'</div>')
+    +field('วันเกิด (วว/ดด/ปปปป พ.ศ.)',inputHtml('pBd',d.BirthDate,'placeholder="เช่น 15/03/2488" oninput="bdHint();guardCheck()"')+'<div class="hint" id="pBdMsg"></div>','',mode==='new'?1:0)
+    +field('สถานภาพสมรส',selectHtml('pMar',L.maritalStatuses,d.MaritalStatus))
+    +field('สิทธิการรักษา','<select class="phc-select" id="pMain" onchange="subFill(\'\')">'+opt('','ไม่ระบุ')+(L.mainRights||[]).map(x=>opt(x,x,x===d.MainRight)).join('')+'</select>')
+    +field('สิทธิย่อย','<select class="phc-select" id="pSub"></select>','',0,'ผู้สูงอายุ / ผู้พิการ / อสส. ให้เลือกที่ "กลุ่มสิทธิสวัสดิการ"')
+    +field('ระดับการศึกษา',selectHtml('pEdu',L.educationLevels,d.EducationLevel))+field('อาชีพ',selectHtml('pOcc',L.occupations,d.Occupation))
+    +'<div class="full form-sub">ที่อยู่ปัจจุบัน</div>'
+    +field('บ้านเลขที่',inputHtml('pHouse',d.HouseNo))+field('หมู่บ้าน / อาคาร / ชุมชน',inputHtml('pDetail',d.AddressDetail))
+    +field('หมู่',inputHtml('pMoo',d.Moo))+field('ซอย',inputHtml('pSoi',d.Soi))
+    +field('ถนน',inputHtml('pRoad',d.Road))+field('แขวง / ตำบล',inputHtml('pSub2',d.SubDistrict))
+    +field('เขต / อำเภอ',inputHtml('pDist',d.District))+field('จังหวัด',inputHtml('pProv',d.Province||(mode==='new'?'กรุงเทพมหานคร':'')))
+    +field('รหัสไปรษณีย์',inputHtml('pZip',d.ZipCode,'inputmode="numeric" maxlength="5"'))
+    +'</div>';
+}
+function personInit(d){ subFill(d&&d.SubRight||''); bdHint(); }
+function subFill(cur){ const m=$('pMain'), s=$('pSub'); if(!m||!s) return; const list=(S.lists.subRights||[]).filter(x=>!m.value||x.parent===m.value);
+  s.innerHTML=opt('','ไม่ระบุ')+list.map(x=>opt(x.value,x.value,x.value===cur)).join(''); }
+function cidHint(){ const v=digits(val('pCid')), el=$('pCidMsg'); if(!el) return; if(!v){ el.textContent=''; el.className='hint'; return; } el.textContent=v.length<13?('กรอกแล้ว '+v.length+'/13 หลัก'):(cidOk(v)?'✓ เลขบัตรถูกต้อง':'✗ เลขบัตรไม่ถูกต้อง (ตรวจหลักสุดท้ายไม่ผ่าน)'); el.className='hint '+(v.length===13?(cidOk(v)?'ok-t':'bad-t'):''); }
+function bdHint(){ const el=$('pBdMsg'); if(!el) return; const k=birthKeyFromBE(val('pBd')); el.className='hint'+(k===null?' bad-t':''); el.textContent=k===null?'รูปแบบวันเกิดไม่ถูกต้อง':(k?'อายุ '+ageYears(k)+' ปี · '+thDate(k,true):''); }
+function readPerson(mode){
+  const o={ Prefix:val('pPre'), Gender:val('pSex'), FirstName:val('pFn'), LastName:val('pLn'), HN:val('pHn'), CID:digits(val('pCid')), MaritalStatus:val('pMar'), MainRight:val('pMain'), SubRight:val('pSub'),
+    EducationLevel:val('pEdu'), Occupation:val('pOcc'), HouseNo:val('pHouse'), AddressDetail:val('pDetail'), Moo:val('pMoo'), Soi:val('pSoi'), Road:val('pRoad'), SubDistrict:val('pSub2'), District:val('pDist'), Province:val('pProv'), ZipCode:digits(val('pZip')) };
+  const bd=birthKeyFromBE(val('pBd'));
+  if(!o.FirstName||!o.LastName) return {err:'กรุณากรอกชื่อและนามสกุล', el:'pFn'};
+  if(mode==='new'&&!o.HN&&!o.CID) return {err:'กรุณาระบุ HN หรือเลขบัตรประชาชนอย่างน้อย 1 อย่าง', el:'pHn'};
+  if(o.CID&&!cidOk(o.CID)) return {err:'เลขบัตรประชาชนไม่ถูกต้อง', el:'pCid'};
+  if(mode==='new'&&!o.Gender) return {err:'กรุณาเลือกเพศ', el:'pSex'};
+  if(bd===null) return {err:'วันเกิดไม่ถูกต้อง (วว/ดด/ปปปป พ.ศ.)', el:'pBd'};
+  if(mode==='new'&&!bd) return {err:'กรุณาระบุวันเกิด', el:'pBd'};
+  if(bd&&bd>todayKey()) return {err:'วันเกิดต้องไม่เป็นวันที่ในอนาคต', el:'pBd'};
+  if(o.ZipCode&&o.ZipCode.length!==5) return {err:'รหัสไปรษณีย์ต้องมี 5 หลัก', el:'pZip'};
+  o.BirthDate=bd?keyToBE(bd):'';
+  return {person:o};
+}
+
+/* ---------- ผู้ติดต่อ (บิดา / มารดา / ญาติ / ผู้ดูแล + หลายเบอร์) ---------- */
+let CT_SEQ=0;
+function contactsEditor(){
+  const roles=(S.lists.contactRoles||[]);
+  return '<div id="guardNote" class="alert-row w guard-note hidden"><b>👶 ผู้ใช้บริการอายุต่ำกว่า 18 ปี</b><span>กรุณาระบุบิดา / มารดา หรือญาติที่ดูแล พร้อมเบอร์โทร</span></div>'
+    +'<div id="ctBox"></div><datalist id="ctRelList">'+(S.lists.relations||[]).map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist><datalist id="ctPreList">'+['นาย','นาง','นางสาว'].map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>'
+    +'<div class="ct-add"><span class="small muted" style="align-self:center">เพิ่มผู้ติดต่อ:</span>'+roles.filter(r=>r.value!=='SELF').map(r=>'<button type="button" class="phc-btn phc-btn--ghost phc-btn--sm" onclick="ctAdd({Role:\''+r.value+'\'},true)">➕ '+esc(r.label)+'</button>').join('')+'</div>';
+}
+function ctInit(list){ const box=$('ctBox'); if(!box) return; box.innerHTML=''; list=(list||[]).slice(); if(!list.some(c=>c.Role==='SELF')) list.unshift({Role:'SELF'}); list.forEach(c=>ctAdd(c)); ctFixPrimary(); guardCheck(); }
+function ctAdd(c, focus){
+  c=c||{}; const box=$('ctBox'), n=++CT_SEQ, card=document.createElement('div'), self=c.Role==='SELF';
+  card.className='ctc'; card.dataset.id=c.ContactID||''; card.dataset.hascid=c.hasCID?'1':''; card.id='ctc'+n;
+  const roles=(S.lists.contactRoles||[]).filter(r=>self?r.value==='SELF':r.value!=='SELF');
+  card.innerHTML='<div class="ctc-head"><select class="phc-select ct-role" aria-label="ความสัมพันธ์กับผู้ใช้บริการ" onchange="ctRole(this)" '+(self?'disabled':'')+'>'+roles.map(r=>opt(r.value,self?'📞 เบอร์ของผู้ใช้บริการเอง':r.label,r.value===c.Role)).join('')+'</select>'
+    +'<input class="phc-input rel ct-rel" list="ctRelList" placeholder="ความเกี่ยวข้อง เช่น ป้า / ยาย" value="'+esc(c.Relation||'')+'" aria-label="ความเกี่ยวข้อง">'
+    +(self?'':'<button type="button" class="xbtn" title="เอาผู้ติดต่อนี้ออก" aria-label="เอาผู้ติดต่อนี้ออก" onclick="ctDel(this)">✕</button>')+'</div>'
+    +(self?'':'<div class="ctc-name"><input class="phc-input ct-pre" list="ctPreList" placeholder="คำนำหน้า" value="'+esc(c.Prefix||'')+'" aria-label="คำนำหน้า"><input class="phc-input ct-fn" placeholder="ชื่อ" value="'+esc(c.FirstName||'')+'" aria-label="ชื่อผู้ติดต่อ"><input class="phc-input ct-ln" placeholder="นามสกุล" value="'+esc(c.LastName||'')+'" aria-label="นามสกุลผู้ติดต่อ"><input class="phc-input ct-cid" inputmode="numeric" maxlength="13" placeholder="'+(c.hasCID?'เลขบัตร: '+esc(c.CIDMasked)+' (เว้นว่าง = เดิม)':'เลขบัตรประชาชน (ถ้ามี)')+'" aria-label="เลขบัตรประชาชนผู้ติดต่อ"></div>')
+    +'<div class="ct-phs"></div><button type="button" class="phc-btn phc-btn--ghost phc-btn--sm" onclick="phAdd(this.closest(\'.ctc\'),\'\',false,true)">➕ เพิ่มเบอร์</button>';
+  box.appendChild(card); ctRole(card.querySelector('.ct-role'));
+  const phones=(c.Phones&&c.Phones.length)?c.Phones:[''];
+  phones.forEach(p=>phAdd(card,p,c.PrimaryPhone&&digits(c.PrimaryPhone)===digits(p)));
+  if(focus){ const f=card.querySelector('.ct-fn'); if(f) f.focus(); }
+  return card;
+}
+function ctRole(sel){ const card=sel.closest('.ctc'), r=sel.value, rel=card.querySelector('.ct-rel'); rel.classList.toggle('hidden', !(r==='RELATIVE'||r==='OTHER')); card.dataset.role=r; }
+function phAdd(card, p, pri, focus){ const box=card.querySelector('.ct-phs'), row=document.createElement('div'); row.className='ph-row';
+  row.innerHTML='<input class="phc-input ct-ph" inputmode="tel" placeholder="เบอร์โทร" value="'+esc(p||'')+'" aria-label="เบอร์โทร"><label class="ph-pri"><input type="radio" name="ctPri" '+(pri?'checked':'')+'> เบอร์หลัก</label><button type="button" class="xbtn" title="เอาเบอร์นี้ออก" aria-label="เอาเบอร์นี้ออก" onclick="phDel(this)">✕</button>';
+  box.appendChild(row); if(focus) row.querySelector('input').focus(); }
+function phDel(b){ const row=b.closest('.ph-row'), box=row.parentNode; if(box.children.length>1) row.remove(); else row.querySelector('input').value=''; ctFixPrimary(); }
+function ctDel(b){ b.closest('.ctc').remove(); ctFixPrimary(); guardCheck(); }
+function ctFixPrimary(){ const box=$('ctBox'); if(!box) return; if(!box.querySelector('input[name=ctPri]:checked')){ const first=[...box.querySelectorAll('.ph-row')].find(r=>r.querySelector('.ct-ph').value.trim()); const rd=(first||box.querySelector('.ph-row')||{querySelector:()=>null}).querySelector('input[type=radio]'); if(rd) rd.checked=true; } }
+function isMinor(){ const k=birthKeyFromBE(val('pBd')); const a=k?ageYears(k):null; if(a!==null&&a<18) return true; if(a===null){ if(has(val('vTg'),'เด็ก')||val('vWelfare')==='เด็ก 0-12 ปี') return true; } return false; }
+function guardCheck(){ const note=$('guardNote'), box=$('ctBox'); if(!note||!box) return; const minor=isMinor(); note.classList.toggle('hidden',!minor);
+  if(minor&&!S.guardAdded&&!box.querySelector('.ctc[data-role=FATHER],.ctc[data-role=MOTHER],.ctc[data-role=RELATIVE],.ctc[data-role=CAREGIVER]')){ S.guardAdded=true; ctAdd({Role:'FATHER'}); ctAdd({Role:'MOTHER'}); } }
+function readContacts(){
+  const out=[], seen={}; let err='';
+  document.querySelectorAll('#ctBox .ctc').forEach((card,i)=>{
+    const g=c=>{ const el=card.querySelector(c); return el?el.value.trim():''; };
+    const role=card.querySelector('.ct-role').value, rel=g('.ct-rel'), pre=g('.ct-pre'), fn=g('.ct-fn'), ln=g('.ct-ln'), cid=digits(g('.ct-cid'));
+    let primary=''; const phones=[];
+    card.querySelectorAll('.ph-row').forEach(r=>{ const ph=r.querySelector('.ct-ph').value.trim(); if(!ph) return; const dg=digits(ph);
+      if(dg.length<6||dg.length>15) err=err||('เบอร์ '+ph+' ไม่ถูกต้อง'); if(seen[dg]) err=err||('เบอร์ '+ph+' ซ้ำกัน'); seen[dg]=1; phones.push(ph); if(r.querySelector('input[type=radio]').checked) primary=ph; });
+    const roleTH=(S.lists.contactRoles.find(x=>x.value===role)||{}).label||role;
+    if(role!=='SELF'&&!fn&&!ln&&!phones.length&&!cid&&!rel) return; /* การ์ดว่าง = ข้าม */
+    if(role!=='SELF'&&!fn&&!ln&&!phones.length) err=err||('ผู้ติดต่อ ('+roleTH+'): กรุณากรอกชื่อหรือเบอร์โทร');
+    if((role==='RELATIVE'||role==='OTHER')&&!rel) err=err||('ผู้ติดต่อ ('+roleTH+'): กรุณาระบุความเกี่ยวข้อง เช่น ป้า / ยาย');
+    if(cid&&!cidOk(cid)) err=err||('เลขบัตรประชาชนของผู้ติดต่อ ('+roleTH+') ไม่ถูกต้อง');
+    out.push({ContactID:card.dataset.id||'', Role:role, Relation:rel, Prefix:pre, FirstName:fn, LastName:ln, CID:cid, Phones:phones, PrimaryPhone:primary});
+  });
+  return {list:out, err:err};
+}
+
+/* ---------- ผู้ป่วยใหม่ / แก้ข้อมูลส่วนตัว ---------- */
+function guessFromQuery(){ const q=S.q||'', d=digits(q), o={}; if(d.length===13&&d===q.split(' ').join('').split('-').join('')) o.CID=d; else if(has(q,'/')) o.HN=q; else if(q){ const p=q.split(' ').filter(Boolean); o.FirstName=p[0]||''; o.LastName=p.slice(1).join(' '); } return o; }
+function newPatientForm(){
+  S.form={mode:'patientNew'}; S.guardAdded=false; if(S.page!=='clients'){ go('clients','form'); return; } drawForm();
+}
+function editPatientForm(){ S.form={mode:'patientEdit'}; S.guardAdded=true; drawForm(); }
+function drawForm(){
+  const F=S.form; if(F.mode==='visit'){ drawVisitForm(); return; }
+  const isNew=F.mode==='patientNew', f=S.file, d=isNew?Object.assign({Province:'กรุงเทพมหานคร'},guessFromQuery()):personDefaults(f, null);
+  $('content').innerHTML='<div class="form-wrap"><div class="page-head"><div><h2>'+(isNew?'เพิ่มผู้ป่วยใหม่':'แก้ไขข้อมูลส่วนตัว / ผู้ติดต่อ')+'</h2><p>'+(isNew?'บันทึกเข้าเวชระเบียนกลาง (ระบบตรวจคนซ้ำให้ก่อนบันทึก)':esc(f.central.FullName)+' · ช่องที่แก้จะบันทึกเข้าเวชระเบียนกลางด้วย (เฉพาะช่องที่เปลี่ยน)')+'</p></div></div>'
+    +'<div id="dupBox"></div>'
+    +'<div class="form-sec"><h4>ข้อมูลส่วนตัว<small>ชุดเดียวกับเวชระเบียนกลาง</small></h4>'+personForm(d, isNew?'new':'edit')+'</div>'
+    +'<div class="form-sec"><h4>ผู้ติดต่อ<small>บิดา / มารดา / ญาติ / ผู้ดูแล · หลายเบอร์ได้ · เลือกเบอร์หลัก 1 เบอร์ (ส่งเข้าเวชระเบียนกลาง)</small></h4>'+contactsEditor()+'</div>'
+    +'<div class="save-bar"><span class="grow small muted">'+(isNew?'หลังบันทึก กด "บันทึกงานใหม่" ต่อได้ทันที':'มีสิทธิ์แค่ "เพิ่ม" = แก้ผู้ติดต่อได้ · แก้ข้อมูลเวชระเบียนกลางต้องมีสิทธิ์ "แก้ไข"')+'</span><button class="phc-btn phc-btn--secondary" type="button" onclick="cancelForm()">ยกเลิก</button><button class="phc-btn" type="button" id="saveBtn" onclick="savePatient(false)">💾 '+(isNew?'บันทึกผู้ป่วยใหม่':'บันทึกการแก้ไข')+'</button></div></div>';
+  personInit(d); ctInit(isNew?[]:f.contacts);
+}
+function cancelForm(){ const F=S.form; S.form=null; if(F&&F.mode!=='patientNew'&&S.file) drawFile(); else renderClients(); }
+function formErr(msg, elId){ toast(msg,true); const el=elId&&$(elId); if(el){ el.focus(); el.scrollIntoView({block:'center'}); } }
+async function savePatient(force){
+  const isNew=S.form.mode==='patientNew', p=readPerson(isNew?'new':'edit'); if(p.err){ formErr(p.err,p.el); return; }
+  const ct=readContacts(); if(ct.err){ formErr(ct.err); return; }
+  const b=$('saveBtn'); setBusy(b,true);
+  try{
+    if(isNew){
+      const r=await api('swApiRegisterPatient',{person:p.person, Contacts:ct.list, forceCreate:!!force});
+      if(r.duplicate){ dupBox(r); return; }
+      S.file=r.file; S.form=null; toast('เพิ่มผู้ป่วยใหม่เข้าเวชระเบียนกลางแล้ว'); if(r.warn) toast(r.warn,true); drawFile();
+    } else {
+      const r=await api('swApiUpdatePatient',{PatientID:S.file.central.PatientID, person:p.person, Contacts:ct.list});
+      S.file=r.file; S.form=null; toast(r.changed.length?'บันทึกแล้ว · อัปเดตเวชระเบียนกลาง: '+r.changed.map(fieldTH).join(', '):'บันทึกแล้ว (ข้อมูลเวชระเบียนกลางไม่เปลี่ยน)'); if(r.warn) toast(r.warn,true); drawFile();
+    }
+  }catch(e){ toast(e.message,true); }
+  finally{ setBusy(b,false); }
+}
+function dupBox(r){
+  const box=$('dupBox'); box.innerHTML='<div class="dup"><b>⚠️ '+esc(r.message||'พบข้อมูลที่อาจซ้ำในเวชระเบียนกลาง')+'</b><p class="small" style="margin:4px 0 8px">ถ้าเป็นคนเดียวกัน ให้เลือกรายชื่อด้านล่าง (ไม่ต้องเพิ่มใหม่)</p><div class="grid" style="gap:8px">'
+    +r.matches.map(m=>'<button type="button" class="pick" onclick="openFile(\''+esc(m.PatientID)+'\')"><div><b>'+esc(m.FullName)+'</b><span>'+[m.HN?'HN '+m.HN:'',m.CIDMasked,m.BirthDate?'เกิด '+m.BirthDate:'',m.AgeText].filter(Boolean).map(esc).join(' · ')+'</span><br><span>'+esc(m.AddressText||'')+'</span></div><div class="r">'+chip(m.reason||'อาจซ้ำ','warning')+'<br><span>เลือกคนนี้ →</span></div></button>').join('')
+    +'</div>'+(r.canForceCreate===false?'<p class="small" style="margin:10px 0 0"><b>เลขบัตรประชาชนหรือ HN นี้มีอยู่แล้ว — กรุณาเลือกคนเดิม</b></p></div>':'<div style="margin-top:10px"><button class="phc-btn phc-btn--secondary phc-btn--sm" type="button" onclick="confirmBox(\'ยืนยันเพิ่มผู้ป่วยใหม่\',\'ไม่ใช่คนเดียวกับรายชื่อที่พบ ต้องการเพิ่มเป็นผู้ป่วยใหม่ในเวชระเบียนกลาง\',\'เพิ่มใหม่\').then(ok=>{ if(ok) savePatient(true); })">ไม่ใช่คนเดียวกัน → เพิ่มใหม่</button></div></div>');
+  box.scrollIntoView({block:'start'});
+}
+const FIELD_TH={HN:'HN',CID:'เลขบัตร',Prefix:'คำนำหน้า',Gender:'เพศ',FirstName:'ชื่อ',LastName:'นามสกุล',BirthDate:'วันเกิด',HouseNo:'บ้านเลขที่',Moo:'หมู่',Road:'ถนน',SubDistrict:'แขวง',District:'เขต',Province:'จังหวัด',ZipCode:'รหัสไปรษณีย์',MainRight:'สิทธิการรักษา',SubRight:'สิทธิย่อย',Phone:'เบอร์หลัก',AddressDetail:'หมู่บ้าน/อาคาร',Soi:'ซอย',MaritalStatus:'สถานภาพ',EducationLevel:'การศึกษา',Occupation:'อาชีพ'};
+function fieldTH(k){ return FIELD_TH[k]||k; }
+/** ค่าในฟอร์มข้อมูลส่วนตัว: เวชระเบียนกลางล่าสุด + ช่องที่กลางยังไม่เก็บ (จากงาน) */
+function personDefaults(f, detail){
+  const c=f.central, df=f.defaults||{}, src=detail||{};
+  return { Prefix:c.Prefix, Gender:c.Gender, FirstName:c.FirstName, LastName:c.LastName, HN:c.HN, hasCID:c.hasCID, CIDMasked:c.CIDMasked, BirthDate:c.BirthDate, MainRight:c.MainRight, SubRight:c.SubRight,
+    MaritalStatus:src.MaritalStatus||c.MaritalStatus, EducationLevel:src.EducationLevel||c.EducationLevel, Occupation:src.Occupation||c.Occupation,
+    HouseNo:c.HouseNo, AddressDetail:detail?src.CurrentAddressDetail:(c.AddressDetail||df.AddressDetail), Moo:c.Moo, Soi:c.Soi||src.CurrentSoi, Road:c.Road, SubDistrict:c.SubDistrict, District:c.District, Province:c.Province, ZipCode:c.ZipCode };
+}
+
+/* =====================================================================
+ * ฟอร์มบันทึกงาน
+ * ===================================================================== */
+const ACTS=[
+  ['6) การให้บริการ / กิจกรรมทางสังคมสงเคราะห์',[
+    ['Activity_HealthCenter37','ให้บริการที่ ศบส.37'],['Activity_HomeVisit','เยี่ยมบ้าน'],
+    ['Activity_NeedAssessment','ประเมินความต้องการ',[['Activity_NeedAssessmentDetail','text','ความต้องการ / รายละเอียด']]],
+    ['Activity_RiskAssessment','ประเมินความเสี่ยง',[['Activity_RiskAssessmentResult','select','ผลการประเมิน','riskResults',1],['Activity_RiskAssessmentDetail','text','รายละเอียด']]],
+    ['Activity_FamilyReadiness','ประเมินความพร้อมของครอบครัว',[['Activity_FamilyReadinessLevel','select','ระดับความพร้อม','familyReadinessLevels',1],['Activity_FamilyReadinessDetail','text','รายละเอียด']]]]],
+  ['7) การส่งเสริมและป้องกัน',[
+    ['Promotion_RightsWelfareEducation','ให้ความรู้เรื่องสิทธิ / สวัสดิการ',[['Promotion_RightsWelfareEducationDetail','text','เรื่อง / รายละเอียด']]],
+    ['Promotion_Other','อื่น ๆ',[['Promotion_OtherDetail','text','ระบุ',null,1]]]]],
+  ['8) การบำบัดและฟื้นฟู',[
+    ['Rehab_Counseling','ให้คำปรึกษาแนะนำ',[['Rehab_CounselingDetail','text','เรื่อง / รายละเอียด']]],
+    ['Rehab_CoordinateReferral','ประสานและส่งต่อหน่วยงาน',[['Rehab_CoordinateReferralDetail','text','หน่วยงาน / รายละเอียด']]],
+    ['Rehab_Other','อื่น ๆ',[['Rehab_OtherDetail','text','ระบุ',null,1]]]]],
+  ['9) การช่วยเหลือด้านการจัดสรรทรัพยากร',[
+    ['Resource_MilkMedicalFood','นมผง / อาหารเสริมทางการแพทย์'],
+    ['Resource_MedicalEquipment','วัสดุอุปกรณ์ทางการแพทย์',[['Resource_MedicalEquipmentDetail','text','รายการ']]],
+    ['Resource_ConsumerGoods','เครื่องอุปโภคบริโภค',[['Resource_ConsumerGoodsDetail','text','รายการ']]],
+    ['Resource_EmergencyMoney','เงินช่วยเหลือฉุกเฉิน',[['Resource_EmergencyMoneyAmount','number','จำนวนเงิน (บาท)']]],
+    ['Resource_Diaper','ผ้าอ้อมผู้ใหญ่'],['Resource_FeeDiscount','ยกเว้น / ลดหย่อนค่าบริการ'],
+    ['Resource_Other','อื่น ๆ',[['Resource_OtherDetail','text','ระบุ',null,1]]]]]
+];
+const ADDR=[['HouseNo','บ้านเลขที่'],['AddressDetail','หมู่บ้าน / อาคาร / ชุมชน'],['Moo','หมู่'],['Soi','ซอย'],['Road','ถนน'],['SubDistrict','แขวง / ตำบล'],['District','เขต / อำเภอ'],['Province','จังหวัด'],['ZipCode','รหัสไปรษณีย์']];
+function on(v){ return v===true||String(v||'').toUpperCase()==='TRUE'; }
+async function newVisit(pid, ref){
+  if(!canAdd()){ toast('ไม่มีสิทธิ์บันทึกงาน (ต้องได้สิทธิ์ "เพิ่ม")',true); return; }
+  ref=ref||S.pendingRef||null;
+  if(pid&&(!S.file||S.file.central.PatientID!==pid)){ loading('กำลังดึงข้อมูลล่าสุดจากเวชระเบียนกลาง…'); try{ S.file=await api('swApiPatient',pid); }catch(e){ errBox(e); return; } }
+  if(ref&&ref.PatientID&&S.file.central.PatientID!==ref.PatientID){ const ok=await confirmBox('ผู้ป่วยไม่ตรงกับใบส่งต่อ','ใบส่งต่อ '+esc(ref.ReferralSN)+' เป็นของ <b>'+esc(ref.PatientName)+'</b> แต่กำลังบันทึกให้ <b>'+esc(S.file.central.FullName)+'</b><br>ต้องการบันทึกต่อหรือไม่','บันทึกต่อ'); if(!ok) return; }
+  S.form={mode:'visit', edit:false, ref:ref}; S.guardAdded=false;
+  if(S.page!=='clients') go('clients','form'); else drawForm();
+}
+async function editVisit(id){
+  closeModal(); loading('กำลังเปิดงาน…');
+  try{ const d=await api('swApiVisit',id); S.file=await api('swApiPatient',d.PatientID); S.form={mode:'visit', edit:true, detail:d}; S.guardAdded=true; if(S.page!=='clients') go('clients','form'); else drawForm(); }
+  catch(e){ errBox(e); }
+}
+function visitDefaults(){
+  const F=S.form, f=S.file, d=F.edit?F.detail:Object.assign({}, f.defaults||{});
+  if(!F.edit){ if(!d.ReceiveChannel) d.ReceiveChannel=''; if(F.ref){ d.ServiceReason=[F.ref.ReferralTitle,F.ref.ReferralReason].filter(Boolean).join(' — '); d.InformantName=F.ref.FromUserName||''; d.RelationshipText=F.ref.FromWorkGroup?'ผู้ส่งต่อ ('+F.ref.FromWorkGroup+')':''; } }
+  return d;
+}
+function drawVisitForm(){
+  const F=S.form, f=S.file, c=f.central, d=visitDefaults(), L=S.lists, w=S.dw;
+  let dmin=w.min, dmax=w.today, dkey='', dhint='ว่าง = วันนี้ เวลาที่กดบันทึก · ย้อนหลังได้ตั้งแต่ '+thDate(w.min,true)+(w.allowPrev?' (ปีงบ '+(w.fy-1)+' เปิดถึง '+thDate(w.prevUntil,true)+')':'');
+  if(F.edit){ const fy=Number(d.FiscalYearBE)||fyOfKey(d.ReceivedKey||w.today), r=fyRange(fy); dmin=r.from; dmax=r.to<w.today?r.to:w.today; dkey=d.ReceivedKey||''; dhint='แก้ได้ภายในปีงบ '+fy+' เท่านั้น (เลขเคสผูกกับปีงบ)'; }
+  const pd=personDefaults(f, F.edit?d:null);
+  const sameReg=(d.RegisterAddressMode||'ใช้ที่อยู่ปัจจุบัน')!=='ระบุที่อยู่อื่น';
+  const contactDiff=F.edit?ADDR.some(a=>d['Contact'+a[0]]&&d['Contact'+a[0]]!==(d['Current'+a[0]]||'')):!!d.ContactDiffers;
+  const addrFields=(px, src)=>'<div class="form-grid">'+ADDR.map(a=>field(a[1],inputHtml(px+a[0],src[px.slice(1)+a[0]]||'',a[0]==='ZipCode'?'inputmode="numeric" maxlength="5"':''))).join('')+'</div>';
+  const regSrc={}; ADDR.forEach(a=>{ regSrc['Register'+a[0]]=d['Register'+a[0]]; regSrc['Contact'+a[0]]=d['Contact'+a[0]]; });
+  $('content').innerHTML='<div class="form-wrap"><div class="page-head"><div><h2>'+(F.edit?'แก้ไขงาน '+esc(d.VisitSN):'บันทึกงานใหม่')+'</h2><p>'+esc(c.FullName)+[c.HN?' · HN '+c.HN:'', c.AgeText?' · อายุ '+c.AgeText:''].map(esc).join('')+' '+adpChip(f.adp)+'</p></div></div>'
+    +(F.ref?'<div class="ref-banner"><b>📥 บันทึกผลของใบส่งต่อ '+esc(F.ref.ReferralSN)+'</b> จาก '+esc(F.ref.FromWorkGroup||'-')+(F.ref.FromUserName?' ('+esc(F.ref.FromUserName)+')':'')+'<br><span class="small">'+esc(F.ref.ReferralTitle||'')+(F.ref.ReferralReason?' — '+esc(F.ref.ReferralReason):'')+'</span><br><span class="xs muted">บันทึกแล้วระบบจะส่งผลกลับไปที่ระบบส่งต่อกลางให้อัตโนมัติ</span></div>':'')
+    +(F.edit&&d.RefReferralSN?'<div class="ref-banner"><b>📥 งานนี้บันทึกจากใบส่งต่อ '+esc(d.RefReferralSN)+'</b> <span class="small">(การแก้ไขไม่ส่งผลกลับซ้ำ)</span></div>':'')
+    +'<div class="form-sec"><h4>1) การรับเรื่อง</h4><div class="form-grid">'
+      +field('วันที่รับเรื่อง',dateField('vDate',dkey,{min:dmin,max:dmax,clear:!F.edit,ph:F.edit?'วว/ดด/ปปปป':'ว่าง = วันนี้'}),'',0,esc(dhint))
+      +field('กลุ่มสิทธิสวัสดิการ',selectHtml('vWelfare',L.welfareGroups,d.WelfareGroup,'ไม่ระบุ','onchange="guardCheck()"'))
+      +field('สาเหตุการใช้บริการ / การส่งปรึกษา','<textarea class="phc-textarea" id="vReason" rows="2">'+esc(d.ServiceReason||'')+'</textarea>','full',1)
+      +field('การรับเรื่อง (ช่องทาง)',selectHtml('vCh',L.receiveChannels,d.ReceiveChannel,'ไม่ระบุ'))+field('ระบุช่องทาง / หน่วยงาน (ถ้ามี)',inputHtml('vChO',d.ReceiveChannelOther))
+      +field('กลุ่มเป้าหมาย',selectHtml('vTg',L.targetGroups,d.TargetGroup,'ไม่ระบุ','onchange="tgChange();guardCheck()"'))+field('ประเภทความพิการ',inputHtml('vDis',d.DisabilityType,'placeholder="เช่น ทางการเคลื่อนไหว"'),'',0)
+      +field('ผู้ให้ข้อมูล',inputHtml('vInf',d.InformantName))+field('ความเกี่ยวข้องกับผู้ใช้บริการ',inputHtml('vRelT',d.RelationshipText))
+    +'</div></div>'
+    +'<div class="form-sec"><h4>2–5) ข้อมูลส่วนตัว และที่อยู่<small>ข้อมูลล่าสุดจากเวชระเบียนกลาง · แก้ที่นี่ = แก้เวชระเบียนกลางด้วย (เฉพาะช่องที่เปลี่ยน)</small></h4>'+personForm(pd,'edit')
+      +'<div class="form-sub" style="margin-top:12px">ที่อยู่ตามทะเบียนบ้าน</div><label class="chk-inline"><input type="checkbox" id="vRegDiff" '+(sameReg?'':'checked')+' onchange="$(\'vRegBox\').classList.toggle(\'hidden\',!this.checked)"> ต่างจากที่อยู่ปัจจุบัน</label><div id="vRegBox" class="'+(sameReg?'hidden':'')+'">'+addrFields('vRegister',regSrc)+'</div>'
+      +'<div class="form-sub" style="margin-top:12px">ที่อยู่ที่ติดต่อได้</div><label class="chk-inline"><input type="checkbox" id="vConDiff" '+(contactDiff?'checked':'')+' onchange="$(\'vConBox\').classList.toggle(\'hidden\',!this.checked)"> ต่างจากที่อยู่ปัจจุบัน</label><div id="vConBox" class="'+(contactDiff?'':'hidden')+'">'+addrFields('vContact',regSrc)+'</div>'
+    +'</div>'
+    +'<div class="form-sec"><h4>ผู้ติดต่อ<small>เบอร์หลัก 1 เบอร์ = เบอร์ติดต่อของงานนี้ และส่งเข้าเวชระเบียนกลาง</small></h4>'+contactsEditor()+'</div>'
+    +ACTS.map(sec=>'<div class="form-sec"><h4>'+esc(sec[0])+'</h4>'+sec[1].map(it=>actRow(it,d)).join('')+'</div>').join('')
+    +'<div class="form-sec"><h4>หมายเหตุ</h4><textarea class="phc-textarea" id="vNote" rows="3">'+esc(d.Note||'')+'</textarea></div>'
+    +'<div class="save-bar"><span class="grow small muted" id="saveInfo">'+(F.edit?'บันทึกโดย '+esc(d.CreatedByFullName||d.CreatedByName||'-')+' · '+esc(d.CreatedAtBE||d.CreatedAt||''):'')+'</span><button class="phc-btn phc-btn--secondary" type="button" onclick="cancelVisit()">ยกเลิก</button><button class="phc-btn" type="button" id="saveBtn" onclick="saveVisit()">💾 '+(F.edit?'บันทึกการแก้ไข':'บันทึกงาน')+'</button></div></div>';
+  personInit(pd); ctInit(f.contacts); tgChange();
+  ACTS.forEach(sec=>sec[1].forEach(it=>actToggle(it[0])));
+}
+function actRow(it, d){
+  const k=it[0], dets=it[2]||[];
+  return '<div class="chk-row"><label><input type="checkbox" id="a_'+k+'" '+(on(d[k])?'checked':'')+' onchange="actToggle(\''+k+'\')"> '+esc(it[1])+'</label>'
+    +(dets.length?'<div class="det" id="d_'+k+'">'+dets.map(x=>{ const id='a_'+x[0], ph=x[2]+(x[4]?' *':'');
+      if(x[1]==='select') return '<div>'+selectHtml(id,S.lists[x[3]]||[],d[x[0]],x[2]+(x[4]?' *':''),'aria-label="'+esc(x[2])+'"')+'</div>';
+      return '<div>'+inputHtml(id,d[x[0]],(x[1]==='number'?'type="number" min="0" step="1" inputmode="numeric" ':'')+'placeholder="'+esc(ph)+'" aria-label="'+esc(x[2])+'"')+'</div>'; }).join('')+'</div>':'')+'</div>';
+}
+function actToggle(k){ const box=$('d_'+k); if(box) box.classList.toggle('hidden',!checked('a_'+k)); }
+function tgChange(){ const dis=$('vDis'); if(!dis) return; dis.closest('.phc-field').classList.toggle('hidden', val('vTg')!=='คนพิการ'); }
+function cancelVisit(){ confirmBox('ยกเลิกการบันทึก','ข้อมูลที่กรอกในฟอร์มนี้จะไม่ถูกบันทึก','ยกเลิกการบันทึก',true).then(ok=>{ if(ok){ S.form=null; drawFile(); } }); }
+function readVisit(){
+  const v={ ServiceReason:val('vReason'), WelfareGroup:val('vWelfare'), ReceiveChannel:val('vCh'), ReceiveChannelOther:val('vChO'), TargetGroup:val('vTg'), DisabilityType:val('vTg')==='คนพิการ'?val('vDis'):'',
+    InformantName:val('vInf'), RelationshipText:val('vRelT'), Note:val('vNote') };
+  if(!v.ServiceReason) return {err:'กรุณากรอกสาเหตุการใช้บริการ / การส่งปรึกษา', el:'vReason'};
+  const reg=checked('vRegDiff'), con=checked('vConDiff');
+  v.RegisterAddressMode=reg?'ระบุที่อยู่อื่น':'ใช้ที่อยู่ปัจจุบัน';
+  ADDR.forEach(a=>{ v['Register'+a[0]]=reg?val('vRegister'+a[0]):''; v['Contact'+a[0]]=con?val('vContact'+a[0]):''; });
+  if(reg&&!ADDR.some(a=>v['Register'+a[0]])) return {err:'กรุณากรอกที่อยู่ตามทะเบียนบ้าน (หรือเอาเครื่องหมาย "ต่างจากที่อยู่ปัจจุบัน" ออก)', el:'vRegisterHouseNo'};
+  if(con&&!ADDR.some(a=>v['Contact'+a[0]])) return {err:'กรุณากรอกที่อยู่ที่ติดต่อได้ (หรือเอาเครื่องหมายออก)', el:'vContactHouseNo'};
+  v.ContactSameAsCurrent=!con;
+  let err='', el='';
+  ACTS.forEach(sec=>sec[1].forEach(it=>{ const k=it[0], o=checked('a_'+k); v[k]=o; (it[2]||[]).forEach(x=>{ v[x[0]]=o?val('a_'+x[0]):''; if(o&&x[4]&&!v[x[0]]&&!err){ err='กรุณาระบุ "'+x[2]+'" ของ '+it[1]; el='a_'+x[0]; } }); }));
+  if(err) return {err:err, el:el};
+  if(v.Resource_EmergencyMoney&&v.Resource_EmergencyMoneyAmount&&!(Number(v.Resource_EmergencyMoneyAmount)>=0)) return {err:'จำนวนเงินช่วยเหลือไม่ถูกต้อง', el:'a_Resource_EmergencyMoneyAmount'};
+  return {visit:v};
+}
+async function saveVisit(){
+  const F=S.form, pv=readVisit(); if(pv.err){ formErr(pv.err,pv.el); return; }
+  const p=readPerson('edit'); if(p.err){ formErr(p.err,p.el); return; }
+  const ct=readContacts(); if(ct.err){ formErr(ct.err); return; }
+  if(isMinor()&&!ct.list.some(x=>x.Role!=='SELF')){ const ok=await confirmBox('ยังไม่มีข้อมูลบิดา / มารดา / ญาติ','ผู้ใช้บริการอายุต่ำกว่า 18 ปี แต่ยังไม่ได้กรอกผู้ติดต่อ ต้องการบันทึกต่อหรือไม่','บันทึกต่อ'); if(!ok) return; }
+  const body={PatientID:S.file.central.PatientID, person:p.person, Contacts:ct.list, visit:pv.visit, ReceivedDate:dateVal('vDate')};
+  if(F.ref){ body.RefReferralID=F.ref.ReferralID; body.RefReferralSN=F.ref.ReferralSN; body.RefFromWorkGroup=F.ref.FromWorkGroup; }
+  const b=$('saveBtn'); setBusy(b,true);
+  try{
+    let r;
+    if(F.edit){ body.VisitID=F.detail.VisitID; if(body.ReceivedDate===F.detail.ReceivedKey) body.ReceivedDate=''; r=await api('swApiUpdateVisit',body); }
+    else r=await api('swApiSaveVisit',body);
+    S.file=r.file; S.form=null; S.hist=null; S.home=null;
+    toast((F.edit?'แก้ไขงาน ':'บันทึกงาน ')+r.VisitSN+' แล้ว'+(r.centralChanged&&r.centralChanged.length?' · อัปเดตเวชระเบียนกลาง: '+r.centralChanged.map(fieldTH).join(', '):''));
+    if(r.warn) toast(r.warn,true);
+    if(r.refer){ if(r.refer.ok) toast('ส่งผลกลับระบบส่งต่อกลางแล้ว (ใบส่งต่อ '+F.ref.ReferralSN+')'); else toast('บันทึกงานแล้ว แต่ส่งผลกลับระบบส่งต่อไม่สำเร็จ: '+r.refer.message+' — กดส่งอีกครั้งได้','warn'); }
+    if(F.ref){ S.pendingRef=null; S.inbox=null; refreshInboxBadge(); }
+    drawFile(); showVisit(r.detail);
+  }catch(e){ toast(e.message,true); }
+  finally{ setBusy(b,false); }
+}
+
+/* =====================================================================
+ * รายละเอียดงาน (หน้าต่าง) · พิมพ์ · ลบ
+ * ===================================================================== */
+async function openVisit(id){
+  openModal('รายละเอียดงาน',phcSk(6));
+  try{ showVisit(await api('swApiVisit',id)); }catch(e){ openModal('รายละเอียดงาน','<p class="bad-t">'+esc(e.message)+'</p>'); }
+}
+function addrText(r, px){ return [r[px+'HouseNo'], r[px+'AddressDetail'], r[px+'Moo']?'หมู่ '+r[px+'Moo']:'', r[px+'Soi']?'ซ.'+r[px+'Soi']:'', r[px+'Road']?'ถ.'+r[px+'Road']:'', r[px+'SubDistrict']?'แขวง/ต.'+r[px+'SubDistrict']:'', r[px+'District']?'เขต/อ.'+r[px+'District']:'', r[px+'Province'], r[px+'ZipCode']].filter(x=>String(x||'').trim()).join(' '); }
+function actList(r){ return ACTS.map(sec=>({title:sec[0], items:sec[1].filter(it=>on(r[it[0]])).map(it=>it[1]+((it[2]||[]).map(x=>r[x[0]]).filter(Boolean).length?' — '+(it[2]||[]).map(x=>x[0]==='Resource_EmergencyMoneyAmount'&&r[x[0]]?num(r[x[0]])+' บาท':r[x[0]]).filter(Boolean).join(' · '):''))})).filter(s=>s.items.length); }
+function visitSections(r){
+  const kv=rows=>'<div class="kv">'+rows.filter(x=>String(x[1]||'').trim()).map(x=>'<span>'+esc(x[0])+'</span><div>'+esc(x[1])+'</div>').join('')+'</div>';
+  const reg=String(r.RegisterAddressMode||'')==='ระบุที่อยู่อื่น'?addrText(r,'Register'):'';
+  const con=addrText(r,'Contact'), cur=addrText(r,'Current');
+  return [
+    ['ผู้ใช้บริการ', kv([['ชื่อ–สกุล',r.PatientName],['HN',r.HN],['เลขบัตร',r.CIDMasked],['เพศ / อายุ',[r.Gender,r.AgeText].filter(Boolean).join(' · ')],['วันเกิด',r.BirthDate],['สิทธิการรักษา',[r.MainRight,r.SubRight].filter(Boolean).join(' · ')],['กลุ่มสิทธิสวัสดิการ',r.WelfareGroup],['สถานภาพ',r.MaritalStatus],['การศึกษา',r.EducationLevel],['อาชีพ',r.Occupation]])],
+    ['1) การรับเรื่อง', kv([['วันที่รับเรื่อง',r.CaseReceivedAt],['สาเหตุ',r.ServiceReason],['ช่องทาง',[r.ReceiveChannel,r.ReceiveChannelOther].filter(Boolean).join(' — ')],['กลุ่มเป้าหมาย',[r.TargetGroup,r.DisabilityType].filter(Boolean).join(' — ')],['ผู้ให้ข้อมูล',[r.InformantName,r.RelationshipText].filter(Boolean).join(' / ')],['ใบส่งต่อ',r.RefReferralSN?r.RefReferralSN+' จาก '+(r.RefFromWorkGroup||'-')+' · ส่งผลกลับ: '+({SENT:'สำเร็จ',FAILED:'ไม่สำเร็จ ('+(r.RefResultError||'')+')',PENDING:'รอส่ง'}[r.RefResultStatus]||'-'):'']])],
+    ['ที่อยู่ / การติดต่อ', kv([['ที่อยู่ปัจจุบัน',cur],['ตามทะเบียนบ้าน',reg||(cur?'เหมือนที่อยู่ปัจจุบัน':'')],['ที่อยู่ที่ติดต่อได้',con&&con!==cur?con:(con?'เหมือนที่อยู่ปัจจุบัน':'')],['เบอร์ติดต่อ',r.ContactPhone]])
+      +((r.contactsSnapshot||[]).length?'<div style="margin-top:6px">'+r.contactsSnapshot.map(c=>'<div class="small">• <b>'+esc(c.RoleTH)+(c.Relation?' ('+esc(c.Relation)+')':'')+'</b> '+esc(c.Name||'')+' '+c.Phones.map(p=>esc(p)+(digits(p)===digits(c.PrimaryPhone)?' (หลัก)':'')).join(', ')+'</div>').join('')+'</div>':'')],
+  ].concat(actList(r).map(s=>[s.title,'<ul style="margin:0;padding-left:20px">'+s.items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>']))
+   .concat(r.Note?[['หมายเหตุ','<div style="white-space:pre-wrap">'+esc(r.Note)+'</div>']]:[]);
+}
+function showVisit(r){
+  S.detail=r;
+  const body='<div class="actions" style="margin-bottom:10px">'+chip('เลขที่ '+r.VisitSN,'info')+chip('เคส '+r.CaseSN+' · ครั้งที่ '+r.VisitNo,'neutral')+chip('ปีงบ '+(r.FiscalYearBE||''),'success')+'</div>'
+    +visitSections(r).map(s=>'<div class="dsec"><h4>'+esc(s[0])+'</h4>'+s[1]+'</div>').join('')
+    +'<div class="xs muted">บันทึกโดย '+esc(r.CreatedByFullName||r.CreatedByName||'-')+' · '+esc(r.CreatedAtBE||r.CreatedAt||'')+(r.UpdatedAtBE&&r.UpdatedAtBE!==r.CreatedAtBE?' · แก้ไขล่าสุด '+esc(r.UpdatedByFullName||r.UpdatedByName||'')+' '+esc(r.UpdatedAtBE):'')+'</div>';
+  const foot='<div class="left">'+(isAdmin()?'<button class="phc-btn phc-btn--danger-soft" type="button" onclick="deleteVisit()">🗑️ ลบ</button>':'')+(r.RefResultStatus==='FAILED'&&canAdd()?'<button class="phc-btn phc-btn--secondary" type="button" onclick="retryRefer(\''+esc(r.VisitID)+'\',this)">📤 ส่งผลกลับอีกครั้ง</button>':'')+'</div>'
+    +'<button class="phc-btn phc-btn--secondary" type="button" onclick="printVisit()">🖨️ พิมพ์</button>'
+    +(S.page!=='clients'||!S.file||S.file.central.PatientID!==r.PatientID?'<button class="phc-btn phc-btn--secondary" type="button" onclick="openFile(\''+esc(r.PatientID)+'\')">👤 เปิดแฟ้ม</button>':'')
+    +(canEdit()?'<button class="phc-btn" type="button" onclick="editVisit(\''+esc(r.VisitID)+'\')">✏️ แก้ไข</button>':'');
+  openModal('งาน '+r.VisitSN+' · '+(r.PatientName||''), body, foot);
+}
+async function deleteVisit(){
+  const r=S.detail; const reason=await reasonBox('ลบงาน '+r.VisitSN,'<p>'+esc(r.PatientName)+' · '+esc(r.CaseReceivedAt)+'<br><span class="small muted">ข้อมูลไม่ถูกลบออกจากชีต (ปิดสถานะ + เก็บเหตุผล) · กู้คืนได้จาก Apps Script Editor</span></p>','เหตุผลการลบ','ลบงาน');
+  if(reason===null) return;
+  try{ await api('swApiDeleteVisit',{VisitID:r.VisitID, Reason:reason}); toast('ลบงาน '+r.VisitSN+' แล้ว'); closeModal(); S.hist=null; S.home=null;
+    if(S.page==='clients'&&S.file&&S.file.central.PatientID===r.PatientID) openFile(r.PatientID,true); else go(S.page); }
+  catch(e){ toast(e.message,true); }
+}
+async function retryRefer(id, btn){ setBusy(btn,true,'<span class="spinner sm"></span> กำลังส่ง…'); try{ const d=await api('swApiReferRetry',{VisitID:id}); toast('ส่งผลกลับระบบส่งต่อกลางแล้ว'); S.inbox=null; S.home=null; showVisit(d); if(S.page==='inbox') renderInbox(); }catch(e){ toast(e.message,true); setBusy(btn,false); } }
+function kitPrint(o){ if(!window.PHC37Print){ toast('ไม่พบชุดพิมพ์มาตรฐาน',true); return; } PHC37Print.print(PHC37Print.document(Object.assign({systemName:'ระบบบันทึกผู้ใช้บริการสังคมสงเคราะห์', printedBy:S.user.fullName},o)),{onDone:e=>{ if(e) toast('เปิดหน้าพิมพ์ไม่สำเร็จ: '+e.message,true); }}); }
+function printVisit(){
+  const r=S.detail; if(!r) return;
+  const kv=rows=>{ const x=rows.filter(a=>String(a[1]||'').trim()); return x.length?'<table class="phc-p-kv">'+x.map(a=>'<tr><th>'+esc(a[0])+'</th><td>'+esc(a[1])+'</td></tr>').join('')+'</table>':''; };
+  const sec=(t,h)=>h?'<section class="phc-p-section"><h2>'+esc(t)+'</h2>'+h+'</section>':'';
+  const reg=String(r.RegisterAddressMode||'')==='ระบุที่อยู่อื่น'?addrText(r,'Register'):'';
+  const cur=addrText(r,'Current'), con=addrText(r,'Contact');
+  const cts=(r.contactsSnapshot||[]).map(c=>[c.RoleTH+(c.Relation?' ('+c.Relation+')':''), [c.Name, c.Phones.join(', ')].filter(Boolean).join(' · ')]);
+  const acts=actList(r);
+  const body='<div class="phc-p-grid2"><div class="swp-col">'
+      +sec('ข้อมูลผู้ใช้บริการ',kv([['HN',r.HN],['เลขบัตร',r.CIDMasked],['ชื่อ–สกุล',r.PatientName],['เพศ',r.Gender],['วันเกิด',r.BirthDate],['อายุ',r.AgeText],['สิทธิการรักษา',[r.MainRight,r.SubRight].filter(Boolean).join(' · ')],['กลุ่มสิทธิสวัสดิการ',r.WelfareGroup]]))
+      +'</div><div class="swp-col">'
+      +sec('1) การรับเรื่อง',kv([['วันที่รับเรื่อง',r.CaseReceivedAt],['สาเหตุ',r.ServiceReason],['การรับเรื่อง',[r.ReceiveChannel,r.ReceiveChannelOther].filter(Boolean).join(' — ')],['กลุ่มเป้าหมาย',[r.TargetGroup,r.DisabilityType].filter(Boolean).join(' — ')],['ผู้ให้ข้อมูล',[r.InformantName,r.RelationshipText].filter(Boolean).join(' / ')],['ใบส่งต่อ',r.RefReferralSN?r.RefReferralSN+' ('+(r.RefFromWorkGroup||'')+')':'']]))
+      +sec('3) ประวัติผู้ใช้บริการ',kv([['สถานภาพสมรส',r.MaritalStatus],['ระดับการศึกษา',r.EducationLevel],['อาชีพ',r.Occupation]]))
+      +'</div></div><div class="swp-stack">'
+      +sec('2) ที่อยู่ที่ติดต่อได้ / ผู้ติดต่อ',kv([['ที่อยู่',con&&con!==cur?con:(con?'เหมือนที่อยู่ปัจจุบัน':'')],['โทรศัพท์ (หลัก)',r.ContactPhone]].concat(cts)))
+      +sec('4) ที่อยู่ปัจจุบัน',kv([['ที่อยู่',cur]]))
+      +(reg?sec('5) ที่อยู่ตามทะเบียนบ้าน',kv([['ที่อยู่',reg]])):'')
+      +acts.map(s=>sec(s.title,'<table class="phc-p-kv">'+s.items.map(x=>'<tr><td>✓ '+esc(x)+'</td></tr>').join('')+'</table>')).join('')
+      +(r.Note?sec('หมายเหตุ',kv([['หมายเหตุ',r.Note]])):'')
+      +'</div>';
+  kitPrint({ title:'แบบบันทึกผู้ใช้บริการสังคมสงเคราะห์', docNo:r.VisitSN||'', meta:[['เคส',r.CaseSN],['ครั้งที่',r.VisitNo],['ปีงบ',r.FiscalYearBE]], density:'compact', bodyHtml:body, signatures:['ผู้บันทึก/ผู้รับผิดชอบ','ผู้ตรวจสอบ'],
+    extraCss:'.swp-col{display:flex;flex-direction:column;gap:6px;min-width:0}.swp-stack{display:flex;flex-direction:column;gap:2px;margin-top:4px}.swp-stack .phc-p-kv th{width:18%}' });
+}
+
+/* =====================================================================
+ * ประวัติงาน
+ * ===================================================================== */
+function histPreset(f){ S.hist={f:Object.assign({keyword:'',fy:'',from:'',to:'',targetGroup:''},f), rows:null, total:0}; go('history','keep'); }
+function renderHistory(keep){
+  if(!S.hist||!keep&&!S.hist.rows) S.hist=S.hist||{f:{keyword:'',fy:String(S.dw.fy),from:'',to:'',targetGroup:''}, rows:null, total:0};
+  const f=S.hist.f, fys=[S.dw.fy,S.dw.fy-1,S.dw.fy-2,S.dw.fy-3].map(String);
+  $('content').innerHTML='<div class="page-head"><div><h2>ประวัติงาน</h2><p>ล่าสุดก่อน · ค้นได้ทั้งชื่อ HN เลขที่งาน เรื่อง และผู้บันทึก</p></div><div class="actions"><button class="phc-btn phc-btn--secondary phc-btn--sm" type="button" onclick="printHistory()">🖨️ พิมพ์รายการ</button></div></div>'
+    +'<form class="card toolbar" onsubmit="event.preventDefault();loadHist(true)">'
+      +field('ค้นหา',inputHtml('hQ',f.keyword,'placeholder="ชื่อ / HN / เลขที่ / เรื่อง"'),'grow')
+      +field('ปีงบประมาณ','<select class="phc-select" id="hFy">'+opt('','ทุกปีงบ',!f.fy)+fys.map(y=>opt(y,y,y===String(f.fy))).join('')+'</select>')
+      +field('ตั้งแต่วันที่',dateField('hFrom',f.from,{max:S.dw.today,clear:true}))+field('ถึงวันที่',dateField('hTo',f.to,{max:S.dw.today,clear:true}))
+      +field('กลุ่มเป้าหมาย',selectHtml('hTg',S.lists.targetGroups,f.targetGroup,'ทุกกลุ่ม'))
+      +'<div class="actions"><button class="phc-btn" type="submit">🔍 ค้นหา</button><button class="phc-btn phc-btn--ghost" type="button" onclick="S.hist=null;renderHistory()">ล้าง</button></div>'
+    +'</form><div id="hList"></div>';
+  if(S.hist.rows) drawHist(); else loadHist(true);
+}
+async function loadHist(reset){
+  const H=S.hist;
+  if(reset){ H.f={keyword:val('hQ'), fy:val('hFy'), from:dateVal('hFrom'), to:dateVal('hTo'), targetGroup:val('hTg')}; H.rows=[]; H.total=0; const b=$('hList'); if(b) b.innerHTML='<div class="card">'+phcSk(6)+'</div>'; }
+  if(H.f.from&&H.f.to&&H.f.from>H.f.to){ toast('วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด',true); return; }
+  try{ const r=await api('swApiVisits',Object.assign({offset:H.rows.length, limit:50},H.f)); H.rows=H.rows.concat(r.rows); H.total=r.total; if(S.page==='history') drawHist(); }
+  catch(e){ const b=$('hList'); if(b) b.innerHTML='<div class="card empty bad-t">'+esc(e.message)+'</div>'; }
+}
+function drawHist(){
+  const H=S.hist, b=$('hList'); if(!b) return; const left=H.total-H.rows.length;
+  b.innerHTML='<div class="muted small" style="margin:4px 0 8px">พบ '+num(H.total)+' งาน'+(H.rows.length<H.total?' · แสดง '+num(H.rows.length):'')+'</div>'+visitTable(H.rows,'ไม่พบงานตามเงื่อนไข')
+    +(left>0?'<div style="text-align:center;margin-top:12px"><button class="phc-btn phc-btn--secondary" type="button" onclick="setBusy(this,true,\'กำลังโหลด…\');loadHist(false)">โหลดเพิ่ม (เหลือ '+num(left)+' งาน)</button></div>':'');
+}
+function printHistory(){
+  const H=S.hist; if(!H||!H.rows||!H.rows.length){ toast('ยังไม่มีรายการให้พิมพ์',true); return; }
+  const f=H.f, cond=[f.fy?'ปีงบ '+f.fy:'ทุกปีงบ', f.from||f.to?'วันที่ '+(f.from?shortDate(f.from):'…')+' – '+(f.to?shortDate(f.to):'…'):'', f.targetGroup, f.keyword?'ค้นหา "'+f.keyword+'"':''].filter(Boolean).join(' · ');
+  const body='<table class="phc-p-table"><thead><tr><th>#</th><th>วันที่รับเรื่อง</th><th>ผู้ใช้บริการ</th><th>HN</th><th>เรื่อง</th><th>กลุ่มเป้าหมาย</th><th>เลขที่</th><th>ผู้บันทึก</th></tr></thead><tbody>'
+    +H.rows.map((r,i)=>'<tr><td class="phc-p-num">'+(i+1)+'</td><td>'+esc(shortDate(r.ReceivedKey))+'</td><td>'+esc(r.PatientName)+'</td><td>'+esc(r.HN||'')+'</td><td>'+esc(r.ServiceReason||'')+'</td><td>'+esc(r.TargetGroup||'')+'</td><td>'+esc(r.VisitSN)+'</td><td>'+esc(r.CreatedByName||'')+'</td></tr>').join('')+'</tbody></table>'
+    +(H.rows.length<H.total?'<p>แสดง '+H.rows.length+' จาก '+H.total+' งาน (กด "โหลดเพิ่ม" ก่อนพิมพ์ถ้าต้องการทั้งหมด)</p>':'');
+  kitPrint({title:'รายการงานสังคมสงเคราะห์', meta:[['เงื่อนไข',cond],['จำนวน',H.rows.length+' งาน']], orientation:'landscape', density:'compact', bodyHtml:body});
+}
+
+/* =====================================================================
+ * รับจากระบบส่งต่อ
+ * ===================================================================== */
+async function refreshInboxBadge(){
+  try{ const r=await api('swApiInbox'); S.inbox=r; setInboxBadge(); }catch(e){ S.inboxNew=null; }
+}
+function setInboxBadge(){ const rows=(S.inbox&&S.inbox.rows)||[]; S.inboxNew=rows.filter(x=>!x.linked).length; const el=$('cntInbox'); el.textContent=S.inboxNew||''; el.classList.toggle('hidden',!S.inboxNew); const h=$('homeInbox'); if(h) h.textContent=num(S.inboxNew); }
+async function renderInbox(){
+  $('content').innerHTML='<div class="page-head"><div><h2>รับจากระบบส่งต่อ</h2><p>ใบส่งต่อถึงงานสังคมสงเคราะห์ · รับงาน → บันทึกงาน → ระบบส่งผลกลับให้อัตโนมัติ</p></div><div class="actions"><button class="phc-btn phc-btn--secondary phc-btn--sm" type="button" onclick="S.inbox=null;renderInbox()">🔄 โหลดใหม่</button></div></div><div id="ibList"><div class="card">'+phcSk(4)+'</div></div>';
+  try{ if(!S.inbox) S.inbox=await api('swApiInbox'); setInboxBadge(); if(S.page==='inbox') drawInbox(); }
+  catch(e){ const b=$('ibList'); if(b) b.innerHTML='<div class="card empty"><p class="bad-t">'+esc(e.message)+'</p><button class="phc-btn phc-btn--secondary" type="button" onclick="S.inbox=null;renderInbox()">ลองใหม่</button></div>'; }
+}
+const REF_ST={sent:['ส่งมาใหม่','info'],accepted:['รับงานแล้ว','warning'],in_progress:['กำลังดำเนินการ','warning']};
+function drawInbox(){
+  const rows=S.inbox.rows||[], b=$('ibList'); if(!b) return;
+  if(!rows.length){ b.innerHTML='<div class="card empty">✅ ไม่มีใบส่งต่อค้าง<br><span class="xs">ข้อมูล ณ '+esc(S.inbox.at)+'</span></div>'; return; }
+  b.innerHTML='<div class="muted small" style="margin-bottom:8px">'+rows.length+' รายการ · ข้อมูล ณ '+esc(S.inbox.at)+'</div>'+rows.map((x,i)=>{
+    const st=REF_ST[String(x.ReferralStatus||'').toLowerCase()]||[x.ReferralStatusTH||x.ReferralStatus,'neutral'], L=x.linked;
+    const src=(x.SourceData||[]).filter(s=>s&&(s.label||s.Label)).map(s=>'<div class="small"><b>'+esc(s.label||s.Label)+':</b> '+esc(s.value||s.Value||'')+'</div>').join('');
+    let act='';
+    if(L) act='<span class="small">บันทึกแล้ว '+esc(L.VisitSN)+' · รอส่งผลกลับ</span> <button class="phc-btn phc-btn--secondary phc-btn--sm" type="button" onclick="openVisit(\''+esc(L.VisitID)+'\')">ดูงาน</button>'+(canAdd()?'<button class="phc-btn phc-btn--sm" type="button" onclick="retryRefer(\''+esc(L.VisitID)+'\',this)">📤 ส่งผลกลับอีกครั้ง</button>':'');
+    else if(String(x.ReferralStatus).toLowerCase()==='sent') act=canAdd()?'<button class="phc-btn phc-btn--sm" type="button" onclick="acceptRef('+i+',this)">✅ รับงาน</button>':'';
+    else act=canAdd()?'<button class="phc-btn phc-btn--sm" type="button" onclick="recordRef('+i+')">📝 บันทึกงาน</button>':'';
+    return '<div class="ref-card '+(L?'fail':'')+'"><div class="card-head" style="margin-bottom:4px"><h3>'+esc(x.PatientName||'-')+'</h3><div>'+chip(st[0],st[1])+(x.Priority?chip(x.Priority, has(x.Priority,'ด่วน')?'danger':'neutral'):'')+'</div></div>'
+      +'<div class="meta">ใบส่งต่อ '+esc(x.ReferralSN)+' · '+esc(x.ReferralDate||'')+' · จาก '+esc(x.FromWorkGroup||'-')+(x.FromUserName?' ('+esc(x.FromUserName)+')':'')+(x.DueDate?' · ครบกำหนด '+esc(x.DueDate):'')+'</div>'
+      +'<div class="meta">'+[x.HN?'HN '+x.HN:'', x.CIDMasked, x.PatientPhone?'📞 '+x.PatientPhone:'', x.AddressText].filter(Boolean).map(esc).join(' · ')+'</div>'
+      +'<div class="rs"><b>'+esc(x.ReferralTitle||'')+'</b>'+(x.ReferralReason?'\n'+esc(x.ReferralReason):'')+'</div>'+src
+      +'<div class="actions" style="margin-top:8px">'+act+'</div></div>';
+  }).join('');
+}
+async function acceptRef(i, btn){
+  const x=S.inbox.rows[i]; setBusy(btn,true,'<span class="spinner sm"></span> กำลังรับงาน…');
+  try{ const r=await api('swApiAccept',{ReferralID:x.ReferralID}); S.inbox=r.inbox; setInboxBadge(); toast(r.already?'ใบส่งต่อนี้รับงานไว้แล้ว':'รับงานแล้ว — กด "บันทึกงาน" เมื่อพร้อม'); drawInbox(); }
+  catch(e){ toast(e.message,true); setBusy(btn,false); }
+}
+function recordRef(i){
+  const x=S.inbox.rows[i]; S.pendingRef=x;
+  if(x.PatientID){ newVisit(x.PatientID, x); return; }
+  S.q=x.HN||x.PatientName||''; S.found=null; go('clients'); if(S.q) doSearch();
+}
+
+/* =====================================================================
+ * รายงาน (ยกจากรุ่น 2.2.2: ปีงบ / ไตรมาส / ช่วงวันที่ · เทียบช่วงก่อน · เจาะรายชื่อ)
+ * ===================================================================== */
+function renderReport(){
+  const fy=S.report&&S.report.fiscalYearBE?S.report.fiscalYearBE:S.dw.fy, years=(S.report&&S.report.availableFiscalYears)||[S.dw.fy, S.dw.fy-1];
+  $('content').innerHTML='<div class="page-head"><div><h2>รายงาน</h2><p id="rptInfo"></p></div><div class="actions"><button class="phc-btn phc-btn--secondary phc-btn--sm" type="button" onclick="printReport()">🖨️ พิมพ์รายงาน</button></div></div>'
+    +'<div class="rpt-filters">'+field('รูปแบบ',segHtml('rMode',[['fiscal','ปีงบประมาณ'],['quarter','ไตรมาส'],['range','ช่วงวันที่']],S.rptMode,'rptMode()'))
+      +field('ปีงบประมาณ','<select class="phc-select" id="rFy">'+years.map(y=>opt(y,y,Number(y)===Number(fy))).join('')+'</select>','rf-fy')
+      +field('ไตรมาส','<select class="phc-select" id="rQ">'+[1,2,3,4].map(q=>opt(q,'ไตรมาส '+q+' ('+['ต.ค.–ธ.ค.','ม.ค.–มี.ค.','เม.ย.–มิ.ย.','ก.ค.–ก.ย.'][q-1]+')',S.report&&Number(S.report.quarter)===q)).join('')+'</select>','rf-q')
+      +field('ตั้งแต่วันที่',dateField('rFrom',S.rFrom||'',{max:S.dw.today}),'rf-r')+field('ถึงวันที่',dateField('rTo',S.rTo||'',{max:S.dw.today}),'rf-r')
+      +field('เปรียบเทียบ','<select class="phc-select" id="rCmp">'+opt('previous','กับช่วงก่อนหน้า',true)+opt('none','ไม่เปรียบเทียบ')+'</select>')
+      +'<button class="phc-btn" type="button" id="rBtn" onclick="loadReport()">แสดงรายงาน</button></div><div id="rptBox"></div><div id="rptDrill"></div>';
+  rptMode();
+  if(S.report) drawReport(); else loadReport();
+}
+function rptMode(){ S.rptMode=segVal('rMode')||'fiscal'; const show=(c,o)=>document.querySelectorAll('.'+c).forEach(e=>e.classList.toggle('hidden',!o)); show('rf-fy',S.rptMode!=='range'); show('rf-q',S.rptMode==='quarter'); show('rf-r',S.rptMode==='range'); }
+async function loadReport(){
+  const f={mode:S.rptMode, compare:val('rCmp')||'previous'};
+  if(S.rptMode!=='range') f.fiscalYearBE=Number(val('rFy'))||undefined;
+  if(S.rptMode==='quarter') f.quarter=Number(val('rQ'))||1;
+  if(S.rptMode==='range'){ S.rFrom=dateVal('rFrom'); S.rTo=dateVal('rTo'); if(!S.rFrom||!S.rTo){ toast('กรุณาเลือกวันที่ให้ครบทั้งสองช่อง',true); return; } if(S.rFrom>S.rTo){ toast('วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด',true); return; } f.fromDate=keyToBE(S.rFrom); f.toDate=keyToBE(S.rTo); }
+  const box=$('rptBox'); box.innerHTML='<div class="card empty"><div class="spinner"></div><p>กำลังคำนวณรายงาน…</p></div>'; $('rptDrill').innerHTML='';
+  try{ S.report=await api('swApiReport',f); if(S.page==='report') drawReport(); }catch(e){ box.innerHTML='<div class="card empty bad-t">'+esc(e.message)+'</div>'; }
+}
+function rptDelta(v){ if(v===null||v===undefined||v==='') return ''; v=Number(v); return (v>0?'▲':(v<0?'▼':'■'))+' '+Math.abs(v).toLocaleString('th-TH',{maximumFractionDigits:1})+'%'; }
+function rptPcts(rows, base, dec){ const f=Math.pow(10,dec||0); return (rows||[]).map(r=>{ if(!base) return null; const x=Math.round(Number(r.value||0)/base*100*f)/f; return dec?x.toFixed(dec):String(x); }); }
+function rptBars(rows, type, title, base, dec){
+  rows=(rows||[]).slice(); if(!rows.length) return '<p class="rpt-note">ไม่มีข้อมูลในช่วงนี้</p>';
+  const top=Math.max.apply(null, rows.map(r=>Number(r.value||0)).concat([1])), pcts=rptPcts(rows,base,dec);
+  return '<div class="rpt-bars">'+rows.map((r,i)=>{ const v=Number(r.value||0), w=Math.min(100,Math.max(2,Math.round(v/(base||top)*100)));
+    return '<button type="button" class="rpt-bar" data-t="'+esc(type)+'" data-l="'+esc(r.label)+'" data-h="'+esc(title)+'" onclick="drill(this)" aria-label="'+esc(r.label)+' '+v+' ดูรายการ"><span class="rpt-bar-name"><span>'+esc(r.label)+'</span><span class="rpt-track"><span class="rpt-fill" style="width:'+w+'%"></span></span></span><span class="rpt-bar-v">'+num(v)+'</span><span class="rpt-bar-p">'+(base?pcts[i]+'%':'')+'</span></button>'; }).join('')+'</div>';
+}
+function drawReport(){
+  const d=S.report, box=$('rptBox'); if(!box) return;
+  const y=$('rFy'); if(y){ y.innerHTML=(d.availableFiscalYears||[]).map(v=>opt(v,v,Number(v)===Number(d.fiscalYearBE))).join(''); }
+  $('rptInfo').textContent=(d.periodLabel||'')+' · '+(d.periodRangeText||'')+' · ข้อมูล ณ '+(d.generatedAtBE||'');
+  const k=d.kpi||{}, dp=d.kpiDeltaPercent, prev=d.kpiPrevious;
+  const kpis=[['ผู้ใช้บริการ',k.patients,'คน','totalPatients','patients'],['การให้บริการ',k.visits,'ครั้ง','allVisits','visits'],['Case ใหม่',k.newCase,'ราย','newCases','newCase'],['Case เดิม',k.oldCase,'ราย','oldCases','oldCase']];
+  const kpiHtml=kpis.map(x=>{ let delta=''; if(dp){ const t=rptDelta(dp[x[4]]); delta='<span class="rpt-kpi-delta">'+(t?'<b>'+t+'</b> จาก'+esc(d.compareLabel):'เทียบไม่ได้ ('+esc(d.compareLabel)+' = '+num(prev?prev[x[4]]:0)+')')+'</span>'; }
+    return '<button type="button" class="rpt-kpi" data-t="'+x[3]+'" data-l="ทั้งหมด" data-h="'+esc(x[0])+'" onclick="drill(this)"><span class="rpt-kpi-label">'+esc(x[0])+'</span><span><span class="rpt-kpi-value">'+num(x[1])+'</span><span class="rpt-kpi-unit">'+esc(x[2])+'</span></span>'+delta+'</button>'; }).join('');
+  const months=d.months||[], mMax=Math.max.apply(null, months.map(m=>Number(m.value||0)).concat([0]));
+  const cross=months.length>12||(months.length&&months[0].yearShort!==months[months.length-1].yearShort&&months.length<12);
+  let marked=false;
+  const monthHtml=months.map(m=>{ const v=Number(m.value||0), isMax=!marked&&v===mMax&&v>0; if(isMax) marked=true; const h=mMax?Math.max(2,Math.round(v/mMax*190)):2;
+    return '<div class="rpt-col"><span class="rpt-col-v">'+num(v)+'</span><div class="rpt-col-bar'+(isMax?' is-max':'')+'" style="height:'+h+'px"></div><span class="rpt-col-l">'+esc(m.label)+(cross?' '+esc(m.yearShort):'')+'</span></div>'; }).join('');
+  const avg=months.length?Number(k.visits||0)/months.length:0, periods=d.periods||[];
+  const sum=periods.reduce((a,p)=>({visits:a.visits+Number(p.visits||0), newCase:a.newCase+Number(p.newCase||0)}),{visits:0,newCase:0});
+  const tableHtml='<table class="rpt-table"><thead><tr><th scope="col">ช่วง</th><th scope="col">ผู้ใช้บริการ</th><th scope="col">ครั้ง</th><th scope="col">Case ใหม่</th></tr></thead><tbody>'
+    +periods.map(p=>'<tr><th scope="row">'+esc(p.label)+(p.range?'<span class="rpt-sub">'+esc(p.range)+'</span>':'')+'</th><td>'+num(p.patients)+'</td><td>'+num(p.visits)+'</td><td>'+num(p.newCase)+'</td></tr>').join('')
+    +'</tbody><tfoot><tr><th scope="row">รวม</th><td>'+num(k.patients)+'*</td><td>'+num(sum.visits)+'</td><td>'+num(sum.newCase)+'</td></tr></tfoot></table><p class="rpt-note">* นับคนไม่ซ้ำทั้งช่วง จึงไม่เท่ากับผลรวมแต่ละแถว</p>';
+  const base=Number(k.visits||0), c=d.charts||{}, sumOf=rows=>(rows||[]).reduce((a,r)=>a+Number(r.value||0),0);
+  const chart=(title,rows,type,multi)=>{ const b=multi?sumOf(rows):base; return '<div class="rpt-card"><div class="rpt-card-head"><h3>'+esc(title)+'</h3><span>'+(multi?'% ของรายการที่เลือกทั้งหมด '+num(b)+' รายการ':'% ของการให้บริการ '+num(b)+' ครั้ง')+'</span></div>'+rptBars(rows,type,title,b,multi?1:0)+(multi&&(rows||[]).length?'<p class="rpt-note">1 ครั้งเลือกได้หลายข้อ · ตัวเลขคือจำนวนครั้งที่เลือกข้อนั้น</p>':'')+'</div>'; };
+  box.innerHTML='<div class="rpt-body"><section class="rpt-kpis" aria-label="ตัวชี้วัดหลัก">'+kpiHtml+'</section>'
+    +'<section class="rpt-row"><div class="rpt-card"><div class="rpt-card-head"><h3>จำนวนการให้บริการรายเดือน</h3><span>หน่วย: ครั้ง</span></div><div class="rpt-chart" role="img" aria-label="กราฟแท่งจำนวนการให้บริการรายเดือน รวม '+base+' ครั้ง">'+monthHtml+'</div>'
+      +'<div class="rpt-legend"><span><span class="rpt-dot"></span>การให้บริการ</span><span><span class="rpt-dot is-max"></span>เดือนที่สูงที่สุด</span><span>เฉลี่ย '+avg.toLocaleString('th-TH',{maximumFractionDigits:1})+' ครั้ง/เดือน</span></div></div>'
+      +'<div class="rpt-card"><div class="rpt-card-head"><h3>'+esc(d.periodTableTitle||'สรุป')+'</h3></div>'+tableHtml+'</div></section>'
+    +'<section class="rpt-grid2">'+chart('กลุ่มเป้าหมาย',c.targetGroups,'targetGroups')+chart('ช่องทางรับเรื่อง',c.receiveChannels,'receiveChannels')+chart('กิจกรรม / บริการ',c.activities,'activities',true)+chart('การช่วยเหลือด้านทรัพยากร',c.resourceSupports,'resourceSupports',true)+'</section>'
+    +'<p class="rpt-note">กดการ์ดตัวเลขหรือแถบกราฟเพื่อดูรายชื่อ'+(Number(d.undatedCount||0)?' · มี '+num(d.undatedCount)+' รายการที่ไม่มีวันที่ ไม่ถูกนับในรายงานนี้':'')+'</p></div>';
+}
+async function drill(el){
+  const type=el.dataset.t, label=el.dataset.l, title=el.dataset.h, box=$('rptDrill');
+  box.innerHTML='<div class="card" style="margin-top:14px"><p class="muted small" style="margin:0 0 10px">กำลังโหลดรายชื่อ '+esc(title)+' : '+esc(label)+'</p>'+phcSk(5)+'</div>'; box.scrollIntoView({behavior:'smooth',block:'start'});
+  try{ const r=await api('swApiDrilldown',Object.assign({},S.report.drilldownFilter||{},{type:type,label:label,limit:300}));
+    box.innerHTML='<div class="card" style="margin-top:14px"><div class="card-head"><h3>รายชื่อ: '+esc(title)+' / '+esc(label)+' <span class="muted small">('+num(r.total||r.rows.length)+' รายการ'+(r.total>r.rows.length?' · แสดง '+r.rows.length:'')+')</span></h3><button class="xbtn" type="button" onclick="$(\'rptDrill\').innerHTML=\'\'" aria-label="ปิดรายชื่อ">×</button></div>'+visitTable(r.rows,'ไม่พบข้อมูลในยอดนี้')+'</div>'; }
+  catch(e){ box.innerHTML='<div class="card empty bad-t" style="margin-top:14px">'+esc(e.message)+'</div>'; }
+}
+function printReport(){
+  const d=S.report; if(!d){ toast('ยังไม่มีรายงานสำหรับพิมพ์',true); return; }
+  const k=d.kpi||{}, dp=d.kpiDeltaPercent, baseV=Number(k.visits||0);
+  const kpiHtml='<div class="rp-kpis">'+[['ผู้ใช้บริการ',k.patients,'คน','patients'],['การให้บริการ',k.visits,'ครั้ง','visits'],['Case ใหม่',k.newCase,'ราย','newCase'],['Case เดิม',k.oldCase,'ราย','oldCase']].map(x=>{ const t=dp?rptDelta(dp[x[3]]):''; return '<div class="rp-kpi"><span class="rp-l">'+esc(x[0])+'</span><span><b class="rp-v">'+num(x[1])+'</b> <span class="rp-u">'+esc(x[2])+(t?' · '+t:'')+'</span></span></div>'; }).join('')+'</div>';
+  const months=d.months||[], mMax=Math.max.apply(null, months.map(m=>Number(m.value||0)).concat([0]));
+  const chartHtml='<div class="rp-chart">'+months.map(m=>{ const v=Number(m.value||0), h=mMax?Math.max(2,Math.round(v/mMax*105)):2; return '<div class="rp-col"><span class="rp-cv">'+num(v)+'</span><i style="height:'+h+'px'+(v===mMax&&v>0?';background:#0E5A2E':'')+'"></i><span class="rp-cl">'+esc(m.label)+'</span></div>'; }).join('')+'</div>';
+  const periods=d.periods||[], sumV=periods.reduce((a,p)=>a+Number(p.visits||0),0), sumN=periods.reduce((a,p)=>a+Number(p.newCase||0),0);
+  const tableHtml='<table class="phc-p-table"><thead><tr><th>ช่วง</th><th class="phc-p-num">ผู้ใช้บริการ</th><th class="phc-p-num">ครั้ง</th><th class="phc-p-num">Case ใหม่</th></tr></thead><tbody>'
+    +periods.map(p=>'<tr><td>'+esc(p.label)+(p.range?' <span class="rp-u">'+esc(p.range)+'</span>':'')+'</td><td class="phc-p-num">'+num(p.patients)+'</td><td class="phc-p-num">'+num(p.visits)+'</td><td class="phc-p-num">'+num(p.newCase)+'</td></tr>').join('')
+    +'<tr><td><b>รวม</b></td><td class="phc-p-num"><b>'+num(k.patients)+'*</b></td><td class="phc-p-num"><b>'+num(sumV)+'</b></td><td class="phc-p-num"><b>'+num(sumN)+'</b></td></tr></tbody></table><div class="rp-u">* นับคนไม่ซ้ำทั้งช่วง</div>';
+  const c=d.charts||{};
+  const bars=(title,rows,multi)=>{ rows=(rows||[]).slice(); const base=multi?rows.reduce((a,r)=>a+Number(r.value||0),0):baseV, top=Math.max.apply(null,rows.map(r=>Number(r.value||0)).concat([1])), pcts=rptPcts(rows,base,multi?1:0);
+    return '<div class="rp-box"><h2>'+esc(title)+'</h2>'+(rows.length?rows.map((r,i)=>{ const v=Number(r.value||0); return '<div class="rp-bar"><span class="rp-bn"><span>'+esc(r.label)+'</span><span class="rp-track"><i style="width:'+Math.min(100,Math.max(2,Math.round(v/(base||top)*100)))+'%'+(i===0?';background:#15703A':'')+'"></i></span></span><b>'+num(v)+'</b><span class="rp-u">'+(base?pcts[i]+'%':'')+'</span></div>'; }).join('')+'<div class="rp-u" style="margin-top:3px">'+(multi?'% ของรายการที่เลือกทั้งหมด '+num(base)+' รายการ (1 ครั้งเลือกได้หลายข้อ)':'% ของการให้บริการ '+num(base)+' ครั้ง')+'</div>':'<div class="rp-u">ไม่มีข้อมูล</div>')+'</div>'; };
+  const body=kpiHtml+'<div class="rp-row"><div class="rp-box"><h2>จำนวนการให้บริการรายเดือน (ครั้ง)</h2>'+chartHtml+'</div><div class="rp-box"><h2>'+esc(d.periodTableTitle||'สรุป')+'</h2>'+tableHtml+'</div></div>'
+    +'<div class="rp-grid4">'+bars('กลุ่มเป้าหมาย',c.targetGroups)+bars('ช่องทางรับเรื่อง',c.receiveChannels)+bars('กิจกรรม / บริการ',c.activities,true)+bars('การช่วยเหลือด้านทรัพยากร',c.resourceSupports,true)+'</div>';
+  kitPrint({ title:'รายงานงานสังคมสงเคราะห์', meta:[['',d.periodLabel||''],['',d.periodRangeText||''],['เทียบกับ',d.compareLabel||'']], orientation:'landscape', density:'compact', bodyHtml:body,
+    extraCss:'.rp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}.rp-kpi{border:1px solid #A9B3AD;border-radius:6px;padding:5px 9px;display:flex;flex-direction:column}.rp-l{font-size:11px;color:#4A5550;font-weight:600}.rp-v{font-size:22px;line-height:1.15}.rp-u{font-size:11px;color:#4A5550}'
+      +'.rp-row{display:grid;grid-template-columns:1.6fr 1fr;gap:10px;margin-bottom:8px}.rp-box{border:1px solid #A9B3AD;border-radius:6px;padding:6px 10px;break-inside:avoid}.rp-box h2{margin:0 0 4px;font-size:13px}'
+      +'.rp-chart{height:140px;display:flex;align-items:flex-end;gap:6px;padding:0 2px 16px;border-bottom:1px solid #A9B3AD}.rp-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%;position:relative}.rp-col i{display:block;width:100%;max-width:28px;background:#15703A;border-radius:3px 3px 0 0}.rp-cv{font-size:10px;font-weight:700}.rp-cl{position:absolute;bottom:-15px;font-size:10px;color:#4A5550;white-space:nowrap}'
+      +'.rp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.rp-bar{display:grid;grid-template-columns:minmax(0,1fr) 22px 30px;gap:4px;align-items:center;margin-top:3px}.rp-bn{display:flex;flex-direction:column;gap:2px;min-width:0}.rp-bn>span:first-child{font-size:10.5px;overflow-wrap:anywhere}.rp-track{display:block;height:6px;border-radius:999px;background:#EEF1EF;overflow:hidden}.rp-track i{display:block;height:100%;background:#3DA852}.rp-bar b{text-align:right;font-size:11px}.rp-bar .rp-u{text-align:right}' });
+}
+
+/* =====================================================================
+ * ตั้งค่า (superadmin / admin)
+ * ===================================================================== */
+function renderSettings(){
+  if(!isAdmin()){ go('home'); return; }
+  const cur=String(S.settings.BACKDATE_PREV_FY_UNTIL||'10-31').split('-'), w=S.dw;
+  $('content').innerHTML='<div class="page-head"><div><h2>ตั้งค่า</h2><p>เฉพาะ superadmin / admin</p></div></div>'
+    +'<div class="card" style="max-width:720px"><h3>บันทึกย้อนหลังเข้าปีงบก่อนหน้า</h3><p class="small muted" style="margin-top:0">ต้นปีงบใหม่ ยังบันทึกงานที่รับเรื่องในปีงบก่อนได้จนถึงวันที่นี้ (เลือกได้ ต.ค. – ธ.ค.) · หลังจากนั้นบันทึกได้เฉพาะปีงบปัจจุบัน · ทุกกรณีวันที่รับเรื่องต้องไม่เกินวันนี้</p>'
+    +'<div class="form-grid">'+field('เดือน','<select class="phc-select" id="sM">'+[['10','ตุลาคม'],['11','พฤศจิกายน'],['12','ธันวาคม']].map(m=>opt(m[0],m[1],m[0]===cur[0])).join('')+'</select>')
+    +field('วันที่','<select class="phc-select" id="sD">'+Array.from({length:31},(x,i)=>pad2(i+1)).map(d=>opt(d,String(Number(d)),d===cur[1])).join('')+'</select>')+'</div>'
+    +'<div class="alert-row '+(w.allowPrev?'w':'i')+'" style="margin-top:12px">ตอนนี้: '+(w.allowPrev?'บันทึกย้อนเข้าปีงบ '+(w.fy-1)+' ได้ถึง '+esc(thDate(w.prevUntil,true)):'บันทึกได้เฉพาะปีงบ '+w.fy+' (ตั้งแต่ '+esc(thDate(w.min,true))+')')+'</div>'
+    +'<div class="actions" style="margin-top:12px"><button class="phc-btn" type="button" id="sBtn" onclick="saveSettings()">💾 บันทึก</button></div></div>';
+}
+async function saveSettings(){
+  const b=$('sBtn'); setBusy(b,true);
+  try{ const r=await api('swApiSaveSettings',{BACKDATE_PREV_FY_UNTIL:val('sM')+'-'+val('sD')}); S.settings=r.settings; S.dw=r.dateWindow; toast('บันทึกการตั้งค่าแล้ว'); renderSettings(); }
+  catch(e){ toast(e.message,true); setBusy(b,false); }
+}
+
+boot();
+</script>
+<script>
+/* ปุ่ม "กลับหน้าหลัก" → หน้าหลักของแอป PHC37 */
+window.goGateway = function () { try { if ('') sessionStorage.removeItem(''); } catch (e) {} try { window.parent.PHC37.goHome(); } catch (e) {} };
+</script>
+</body>
+</html>
