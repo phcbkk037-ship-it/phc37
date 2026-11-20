@@ -141,6 +141,18 @@
           <iframe id="cnr-frame" class="mr-frame" title="ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชน"></iframe>
         </section>
 
+        <!-- ระบบประเมินสุขภาพ อสส. (หน้าเดิมทั้งหน้า oss.html · oss.js) -->
+        <section id="view-oss" class="view mr-view" hidden>
+          <div id="oss-note" class="mr-note" role="status" hidden></div>
+          <iframe id="oss-frame" class="mr-frame" title="ระบบประเมินสุขภาพ อสส."></iframe>
+        </section>
+
+        <!-- ระบบเฝ้าระวัง ติดตาม และควบคุมโรคติดต่อ (หน้าเดิมทั้งหน้า cdc.html · cdc.js · แผนที่ใช้ GPS) -->
+        <section id="view-cdc" class="view mr-view" hidden>
+          <div id="cdc-note" class="mr-note" role="status" hidden></div>
+          <iframe id="cdc-frame" class="mr-frame" title="ระบบเฝ้าระวัง ติดตาม และควบคุมโรคติดต่อ" allow="geolocation"></iframe>
+        </section>
+
         <!-- ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อม (หน้าเดิมทั้งหน้า it.html · itasset.js) -->
         <section id="view-itasset" class="view mr-view" hidden>
           <div id="ita-note" class="mr-note" role="status" hidden></div>
@@ -779,5 +791,7 @@
   <script src="itasset.js"></script>
   <script src="cnr.js"></script>
   <script src="ltc.js"></script>
+  <script src="oss.js"></script>
+  <script src="cdc.js"></script>
 </body>
 </html>
