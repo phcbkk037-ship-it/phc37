@@ -1,4 +1,4 @@
-/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.2.0) : เวชระเบียนกลาง — หน้าตาแบบ Gateway เดิม
+/* PHC37 PWA — patients.js (PHC37-PWA-PATIENTS-1.3.0 · 1.3.0 แจ้งว่าเวชระเบียนกลางเป็นตัวจริงที่ระบบใหม่แล้ว) : เวชระเบียนกลาง — หน้าตาแบบ Gateway เดิม
  * การ์ดสรุป 4 ใบ · ค้นหา · ตาราง 11 คอลัมน์ (ดู / แก้ไข) · แฟ้มใต้ตาราง · เพิ่ม/แก้ด้วยฟอร์ม Patient Kit (patient-form.js)
  * ไม่เก็บข้อมูลผู้ป่วยไว้ในเครื่อง (ไม่ใช้แคช localStorage) — เก็บเฉพาะตัวเลขสรุปภาพรวม */
 (function () {
@@ -61,8 +61,8 @@
       if (r.invalidCID) q.appendChild(st('เลขบัตรไม่ถูกต้อง ' + r.invalidCID, 'danger'));
       if (r.noMainRight) q.appendChild(st('ไม่มีสิทธิหลัก ' + r.noMainRight, 'off'));
       nt.hidden = false;
-      nt.textContent = '🔄 ' + r.notice + (r.lastOkText ? ' · ดึงล่าสุด ' + r.lastOkText : ' · ยังไม่เคยดึงข้อมูล');
-      if (r.lastRun && r.lastRun.status === 'error') nt.textContent += ' · ⚠️ รอบล่าสุดไม่สำเร็จ (' + (r.lastRun.startedText || '') + ')';
+      nt.textContent = r.native ? '✅ ' + r.notice : '🔄 ' + r.notice + (r.lastOkText ? ' · ดึงล่าสุด ' + r.lastOkText : ' · ยังไม่เคยดึงข้อมูล');
+      if (!r.native && r.lastRun && r.lastRun.status === 'error') nt.textContent += ' · ⚠️ รอบล่าสุดไม่สำเร็จ (' + (r.lastRun.startedText || '') + ')';
       if (S.cur) renderActions();
     }, null, fresh === true);
   }
