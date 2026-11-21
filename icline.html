@@ -1,0 +1,498 @@
+<!doctype html>
+<!-- IcLine.html - IC1 LINE public pages (link staff LINE account / open case) IC1-1.3.0 2026-10-27 -->
+<html lang="th">
+<head>
+<script src="config.js"></script>
+<link rel="icon" href="icons/icon-192.png">
+<script>
+/* PHC37 PWA 2.11.0 — หน้า LINE ของ IC Watch (IC1-1.3.2) บนระบบใหม่ · ไม่ต้องเข้าสู่ระบบ
+ * ข้อมูลหน้า: Edge ic.pub linePage(mode, พารามิเตอร์ใน URL) · google.script.run.<ฟังก์ชันเดิม> → Edge ic.pub (ตรวจลายเซ็นโทเคนเดิมทุกบรรทัด) */
+(function () {
+  var CFG = window.PHC37_CONFIG || {};
+  function send(fn, args) {
+    if (!CFG.API_URL) return Promise.reject(new Error('ยังไม่ได้ตั้งค่า API_URL ในไฟล์ config.js'));
+    var ctrl = ('AbortController' in window) ? new AbortController() : null, timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 45000);
+    return fetch(CFG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'ic.pub', data: { fn: fn, args: args } }),
+      signal: ctrl ? ctrl.signal : undefined }).then(function (r) { clearTimeout(timer); return r.json(); }, function (e) { clearTimeout(timer); throw new Error('เชื่อมต่อไม่ได้ กรุณาลองใหม่'); });
+  }
+  window.icSend_ = send;
+  function runner(ok, fail) {
+    return new Proxy({}, { get: function (t, k) {
+      if (k === 'withSuccessHandler') return function (f) { return runner(f, fail); };
+      if (k === 'withFailureHandler') return function (f) { return runner(ok, f); };
+      if (k === 'withUserObject') return function () { return runner(ok, fail); };
+      return function () {
+        var args = [].slice.call(arguments);
+        send(String(k), args).then(function (r) {
+          if (r && r.ok === false && r.code === 'not_live') r = { ok: false, message: 'ระบบใหม่ยังไม่เปิดใช้ กรุณาติดต่อผู้ดูแลระบบ' };
+          if (ok) ok(r);
+        }, function (e) { if (fail) fail(e); });
+      };
+    } });
+  }
+  window.google = { script: { run: runner(null, null), host: { close: function () {} } } };
+})();
+/* โหลดข้อมูลหน้าจาก Edge แทน doGet เดิม · ลบ code/state ออกจากแถบที่อยู่หลังใช้แล้ว (รีเฟรชไม่ใช้รหัสซ้ำ) */
+function icLoad_() {
+  var box = document.getElementById('box');
+  box.innerHTML = '<div class="st info">กำลังโหลด…</div>';
+  var q = {}, sp = new URLSearchParams(location.search);
+  sp.forEach(function (v, k) { q[k] = v; });
+  var mode = String(q.mode || '').toLowerCase();
+  if (mode === 'open') {   // ปุ่มเปิดเคสใน LINE → แอปใหม่ (เปิดเคสหลังเข้าสู่ระบบ)
+    var c = /^[A-Za-z0-9_-]{1,80}$/.test(q['case'] || '') ? q['case'] : '';
+    location.replace('./?open=ic' + (c ? '&case=' + encodeURIComponent(c) : ''));
+    return;
+  }
+  if (mode === 'linecallback') { try { history.replaceState(null, '', location.pathname + '?mode=done'); } catch (e) {} }
+  if (mode === 'done') { MODE = 'ERROR'; D = { message: 'ทำรายการนี้ไปแล้ว — ปิดหน้านี้ได้ หรือสร้างลิงก์เชื่อม LINE ใหม่' }; render(); return; }
+  window.icSend_('linePage', [mode, q]).then(function (r) {
+    if (r && r.page) { MODE = r.page.mode; D = r.page.data || {}; }
+    else { MODE = 'ERROR'; D = { message: (r && r.code === 'not_live') ? 'ระบบใหม่ยังไม่เปิดใช้ กรุณาติดต่อผู้ดูแลระบบ' : ((r && r.message) || 'ไม่สามารถเปิดหน้านี้ได้') }; }
+    render();
+  }, function (e) { MODE = 'ERROR'; D = { message: e && e.message ? e.message : 'เชื่อมต่อไม่ได้' }; render(); });
+}
+</script>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- ==========================================================
+  PHC37_UIKit.html — มาตรฐานหน้าตาเว็บแอป ศบส.37
+  Version: PHC37-UIKIT-1.2.0 — วันที่ 23/10/2569
+  1.2.0: เพิ่มชุด Loading กลาง (PHC37Load) ใช้ร่วมกับ Gateway: ปุ่มแสดงสถานะ · เส้นวิ่งด้านบน · โครงเทา ·
+         ข้อความแจ้งพร้อมปุ่มลองใหม่ · หน้าเปิดระบบ · ขั้นตอนเข้าสู่ระบบ
+  1.1.0: ฟอนต์หน้าจอเป็น Sarabun (มีหัว ทางการ ชุดเดียวกับ PDF), ขนาดฐาน 16px,
+         เพิ่มปุ่ม phc-btn--edit (ส้มอ่อน) และ phc-btn--danger-soft (แดงอ่อน สำหรับปุ่มลบในตาราง)
+  ไฟล์นี้ต้องเหมือนกันทุกระบบ ห้ามแก้เฉพาะระบบใดระบบหนึ่ง
+  ถ้าต้องแก้ ให้แก้ต้นฉบับ เปลี่ยนเวอร์ชัน แล้วคัดลอกไปทับทุกระบบ
+  ใส่เข้าหน้าเว็บด้วย phc37InjectUiKit_(html) ใน PHC37UiKit.gs
+
+  ประกอบด้วย
+  1) Token สี ตัวอักษร มุมโค้ง ระยะห่าง (--phc-*)
+  2) ส่วนประกอบมาตรฐาน (คลาสขึ้นต้นด้วย phc-) สำหรับหน้าจอใหม่หรือหน้าที่ปรับแล้ว
+  ระบบเดิมผูกตัวแปรสีของตัวเองเข้ากับ token เหล่านี้ (ทีละระบบ)
+=========================================================== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+<style id="phc37-uikit">
+:root{
+  --phc-uikit-version:"PHC37-UIKIT-1.2.0";
+
+  /* สีหลักจากตรา ศบส.37 */
+  --phc-primary:#15703A;
+  --phc-primary-hover:#0E5A2E;
+  --phc-primary-tint:#EAF6EC;
+  --phc-brand:#3DA852;            /* ตกแต่งเท่านั้น ห้ามใช้เป็นสีตัวอักษรบนพื้นขาว */
+
+  /* สีพื้นและตัวอักษร */
+  --phc-ink:#17201A;
+  --phc-ink-2:#4A5550;
+  --phc-border:#D8DED9;
+  --phc-border-input:#A9B3AD;
+  --phc-ground:#F4F6F4;
+  --phc-surface:#FFFFFF;
+  --phc-surface-2:#F8FAF8;
+  --phc-disabled-bg:#C9D1CC;
+
+  /* สีสถานะ (ตัวอักษร / พื้น) */
+  --phc-info:#1D5FBF;    --phc-info-bg:#E8F0FC;
+  --phc-warning:#8A4B00; --phc-warning-bg:#FFF4E5;
+  --phc-danger:#B42318;  --phc-danger-bg:#FDECEB;  --phc-danger-hover:#8F1B12;
+  --phc-success:#15703A; --phc-success-bg:#EAF6EC;
+  --phc-neutral:#4A5550; --phc-neutral-bg:#EEF1EF;
+
+  /* ตัวอักษร */
+  --phc-font:'Sarabun','TH Sarabun New','Leelawadee UI',Tahoma,sans-serif;
+  --phc-font-print:'Sarabun','TH Sarabun New',serif;
+  --phc-mono:ui-monospace,Menlo,Consolas,monospace;
+  --phc-text-xs:13px; --phc-text-sm:14px; --phc-text-md:16px; --phc-text-lg:19px; --phc-text-xl:23px; --phc-text-2xl:30px;
+
+  /* รูปทรง */
+  --phc-radius-sm:8px; --phc-radius:12px; --phc-radius-lg:16px; --phc-radius-pill:999px;
+  --phc-space-1:4px; --phc-space-2:8px; --phc-space-3:12px; --phc-space-4:16px; --phc-space-5:24px; --phc-space-6:32px;
+  --phc-shadow:0 1px 2px rgba(23,32,26,.06),0 4px 12px rgba(23,32,26,.06);
+  --phc-shadow-lg:0 12px 28px rgba(23,32,26,.16);
+  --phc-touch:44px;
+  --phc-focus:0 0 0 3px rgba(21,112,58,.35);
+
+  /* ตรา (สัญลักษณ์กากบาท) สำหรับแถบหัว */
+  --phc-logo-mark:url("data:image/png;base64,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");
+}
+
+/* ---------- พื้นฐาน (ใช้เฉพาะคลาส phc- ไม่แตะ element ทั่วไปของระบบเดิม) ---------- */
+.phc-app{font-family:var(--phc-font);color:var(--phc-ink);background:var(--phc-ground);font-size:var(--phc-text-md);line-height:1.6}
+.phc-app :focus-visible{outline:none;box-shadow:var(--phc-focus)}
+
+/* ---------- ตรา ---------- */
+.phc-brand-mark{display:inline-block;width:36px;height:36px;flex:0 0 auto;background:var(--phc-logo-mark) center/contain no-repeat}
+.phc-appbar{display:flex;align-items:center;gap:var(--phc-space-3);padding:10px 20px;background:var(--phc-surface);border-bottom:1px solid var(--phc-border);box-shadow:inset 0 4px 0 var(--phc-brand)}
+.phc-appbar-title{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.phc-appbar-title b{font-size:16px;font-weight:700}
+.phc-appbar-title span{font-size:var(--phc-text-xs);color:var(--phc-ink-2)}
+
+/* ---------- ปุ่ม ---------- */
+.phc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--phc-touch);padding:0 20px;border:1px solid transparent;border-radius:var(--phc-radius-sm);font:inherit;font-weight:600;cursor:pointer;text-decoration:none;background:var(--phc-primary);color:#fff;transition:background-color .15s}
+.phc-btn:hover{background:var(--phc-primary-hover)}
+.phc-btn:focus-visible{outline:none;box-shadow:var(--phc-focus)}
+.phc-btn--secondary{background:var(--phc-surface);color:var(--phc-ink);border-color:var(--phc-border-input)}
+.phc-btn--secondary:hover{background:var(--phc-surface-2)}
+.phc-btn--ghost{background:transparent;color:var(--phc-primary);padding:0 12px}
+.phc-btn--ghost:hover{background:var(--phc-primary-tint)}
+.phc-btn--danger{background:var(--phc-danger);color:#fff}
+.phc-btn--danger:hover{background:var(--phc-danger-hover)}
+.phc-btn--sm{min-height:36px;padding:0 14px;font-size:14px}
+.phc-btn--icon{width:var(--phc-touch);padding:0}
+.phc-btn--sm.phc-btn--icon{width:36px}
+.phc-btn--edit{background:var(--phc-warning-bg);color:var(--phc-warning);border-color:#E8C48F}
+.phc-btn--edit:hover{background:#FDE8C8}
+.phc-btn--danger-soft{background:var(--phc-danger-bg);color:var(--phc-danger);border-color:#F5C2BD}
+.phc-btn--danger-soft:hover{background:#F9DAD7}
+.phc-btn:disabled,.phc-btn[aria-disabled="true"]{background:var(--phc-disabled-bg);color:var(--phc-ink-2);border-color:transparent;cursor:not-allowed}
+
+/* ---------- ฟอร์ม ---------- */
+.phc-field{display:flex;flex-direction:column;gap:6px}
+.phc-label{font-size:14px;font-weight:600;color:var(--phc-ink)}
+.phc-required{color:var(--phc-danger)}
+.phc-input,.phc-select,.phc-textarea{min-height:var(--phc-touch);padding:0 12px;border:1px solid var(--phc-border-input);border-radius:var(--phc-radius-sm);font:inherit;color:var(--phc-ink);background:var(--phc-surface);box-sizing:border-box;width:100%}
+.phc-textarea{padding:10px 12px;resize:vertical}
+.phc-input:focus,.phc-select:focus,.phc-textarea:focus{outline:none;border-color:var(--phc-primary);box-shadow:var(--phc-focus)}
+.phc-input[aria-invalid="true"],.phc-select[aria-invalid="true"],.phc-textarea[aria-invalid="true"]{border:2px solid var(--phc-danger)}
+.phc-help{font-size:var(--phc-text-sm);color:var(--phc-ink-2)}
+.phc-error{font-size:var(--phc-text-sm);color:var(--phc-danger);font-weight:600}
+
+/* ---------- ป้ายสถานะ ---------- */
+.phc-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 12px;border-radius:var(--phc-radius-pill);font-size:var(--phc-text-sm);font-weight:700;line-height:1.6;white-space:nowrap;background:var(--phc-neutral-bg);color:var(--phc-neutral)}
+.phc-badge--info{background:var(--phc-info-bg);color:var(--phc-info)}
+.phc-badge--warning{background:var(--phc-warning-bg);color:var(--phc-warning)}
+.phc-badge--danger{background:var(--phc-danger-bg);color:var(--phc-danger)}
+.phc-badge--success{background:var(--phc-success-bg);color:var(--phc-success)}
+
+/* ---------- ข้อความแจ้ง ---------- */
+.phc-alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;color:var(--phc-ink);background:var(--phc-info-bg)}
+.phc-alert b{color:var(--phc-info)}
+.phc-alert--success{background:var(--phc-success-bg)}.phc-alert--success b{color:var(--phc-success)}
+.phc-alert--warning{background:var(--phc-warning-bg)}.phc-alert--warning b{color:var(--phc-warning)}
+.phc-alert--danger{background:var(--phc-danger-bg)}.phc-alert--danger b{color:var(--phc-danger)}
+.phc-toast{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;background:var(--phc-ink);color:#fff;font-size:14px;box-shadow:var(--phc-shadow-lg)}
+.phc-toast a{color:#9FE0AE;font-weight:600}
+
+/* ---------- การ์ด / ตาราง ---------- */
+.phc-card{background:var(--phc-surface);border:1px solid var(--phc-border);border-radius:var(--phc-radius);padding:var(--phc-space-5)}
+.phc-stat{display:flex;flex-direction:column;gap:4px}
+.phc-stat-label{font-size:14px;color:var(--phc-ink-2)}
+.phc-stat-value{font-size:32px;line-height:40px;font-weight:700}
+.phc-table-wrap{background:var(--phc-surface);border:1px solid var(--phc-border);border-radius:var(--phc-radius);overflow-x:auto}
+.phc-table{width:100%;border-collapse:collapse;font-size:14px}
+.phc-table th{background:var(--phc-ground);text-align:left;font-weight:700;padding:12px 16px;border-bottom:1px solid var(--phc-border);white-space:nowrap}
+.phc-table td{padding:12px 16px;border-bottom:1px solid #EEF1EF;vertical-align:top}
+.phc-table .phc-num{text-align:right;font-variant-numeric:tabular-nums}
+.phc-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 20px;border:1px dashed var(--phc-border-input);border-radius:var(--phc-radius);background:var(--phc-surface);color:var(--phc-ink-2)}
+
+/* ---------- หน้ายืนยัน ---------- */
+.phc-dialog{background:var(--phc-surface);border:1px solid var(--phc-border);border-radius:var(--phc-radius);padding:20px;box-shadow:var(--phc-shadow-lg);display:flex;flex-direction:column;gap:12px}
+.phc-dialog-title{margin:0;font-size:var(--phc-text-lg);font-weight:700}
+.phc-dialog-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+@media (prefers-reduced-motion:reduce){.phc-btn{transition:none}}
+</style>
+<style id="phc37-load">
+/* ---------- PHC37 Loading (UI Kit 1.2.0 · 23/10/2569) ---------- */
+@keyframes phcLdSpin{to{transform:rotate(360deg)}}
+@keyframes phcLdShim{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes phcLdLine{0%{width:0}20%{width:35%}60%{width:70%}100%{width:88%}}
+@keyframes phcLdRun{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
+@keyframes phcLdFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes phcLdPop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:none}}
+.phc-spin{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(21,112,58,.2);border-top-color:#15703A;animation:phcLdSpin .7s linear infinite;box-sizing:border-box;vertical-align:-3px}
+.phc-spin--light{border-color:rgba(255,255,255,.35);border-top-color:#FFFFFF}
+.phc-sk{display:block;background:linear-gradient(90deg,#E4E9E5 0%,#E4E9E5 35%,#F3F6F3 50%,#E4E9E5 65%,#E4E9E5 100%);background-size:300% 100%;animation:phcLdShim 1.4s linear infinite;border-radius:6px;height:13px}
+.phc-sk--dark{background:linear-gradient(90deg,#24473A 0%,#24473A 35%,#35604F 50%,#24473A 65%,#24473A 100%);background-size:300% 100%}
+.phc-sk-card{background:#FFFFFF;border:1px solid #D8DED9;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:96px;box-sizing:border-box}
+.phc-sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.phc-sk-lines{display:flex;flex-direction:column;gap:12px;padding:6px 0}
+.phc-fade-in{animation:phcLdFade .3s ease both}
+.phc-ld-line{position:fixed;left:0;top:0;height:3px;width:0;z-index:2147483000;pointer-events:none;opacity:0;border-radius:0 2px 2px 0;background:linear-gradient(90deg,#15703A,#3DA852);box-shadow:0 0 8px rgba(61,168,82,.6)}
+.phc-ld-line.is-run{opacity:1;animation:phcLdLine 2.4s cubic-bezier(.1,.6,.3,1) forwards}
+.phc-ld-line.is-done{opacity:0;width:100%;transition:opacity .45s ease .15s}
+.phc-ld-line.is-err{opacity:1;width:100%;background:#B42318;box-shadow:none}
+[aria-busy="true"].phc-is-busy,.phc-is-busy{cursor:progress!important;opacity:.85}
+.phc-is-idle-wait{opacity:.5;pointer-events:none}
+.phc-ld-toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483001;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:calc(100% - 32px);pointer-events:none}
+.phc-ld-toasts .phc-toast{pointer-events:auto;animation:phcLdFade .25s ease both;font-size:15px;max-width:100%;box-sizing:border-box}
+.phc-ld-toasts .phc-toast--error{background:#B42318}
+.phc-ld-toasts .phc-toast--ok{background:#15703A}
+.phc-ld-toasts .phc-toast button{border:0;background:transparent;color:#FFFFFF;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:4px;min-height:32px}
+.phc-ld-over{position:fixed;inset:0;z-index:2147482990;background:#F4F6F4;display:flex;align-items:center;justify-content:center;padding:16px;transition:opacity .4s ease;font-family:var(--phc-font,'Sarabun',Tahoma,sans-serif);color:#17201A}
+.phc-ld-over.is-hide{opacity:0;pointer-events:none}
+.phc-ld-card{width:100%;max-width:370px;background:#FFFFFF;border:1px solid #D8DED9;border-radius:16px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:14px;box-sizing:border-box;text-align:center;box-shadow:0 18px 40px -18px rgba(18,52,30,.35)}
+.phc-ld-logo{position:relative;width:92px;height:92px;display:flex;align-items:center;justify-content:center}
+.phc-ld-ring{position:absolute;inset:0;border-radius:50%;border:3px solid #EAF6EC;border-top-color:#3DA852;animation:phcLdSpin 1.4s linear infinite}
+.phc-ld-card.is-err .phc-ld-ring{border-top-color:#B42318;animation:none}
+.phc-ld-mark{width:58px;height:58px;border-radius:16px;background:#EAF6EC;display:flex;align-items:center;justify-content:center}
+.phc-ld-title{font-weight:700;font-size:17px}
+.phc-ld-bar{position:relative;width:100%;height:6px;border-radius:999px;background:#E4E9E5;overflow:hidden}
+.phc-ld-bar span{position:absolute;top:0;bottom:0;left:0;width:38%;border-radius:999px;background:linear-gradient(90deg,#15703A,#3DA852);animation:phcLdRun 1.3s cubic-bezier(.45,.05,.55,.95) infinite}
+.phc-ld-card.is-err .phc-ld-bar span{width:100%;animation:none;background:#B42318}
+.phc-ld-msg{font-size:15px;color:#4A5550}
+.phc-ld-card.is-err .phc-ld-msg{color:#B42318;font-weight:600}
+.phc-ld-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;width:100%;text-align:left}
+.phc-ld-steps li{display:flex;align-items:center;gap:12px;font-size:16px;color:#4A5550}
+.phc-ld-steps li.is-act{color:#17201A;font-weight:600}
+.phc-ld-steps li.is-done{color:#17201A}
+.phc-ld-ic{flex:none;width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:2px solid #D8DED9;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.phc-ld-steps li.is-act .phc-ld-ic{border-color:#EAF6EC;border-top-color:#15703A;animation:phcLdSpin .8s linear infinite}
+.phc-ld-steps li.is-done .phc-ld-ic{border:0;background:#15703A;color:#FFFFFF;animation:phcLdPop .3s ease}
+.phc-ld-steps li.is-err .phc-ld-ic{border:0;background:#B42318;color:#FFFFFF}
+@media (prefers-reduced-motion:reduce){.phc-sk,.phc-ld-bar span{animation-duration:3s}.phc-fade-in,.phc-ld-toasts .phc-toast,.phc-ld-steps li.is-done .phc-ld-ic{animation:none}.phc-ld-line.is-run{animation-duration:4s}}
+</style>
+<script>
+/* PHC37 Loading — UI Kit 1.2.0 · ใช้ร่วมกันทุกระบบและ Gateway (ไม่มี regex literal และไม่มีคอมเมนต์แบบทับสองตัว)
+   PHC37Load.busy(ปุ่ม, 'กำลังบันทึก…')      → คืนฟังก์ชันคืนสภาพปุ่ม
+   PHC37Load.clicked()                       → ปุ่มที่เพิ่งกดแสดงวงหมุน (ใช้ในตัวเรียกเซิร์ฟเวอร์กลางของระบบ) · คืนฟังก์ชันคืนสภาพ
+   PHC37Load.line.start() / .done() / .fail() → เส้นวิ่งด้านบน (ขึ้นเมื่อรอเกิน 0.3 วินาที · ค้างอย่างน้อย 0.3 วินาที)
+   PHC37Load.skeleton(ที่ใส่, { kind:'table'|'cards'|'lines', cols, rows }) → โครงเทาขนาดเท่าของจริง
+   PHC37Load.toast(ข้อความ, { type:'error'|'ok', retry: ฟังก์ชัน })
+   PHC37Load.boot.show(ข้อความ) / .fail(ข้อความ, ลองใหม่) / .hide()
+   PHC37Load.steps(['ขั้น 1','ขั้น 2']) → { set(i,'act'|'done'|'err'), close() }
+   PHC37Load.call(ชื่อฟังก์ชัน, [args], { btn, busyText, line, skeleton, retry, errText, isError }) → Promise */
+window.PHC37Load = window.PHC37Load || (function() {
+  var VERSION = 'PHC37-LOAD-1.2.0', DELAY = 300, MIN = 300;
+  function el(x) { return typeof x === 'string' ? document.getElementById(x) : x; }
+  function esc(s) { return String(s == null ? '' : s).split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;'); }
+  function now() { return new Date().getTime(); }
+  function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function body(fn) { if (document.body) fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  var MARK = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#15703A" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg>';
+
+  /* ปุ่ม: แสดงสถานะ + กดซ้ำไม่ได้ */
+  function busy(btn, text, opts) {
+    btn = el(btn); opts = opts || {};
+    if (!btn || btn.getAttribute('data-phc-busy') === '1') return function() {};
+    var keep = btn.innerHTML, wasDis = btn.disabled, label = text || btn.textContent;
+    var bg = window.getComputedStyle ? window.getComputedStyle(btn).backgroundColor : '';
+    var light = bg && bg.indexOf('255, 255, 255') < 0 && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+    btn.setAttribute('data-phc-busy', '1'); btn.setAttribute('aria-busy', 'true'); btn.disabled = true; btn.classList.add('phc-is-busy');
+    btn.innerHTML = '<span class="phc-spin' + (light ? ' phc-spin--light' : '') + '" aria-hidden="true"></span> ' + esc(String(label).trim());
+    var others = [];
+    if (opts.group) Array.prototype.forEach.call(el(opts.group).querySelectorAll('button'), function(b) { if (b !== btn && !b.disabled) { b.disabled = true; b.classList.add('phc-is-idle-wait'); others.push(b); } });
+    var done = false;
+    return function() {
+      if (done) return; done = true;
+      btn.innerHTML = keep; btn.disabled = wasDis; btn.removeAttribute('aria-busy'); btn.removeAttribute('data-phc-busy'); btn.classList.remove('phc-is-busy');
+      others.forEach(function(b) { b.disabled = false; b.classList.remove('phc-is-idle-wait'); });
+    };
+  }
+
+  /* ปุ่มที่ผู้ใช้เพิ่งกด (ภายใน 1.5 วินาที) แสดงวงหมุนจนกว่างานเสร็จ · ปุ่มเปลี่ยนหน้า/แท็บ/เมนูไม่หมุน */
+  var CLK = { b: null, at: 0 }, NAVP = ['show', 'go', 'open', 'switch', 'setPage', 'setTab', 'toggle', 'close', 'cancel', 'gw7Go', 'tab'];
+  function clickable(b) {
+    if (!b || b.hasAttribute('data-no-busy') || b.hasAttribute('data-page') || b.hasAttribute('data-tab')) return false;
+    if (b.closest && b.closest('nav, aside, [role="tablist"], .menu, .sidebar, .side, .tabs, .modal-head')) return false;
+    var oc = String(b.getAttribute('onclick') || '').trim();
+    return !NAVP.some(function(p) { return oc.indexOf(p) === 0; });
+  }
+  document.addEventListener('click', function(e) { var b = e.target && e.target.closest ? e.target.closest('button') : null; CLK.b = b && clickable(b) ? b : null; CLK.at = new Date().getTime(); }, true);
+  function clicked() {
+    var b = CLK.b; CLK.b = null;
+    if (!b || now() - CLK.at > 1500 || !document.body.contains(b) || b.getAttribute('aria-busy') === 'true') return function() {};
+    var was = b.disabled, bg = window.getComputedStyle ? window.getComputedStyle(b).backgroundColor : '';
+    var sp = mk('span', 'phc-spin' + (bg && bg.indexOf('255, 255, 255') < 0 && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' ? ' phc-spin--light' : ''));
+    sp.setAttribute('aria-hidden', 'true'); sp.style.marginRight = '6px';
+    b.insertBefore(sp, b.firstChild); b.setAttribute('aria-busy', 'true'); b.classList.add('phc-is-busy'); b.disabled = true;
+    var done = false;
+    return function() { if (done) return; done = true; if (sp.parentNode) sp.parentNode.removeChild(sp); b.removeAttribute('aria-busy'); b.classList.remove('phc-is-busy'); b.disabled = was; };
+  }
+
+  /* เส้นวิ่งด้านบน */
+  var L = { n: 0, node: null, timer: null, shownAt: 0, hideT: null };
+  function lineNode() { if (!L.node) { L.node = mk('div', 'phc-ld-line'); L.node.setAttribute('aria-hidden', 'true'); body(function() { document.body.appendChild(L.node); }); } return L.node; }
+  function lineStart() {
+    L.n++; if (L.n > 1) return;
+    var n = lineNode(); clearTimeout(L.hideT); clearTimeout(L.timer); L.shownAt = 0;
+    L.timer = setTimeout(function() { if (overShown()) return; n.className = 'phc-ld-line'; void n.offsetWidth; n.className = 'phc-ld-line is-run'; L.shownAt = now(); }, DELAY);
+  }
+  function lineEnd(ok) {
+    if (L.n <= 0) return; L.n--; if (L.n > 0 && ok) return; L.n = 0;
+    var n = lineNode(); clearTimeout(L.timer);
+    if (!L.shownAt) { if (!ok) { n.className = 'phc-ld-line is-err'; L.hideT = setTimeout(function() { n.className = 'phc-ld-line'; }, 900); } return; }
+    var wait = Math.max(0, MIN - (now() - L.shownAt));
+    L.hideT = setTimeout(function() { n.className = 'phc-ld-line ' + (ok ? 'is-done' : 'is-err'); L.hideT = setTimeout(function() { n.className = 'phc-ld-line'; }, ok ? 700 : 900); L.shownAt = 0; }, wait);
+  }
+
+  /* ระหว่างการ์ดเปิดระบบ/ขั้นตอนแสดงอยู่ ไม่ต้องมีเส้นวิ่งซ้อน */
+  function overShown() {
+    var o = document.querySelectorAll('.phc-ld-over'), i; for (i = 0; i < o.length; i++) if (o[i].style.display !== 'none' && !o[i].classList.contains('is-hide')) return true;
+    o = document.querySelectorAll('[data-phc-boot]'); for (i = 0; i < o.length; i++) if (!o[i].classList.contains('hidden') && !o[i].hidden && window.getComputedStyle(o[i]).display !== 'none') return true;
+    return false;
+  }
+
+  /* โครงเทา */
+  function skeleton(target, o) {
+    target = el(target); o = o || {}; if (!target) return;
+    var kind = o.kind || 'lines', h = '', i, j, W = ['70%', '45%', '60%', '35%', '55%', '40%', '65%', '50%'];
+    if (kind === 'table') {
+      var cols = o.cols || 4, rows = o.rows || 5;
+      for (i = 0; i < rows; i++) { h += '<tr class="phc-sk-row">'; for (j = 0; j < cols; j++) h += '<td style="padding:14px 12px"><span class="phc-sk" style="width:' + W[(i + j) % W.length] + '"></span></td>'; h += '</tr>'; }
+    } else if (kind === 'cards') {
+      var c = o.count || 6; h = '<div class="phc-sk-grid" style="' + (o.min ? 'grid-template-columns:repeat(auto-fill,minmax(' + o.min + 'px,1fr))' : '') + '">';
+      for (i = 0; i < c; i++) h += '<div class="phc-sk-card"><span class="phc-sk" style="width:44px;height:44px;border-radius:12px"></span><span class="phc-sk" style="width:70%;height:14px"></span><span class="phc-sk" style="width:85%;height:12px"></span></div>';
+      h += '</div>';
+    } else {
+      var n = o.rows || 4; h = '<div class="phc-sk-lines">';
+      for (i = 0; i < n; i++) h += '<span class="phc-sk" style="height:' + (o.height || 14) + 'px;width:' + W[i % W.length].split('%')[0] * 1.3 + '%"></span>';
+      h += '</div>';
+    }
+    target.innerHTML = h; target.setAttribute('aria-busy', 'true');
+    if (o.label) target.setAttribute('aria-label', o.label);
+  }
+  function ready(target) { target = el(target); if (!target) return; target.removeAttribute('aria-busy'); target.classList.remove('phc-fade-in'); void target.offsetWidth; target.classList.add('phc-fade-in'); }
+
+  /* ข้อความแจ้ง */
+  var host = null;
+  function toast(msg, o) {
+    o = o || {}; if (!host) { host = mk('div', 'phc-ld-toasts'); host.setAttribute('role', 'status'); host.setAttribute('aria-live', 'polite'); body(function() { document.body.appendChild(host); }); }
+    var t = mk('div', 'phc-toast' + (o.type ? ' phc-toast--' + o.type : ''));
+    t.appendChild(mk('span', '', esc(msg)));
+    var close = function() { if (t.parentNode) t.parentNode.removeChild(t); };
+    if (typeof o.retry === 'function') { var b = mk('button', '', 'ลองใหม่'); b.type = 'button'; b.onclick = function() { close(); o.retry(); }; t.appendChild(b); }
+    host.appendChild(t); setTimeout(close, o.ms || (o.retry ? 8000 : 4500));
+    return close;
+  }
+
+  /* เปิดเว็บ / F5 */
+  var bootEl = null;
+  function bootCard() {
+    if (bootEl) return bootEl;
+    bootEl = mk('div', 'phc-ld-over');
+    bootEl.innerHTML = '<div class="phc-ld-card" role="status"><div class="phc-ld-logo"><span class="phc-ld-ring"></span><div class="phc-ld-mark">' + MARK + '</div></div>'
+      + '<span class="phc-ld-title"></span><div class="phc-ld-bar" role="progressbar" aria-label="กำลังโหลด"><span></span></div><span class="phc-ld-msg"></span><div class="phc-ld-act"></div></div>';
+    body(function() { document.body.appendChild(bootEl); });
+    return bootEl;
+  }
+  var boot = {
+    show: function(msg, title) {
+      var b = bootCard(), c = b.querySelector('.phc-ld-card'); b.classList.remove('is-hide'); b.style.display = ''; c.classList.remove('is-err');
+      b.querySelector('.phc-ld-title').textContent = title || 'ศูนย์บริการสาธารณสุข 37'; b.querySelector('.phc-ld-msg').textContent = msg || 'กำลังเปิดระบบ…'; b.querySelector('.phc-ld-act').innerHTML = '';
+    },
+    fail: function(msg, retry) {
+      var b = bootCard(), c = b.querySelector('.phc-ld-card'); b.classList.remove('is-hide'); b.style.display = ''; c.classList.add('is-err');
+      b.querySelector('.phc-ld-msg').textContent = msg || 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วกดลองใหม่';
+      var a = b.querySelector('.phc-ld-act'); a.innerHTML = '';
+      if (typeof retry === 'function') { var btn = mk('button', 'phc-btn phc-btn--secondary', '↻ ลองใหม่'); btn.type = 'button'; btn.onclick = retry; a.appendChild(btn); }
+    },
+    hide: function() { if (!bootEl) return; var b = bootEl; b.querySelector('.phc-ld-msg').textContent = 'พร้อมใช้งาน'; b.classList.add('is-hide'); setTimeout(function() { if (b.classList.contains('is-hide')) b.style.display = 'none'; }, 450); }
+  };
+
+  /* ขั้นตอนตามจริง (หลังกดเข้าสู่ระบบ) · ✓ ขึ้นเมื่อขั้นนั้นเสร็จจริงเท่านั้น */
+  function steps(labels, title) {
+    var o = mk('div', 'phc-ld-over');
+    o.innerHTML = '<div class="phc-ld-card" role="status"><div class="phc-ld-mark" style="width:48px;height:48px;border-radius:12px">' + MARK + '</div><span style="font-size:12px;letter-spacing:.14em;color:#4A5550;font-weight:600">' + esc(title || 'PHC37') + '</span><ol class="phc-ld-steps">'
+      + labels.map(function(l) { return '<li><span class="phc-ld-ic" aria-hidden="true"></span><span>' + esc(l) + '</span></li>'; }).join('') + '</ol></div>';
+    body(function() { document.body.appendChild(o); });
+    var lis = o.querySelectorAll('li');
+    return {
+      set: function(i, st) { var li = lis[i]; if (!li) return; li.className = 'is-' + st; li.querySelector('.phc-ld-ic').textContent = st === 'done' ? '✓' : (st === 'err' ? '!' : ''); },
+      close: function(delay) { setTimeout(function() { o.classList.add('is-hide'); setTimeout(function() { if (o.parentNode) o.parentNode.removeChild(o); }, 450); }, delay == null ? 350 : delay); }
+    };
+  }
+
+  /* เรียกเซิร์ฟเวอร์พร้อมสถานะครบชุด */
+  function call(fn, args, o) {
+    o = o || {};
+    return new Promise(function(resolve, reject) {
+      var restore = o.btn ? busy(o.btn, o.busyText, { group: o.group }) : function() {};
+      var useLine = o.line !== false; if (useLine) lineStart();
+      if (o.skeleton) skeleton(o.skeleton.target, o.skeleton);
+      var fail = function(err) {
+        restore(); if (useLine) lineEnd(false);
+        var m = (err && err.message) ? err.message : String(err || 'ไม่สำเร็จ');
+        if (o.toast !== false) toast((o.errText ? o.errText + ': ' : '') + m, { type: 'error', retry: o.retry === true ? function() { call(fn, args, o).then(resolve, reject); } : o.retry });
+        reject(err instanceof Error ? err : new Error(m));
+      };
+      try {
+        google.script.run.withSuccessHandler(function(res) {
+          if (typeof o.isError === 'function' && o.isError(res)) { fail(new Error((res && res.message) || 'ไม่สำเร็จ')); return; }
+          restore(); if (useLine) lineEnd(true); if (o.skeleton) ready(o.skeleton.target); resolve(res);
+        }).withFailureHandler(fail)[fn].apply(null, args || []);
+      } catch (e) { fail(e); }
+    });
+  }
+
+  return { VERSION: VERSION, busy: busy, clicked: clicked, line: { start: lineStart, done: function() { lineEnd(true); }, fail: function() { lineEnd(false); } },
+    skeleton: skeleton, ready: ready, toast: toast, boot: boot, steps: steps, call: call };
+})();
+</script>
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:var(--phc-font);color:var(--phc-ink);background:var(--phc-ground);font-size:16px;line-height:1.55}
+.hero{display:flex;align-items:center;gap:14px;padding:18px 20px;background:#fff;border-top:4px solid var(--phc-brand);border-bottom:1px solid var(--phc-border)}
+.hero .phc-brand-mark{flex:0 0 52px;width:52px;height:52px}
+.hero h1{margin:0;font-size:21px;line-height:1.3}
+.hero p{margin:2px 0 0;color:var(--phc-ink-2);font-size:14px}
+main{width:min(620px,calc(100% - 24px));margin:20px auto 40px}
+.card{background:#fff;border:1px solid var(--phc-border);border-radius:16px;padding:20px;box-shadow:var(--phc-shadow)}
+.st{padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:15px}
+.st.info{background:var(--phc-info-bg);color:var(--phc-info)}.st.ok{background:var(--phc-success-bg);color:var(--phc-success)}.st.err{background:var(--phc-danger-bg);color:var(--phc-danger)}.st.warn{background:var(--phc-warning-bg);color:var(--phc-warning)}
+.kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:6px 12px;margin:0 0 14px;font-size:15px}.kv dt{color:var(--phc-ink-2)}.kv dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+.profile{display:flex;align-items:center;gap:12px;margin-bottom:14px}.profile img{width:52px;height:52px;border-radius:50%;object-fit:cover;background:var(--phc-surface-2)}
+.acts{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.acts .phc-btn{width:100%;min-height:50px;font-size:17px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:15px}.chk input{width:22px;height:22px;margin-top:2px;accent-color:var(--phc-primary)}
+.small{font-size:13px;color:var(--phc-ink-2)}
+.hide{display:none!important}
+@media(max-width:560px){.kv{grid-template-columns:1fr;gap:2px}.kv dd{margin-bottom:6px}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="phc-brand-mark" role="img" aria-label="ตรา ศบส.37"></div><div><h1>IC Watch · แจ้งเตือน LINE</h1><p>ระบบเฝ้าระวังการติดเชื้อหลังทำหัตถการ ศบส.37</p></div></header>
+<main><div class="card" id="box"></div></main>
+<script>
+var MODE = 'LOADING';
+var D = {};
+function esc(v){ var t=String(v==null?'':v), o='', m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}; for(var i=0;i<t.length;i++){ o+=m[t[i]]||t[i]; } return o; }
+function $(id){ return document.getElementById(id); }
+function render(){
+  var b=$('box');
+  if(MODE==='LANDING'){
+    b.innerHTML='<div class="st info">เชื่อมบัญชี LINE เพื่อรับแจ้งเตือนผู้ป่วยครบกำหนดติดตาม</div>'
+      +'<dl class="kv"><dt>เจ้าหน้าที่</dt><dd>'+esc(D.fullName)+'</dd><dt>บัญชีระบบ</dt><dd>'+esc(D.username)+'</dd><dt>LINE OA</dt><dd>'+esc(D.oaName)+' ('+esc(D.oaBasicId)+')</dd></dl>'
+      +'<div class="acts"><a class="phc-btn" target="_top" rel="noopener" href="'+esc(D.authorizeUrl)+'">เข้าสู่ระบบด้วยแอป LINE</a><a class="phc-btn phc-btn--secondary" target="_top" rel="noopener" href="'+esc(D.authorizeUrlWeb)+'">เข้าสู่ระบบ LINE แบบเว็บ (อีเมล / QR)</a></div>'
+      +'<p class="small" style="margin-top:14px">ถ้ากดแอป LINE แล้ววนกลับมาหน้านี้ ให้ใช้ "แบบเว็บ" · ระบบจะชวนเพิ่มเพื่อน '+esc(D.oaName)+' ด้วย (จำเป็นสำหรับรับข้อความ)</p>';
+  } else if(MODE==='CONFIRM'){
+    b.innerHTML='<div class="st info">ตรวจสอบก่อนยืนยันการเชื่อม</div>'
+      +'<div class="profile">'+(D.picture?'<img alt="" src="'+esc(D.picture)+'">':'')+'<div><b>'+esc(D.lineName)+'</b><div class="small">บัญชี LINE ที่เข้าสู่ระบบ</div></div></div>'
+      +'<dl class="kv"><dt>เชื่อมกับ</dt><dd>'+esc(D.fullName)+' ('+esc(D.username)+')</dd></dl>'
+      +(D.movedFrom?'<div class="st warn">LINE นี้เคยเชื่อมกับ '+esc(D.movedFrom)+' — ยืนยันแล้วจะย้ายมาเชื่อมกับบัญชีนี้แทน</div>':'')
+      +'<label class="chk"><input type="checkbox" id="cs" onchange="$(\'ok\').disabled=!this.checked"><span>ยินยอมให้ระบบ IC Watch ส่งแจ้งเตือนข้อมูลผู้ป่วย (ชื่อ · HN · หัตถการ · วันครบกำหนด) ไปที่ LINE นี้ เพื่อใช้ในงานติดตามผู้ป่วยเท่านั้น</span></label>'
+      +'<div class="acts"><button class="phc-btn" id="ok" disabled onclick="done()">ยืนยันการเชื่อม LINE</button></div><div id="msg"></div>';
+  } else if(MODE==='OPEN'&&D.authorizeUrl&&!D.message){
+    b.innerHTML='<div class="st info">ยืนยันตัวตนด้วย LINE เพื่อเปิดเคส</div><p>ใช้ LINE ที่เชื่อมกับระบบ IC แล้ว · ในแอป LINE ระบบจะเข้าให้อัตโนมัติ</p>'
+      +'<div class="acts"><a class="phc-btn" id="go" target="_top" rel="noopener" href="'+esc(D.authorizeUrl)+'">ยืนยันด้วย LINE และเปิดเคส</a><a class="phc-btn phc-btn--secondary" target="_top" rel="noopener" href="'+esc(D.gatewayUrl)+'">เข้าสู่ระบบแอปแทน</a></div>';
+    autoGo(D.authorizeUrl);
+  } else if(MODE==='OPEN'){
+    b.innerHTML=(D.message?'<div class="st warn">'+esc(D.message)+'</div>':'<div class="st info">เปิดระบบ IC ผ่าน Gateway</div>')+'<p>เข้าสู่ระบบแอป ศบส.37 แล้วเลือกเมนู "ระบบเฝ้าระวังการติดเชื้อหลังทำหัตถการ (IC)" · รายการที่แจ้งเตือนอยู่ในหน้า "ติดตามวันนี้"</p>'
+      +'<div class="acts"><a class="phc-btn" target="_top" rel="noopener" href="'+esc(D.gatewayUrl)+'">ไปหน้าเข้าสู่ระบบ</a></div>';
+  } else if(MODE==='GO'){
+    b.innerHTML='<div class="st ok">✅ ยืนยันตัวตนแล้ว</div><dl class="kv"><dt>เจ้าหน้าที่</dt><dd>'+esc(D.fullName)+'</dd><dt>LINE</dt><dd>'+esc(D.lineName)+'</dd>'+(D.caseNo?'<dt>เคส</dt><dd>'+esc(D.caseNo)+'</dd>':'')+'</dl>'
+      +'<div class="acts"><a class="phc-btn" id="go" target="_top" rel="noopener" href="'+esc(D.url)+'">'+(D.caseNo?'เปิดเคส '+esc(D.caseNo):'เปิดระบบ IC')+'</a></div><p class="small" style="margin-top:12px">ปุ่มนี้ใช้ได้ครั้งเดียวภายใน 5 นาที · ถ้าหมดอายุ กดปุ่มในข้อความ LINE อีกครั้ง</p>';
+    autoGo(D.url);
+  } else {
+    b.innerHTML='<div class="st err">'+esc(D.message||'ไม่สามารถดำเนินการได้')+'</div><p class="small">กลับไปที่ระบบ IC → "เชื่อม LINE" เพื่อสร้างลิงก์ใหม่ (ลิงก์ใช้ได้ครั้งเดียว 30 นาที)</p>'
+      +(D.addFriendUrl?'<div class="acts"><a class="phc-btn phc-btn--secondary" target="_top" rel="noopener" href="'+esc(D.addFriendUrl)+'">เพิ่มเพื่อน '+esc(D.oaName||'LINE OA')+'</a></div>':'');
+  }
+}
+function autoGo(url){ var k='icgo:'+String(url).slice(-48); try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(e){} setTimeout(function(){ try{ window.top.location.href=url; }catch(e){} },400); }
+function done(){
+  var b=$('ok'); b.disabled=true; b.textContent='กำลังบันทึก…';
+  google.script.run.withSuccessHandler(function(r){
+    if(!r||!r.ok){ $('msg').innerHTML='<div class="st err" style="margin-top:14px">'+esc((r&&r.message)||'บันทึกไม่สำเร็จ')+'</div>'; b.disabled=false; b.textContent='ยืนยันการเชื่อม LINE'; return; }
+    $('box').innerHTML='<div class="st ok">✅ '+esc(r.message)+'</div><dl class="kv"><dt>เจ้าหน้าที่</dt><dd>'+esc(r.fullName)+'</dd><dt>LINE</dt><dd>'+esc(r.lineName)+'</dd></dl>'
+      +'<div class="acts">'+(r.pushed?'':'<a class="phc-btn" target="_top" rel="noopener" href="'+esc(r.addFriendUrl)+'">เพิ่มเพื่อน '+esc(D.oaName||'LINE OA')+'</a>')+'</div><p class="small">ปิดหน้านี้ได้ · ดูสถานะได้ที่ระบบ IC → เชื่อม LINE</p>';
+  }).withFailureHandler(function(e){ $('msg').innerHTML='<div class="st err" style="margin-top:14px">'+esc(e&&e.message?e.message:e)+'</div>'; b.disabled=false; b.textContent='ยืนยันการเชื่อม LINE'; }).icLineCompleteLink(D.confirmToken);
+}
+icLoad_();
+</script>
+</body>
+</html>

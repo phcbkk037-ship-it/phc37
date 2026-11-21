@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.10.0 · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
-var PHC37_APP_VERSION = '2.10.0';
+/* PHC37 PWA — app.js (PHC37-PWA-2.11.0 · 2.11.0 ระบบ IC Watch + หน้าเชื่อม LINE IC + ปุ่มเปิดเคสจาก LINE (?open=ic&case=…) · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
+var PHC37_APP_VERSION = '2.11.0';
 (function () {
   'use strict';
 
@@ -155,11 +155,11 @@ var PHC37_APP_VERSION = '2.10.0';
   }
 
   // ---------- UI helpers ----------
-  var CHILD_VIEWS = ['view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
-  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc'];
+  var CHILD_VIEWS = ['view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
+  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic'];
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-legacy', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-legacy', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
     // เว็บลูกมีเมนูของตัวเอง + ปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway (ผู้ใช้กำหนด 18 พ.ย.)
@@ -598,6 +598,7 @@ var PHC37_APP_VERSION = '2.10.0';
     show('view-home');
     if (window.PHC37Tasks) window.PHC37Tasks.refresh(true);
     if (u.needsEmail) askEmail();
+    else setTimeout(openPending, 0);
   }
 
   // ---------- บังคับกรอกอีเมล ----------
@@ -661,6 +662,7 @@ var PHC37_APP_VERSION = '2.10.0';
   function isScrMenu(m) { return String(m.key || '').toLowerCase() === 'social_work_client_record'; }
   function isNcdMenu(m) { return String(m.key || '').toLowerCase() === 'ncd_care_management'; }
   function isWbcMenu(m) { return String(m.key || '').toLowerCase() === 'opd_well_baby_clinic'; }
+  function isIcMenu(m) { return String(m.key || '').toLowerCase() === 'ic_surveillance'; }
   function isLtcMenu(m) { return String(m.key || '').toLowerCase() === 'ltc_hhc_palliativecare'; }
   function isRealUrl(url) { return /^https?:\/\//i.test(String(url || '').trim()); }
   function canManage() {
@@ -791,6 +793,10 @@ var PHC37_APP_VERSION = '2.10.0';
       el = makeTile(iconOf(m, '👶'), m.name, groupNote(m), '', function () {
         if (window.PHC37Wbc) window.PHC37Wbc.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
+    } else if (isIcMenu(m)) {
+      el = makeTile(iconOf(m, '🩹'), m.name, groupNote(m), '', function () {
+        if (window.PHC37Ic) window.PHC37Ic.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else if (isOssMenu(m)) {
       el = makeTile(iconOf(m, '🧑‍🤝‍🧑'), m.name, groupNote(m), '', function () {
         if (window.PHC37Oss) window.PHC37Oss.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
@@ -882,7 +888,7 @@ var PHC37_APP_VERSION = '2.10.0';
     var box = $('gw7-apps'); box.textContent = '';
     var menus = allMenus(), n = 0;
     menus.forEach(function (m) {
-      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m) && !isMaterialMenu(m) && !isItAssetMenu(m) && !isCnrMenu(m) && !isLtcMenu(m) && !isOssMenu(m) && !isCdcMenu(m) && !isLvsMenu(m) && !isEldMenu(m) && !isRefMenu(m) && !isImcMenu(m) && !isAdpMenu(m) && !isScrMenu(m) && !isNcdMenu(m) && !isWbcMenu(m))) return;
+      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m) && !isMaterialMenu(m) && !isItAssetMenu(m) && !isCnrMenu(m) && !isLtcMenu(m) && !isOssMenu(m) && !isCdcMenu(m) && !isLvsMenu(m) && !isEldMenu(m) && !isRefMenu(m) && !isImcMenu(m) && !isAdpMenu(m) && !isScrMenu(m) && !isNcdMenu(m) && !isWbcMenu(m) && !isIcMenu(m))) return;
       var b = document.createElement('button'); b.type = 'button'; b.className = 'gw7-app';
       var ic = document.createElement('span'); ic.className = 'gw7-app-ic'; ic.textContent = iconOf(m, '📌'); ic.setAttribute('aria-hidden', 'true');
       var t = document.createElement('span'); t.className = 'gw7-nav-text'; t.textContent = m.name;
@@ -1008,6 +1014,40 @@ var PHC37_APP_VERSION = '2.10.0';
     }
   });
 
+  // ---------- 2.11.0 ลิงก์เปิดระบบจากภายนอก: ?open=ic&case=… (ปุ่ม "เปิดเคส" ในข้อความ LINE ของ IC) ----------
+  // เก็บไว้ก่อน → เข้าสู่ระบบ (ถ้ายังไม่ได้เข้า) → เปิดระบบ IC แล้วหน้าเดิมเปิดเคสเอง (BOOT.openCase) · ไม่ใช้ LINE แทนรหัสผ่าน
+  var KEY_OPEN_APP = 'phc37.openApp', KEY_IC_CASE = 'phc37.icOpenCase', openBusy = false;
+  (function () {
+    try {
+      var sp = new URLSearchParams(location.search), app = String(sp.get('open') || '').toLowerCase();
+      if (!app) return;
+      if (app === 'ic') {
+        var c = String(sp.get('case') || '');
+        sessionStorage.setItem(KEY_OPEN_APP, 'ic');
+        if (/^[A-Za-z0-9_-]{1,80}$/.test(c)) sessionStorage.setItem(KEY_IC_CASE, c); else sessionStorage.removeItem(KEY_IC_CASE);
+      }
+      history.replaceState(null, '', location.pathname);
+    } catch (e) {}
+  })();
+  function openPending() {
+    var app = ''; try { app = sessionStorage.getItem(KEY_OPEN_APP) || ''; } catch (e) {}
+    if (!app || openBusy || $('view-home').hidden) return;
+    var menus = (state.profile && state.profile.menus) || [];
+    if (app === 'ic') {
+      var m = menus.filter(isIcMenu)[0];
+      if (!m) {
+        try { sessionStorage.removeItem(KEY_OPEN_APP); sessionStorage.removeItem(KEY_IC_CASE); } catch (e) {}
+        toast('บัญชีนี้ไม่มีสิทธิ์เปิดระบบ IC Watch', 'err'); return;
+      }
+      if (!window.PHC37Ic) return;
+      openBusy = true;
+      window.PHC37Ic.open(m, function (r) {   // เก็บคำขอไว้จนเปิดได้ (หมดอายุการเข้าสู่ระบบ → เข้าใหม่แล้วเปิดต่อ)
+        openBusy = false;
+        if (!(r && r.code === 'unauthorized')) { try { sessionStorage.removeItem(KEY_OPEN_APP); } catch (e) {} }
+      });
+    }
+  }
+
   // ---------- เลขเวอร์ชัน (ไว้เช็กว่าเปิดไฟล์ล่าสุดอยู่) ----------
   if ($('app-version')) $('app-version').textContent = 'PHC37 PWA เวอร์ชัน ' + PHC37_APP_VERSION;
 
@@ -1030,11 +1070,13 @@ var PHC37_APP_VERSION = '2.10.0';
       if (res.ok) {
         var profile = { user: res.user, menus: res.menus || [], maintenance: res.maintenance || null };
         sset(KEY_PROFILE, JSON.stringify(profile));
-        if (!$('view-home').hidden && cached) {
+        // 2.11.0 แสดงจากแคชไปแล้ว + ผู้ใช้อยู่ในหน้าอื่น (เช่น เปิดระบบจากลิงก์ LINE) → อัปเดตเมนูเงียบ ๆ ไม่ดึงกลับหน้าหลัก
+        if (cached && $('view-login').hidden && (!$('view-home').hidden || IN_APP.some(function (v) { return $(v) && !$(v).hidden; }))) {
           state.profile = profile;
           renderMaintBanner(profile);
           if (state.groupKey && !profile.menus.some(function (m) { return m.key === state.groupKey; })) state.groupKey = null;
           renderMenus(); renderNav();
+          openPending();
         } else {
           renderHome(profile);
         }
