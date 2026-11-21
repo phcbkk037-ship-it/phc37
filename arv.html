@@ -3,7 +3,7 @@
 <html lang="th">
 <head>
 <script>
-/* PHC37 PWA 2.7.0 — หน้าเดิมของระบบติดตามการรักษาและรับยากลุ่มผู้ป่วย ARV (ARV2-1.0.0) ทำงานบนระบบใหม่
+/* PHC37 PWA 2.7.0 — หน้าเดิมของระบบติดตามการรักษาและรับยากลุ่มผู้ป่วย ARV (ARV2-1.0.1) ทำงานบนระบบใหม่
  * google.script.run.<ฟังก์ชันเดิม>(...) → Edge arv.call ผ่านแอปแม่ (ตรรกะเดิมทุกบรรทัด · ข้อมูลระบุตัวตนเข้ารหัสที่ Edge) */
 (function () {
   var P = null; try { P = window.parent && window.parent !== window ? window.parent.PHC37 : null; } catch (e) { P = null; }
@@ -1236,7 +1236,7 @@ window.addEventListener('error',function(e){ try{ if(window.__icBooted) return; 
 <div id="modalRoot"></div>
 <div class="toast-box" id="toasts"></div>
 <script>
-const BOOT = {"version":"ARV2-1.0.0","appName":"ระบบติดตามการรักษาและรับยากลุ่มผู้ป่วย ARV","launchToken":"","returnUrl":""};
+const BOOT = {"version":"ARV2-1.0.1","appName":"ระบบติดตามการรักษาและรับยากลุ่มผู้ป่วย ARV","launchToken":"","returnUrl":""};
 /* ===== ARV2 หน้าเว็บ (เมนูเดิม 7 หน้า + ตั้งค่า) · ARV2-1.0.0 ===== */
 const S = { token:'pwa', user:null, lookups:{}, regimens:[], tests:[], text:{}, line:{}, dash:null, page:'dashboard', back:'patients', file:null, fileTab:'overview',
   plist:null, pf:{q:'',status:'',mine:false}, af:{from:'',to:'',status:'OPEN',type:'',q:''}, lf:{status:''}, mf:{q:''}, setTab:'lookups', settings:null, comms:null, pkLists:null, add:null };
@@ -1534,6 +1534,13 @@ async function personEdit(){
   try{ const [x]=await Promise.all([api('apiPatientLatest',p.ARVPatientID), ensureKit()]); $('peBody').innerHTML='<p class="muted small" style="margin-top:0">แก้แล้วส่งกลับเวชระเบียนกลาง (เฉพาะช่องที่เปลี่ยน)</p>'+PK.formHtml('pk',x,{mode:'edit',community:kitComm(x.CommunityName||'')}); PK.mount('pk',x); $('edBtn').disabled=false; }
   catch(e){ $('peBody').innerHTML=errHtml(e.message); }
 }
+async function regDelete(){
+  const p=S.file.patient, open=S.file.appointments.filter(a=>a.isOpen).length;
+  const why=await reasonBox('ลบทะเบียนผู้ป่วย',`<b>${esc(p.FullName)}</b> · HN ${esc(p.HN||'-')}<ul class="small" style="margin:8px 0 0;padding-left:18px"><li>หายจากทุกหน้าและไม่นับในภาพรวม (ข้อมูลยังเก็บไว้ · กู้คืนได้ที่ ตั้งค่า → ทะเบียนที่ลบ)</li><li>นัดที่ยังเปิด ${esc(open)} นัด จะถูกยกเลิก · แจ้งเตือน LINE ที่ยังไม่ส่งถูกยกเลิก (ไม่ส่งข้อความแจ้งผู้ป่วย)</li><li>ยกเลิกการเชื่อม LINE ของผู้ป่วยรายนี้</li></ul>`,'เหตุผลที่ลบ','เช่น ข้อมูลทดสอบ / เปิดทะเบียนผิดคน','ลบทะเบียน');
+  if(!why) return;
+  try{ const r=await api('apiDeleteRegistry',{ ARVPatientID:p.ARVPatientID, RowVersion:p.RowVersion, reason:why }); toast('ลบทะเบียนแล้ว · ยกเลิกนัด '+r.appointments+' · ยกเลิกแจ้งเตือน '+r.notifications); S.plist=null; S.dash=null; try{ sessionStorage.removeItem('arv2.file'); }catch(e){} go('patients'); }
+  catch(e){ toast(e.message,true); }
+}
 function personSave(){ const r=PK.read('pk',{mode:'edit'}); if(r.err){ $('editErr').innerHTML=errHtml(r.err); return; } regUpdate(r); }
 
 /* ---------- แฟ้มผู้ป่วย ---------- */
@@ -1550,7 +1557,7 @@ function drawFile(){
   const head=`<a class="backlink" href="#" onclick="go(S.back);return false">‹ กลับ${esc(TITLES[S.back]||'')}</a>
   <div class="card"><div class="vhead"><div><h2 style="margin:0">${esc(p.FullName)}</h2><div class="vmeta">HN <b>${esc(p.HN||'-')}</b> · NAP <b>${esc(p.NAPMasked||'-')}</b> · ${esc([p.Age!==''?p.Age+' ปี':'',p.SexTh].filter(Boolean).join(' · '))} · ผู้รับผิดชอบ <b>${esc(p.AssignedToName||'-')}</b></div>
     <div style="margin-top:6px">${chip(p.PatientStatusLabel||'-','info')} ${lineChip(f.line)}</div></div>
-    <div class="actions">${canEdit()?'<button class="phc-btn phc-btn--secondary" onclick="regEdit()">✏️ แก้ไขทะเบียน</button>':''}${canAdd()?`<button class="phc-btn phc-btn--secondary" onclick="labForm('${esc(p.ARVPatientID)}')">🧪 บันทึกเจาะเลือด</button><button class="phc-btn phc-btn--secondary" onclick="medForm('${esc(p.ARVPatientID)}')">💊 บันทึกรับยา</button><button class="phc-btn" onclick="apptForm('${esc(p.ARVPatientID)}')">📅 สร้างนัด</button>`:''}</div></div></div>`;
+    <div class="actions">${canEdit()?'<button class="phc-btn phc-btn--secondary" onclick="regEdit()">✏️ แก้ไขทะเบียน</button>':''}${canAdd()?`<button class="phc-btn phc-btn--secondary" onclick="labForm('${esc(p.ARVPatientID)}')">🧪 บันทึกเจาะเลือด</button><button class="phc-btn phc-btn--secondary" onclick="medForm('${esc(p.ARVPatientID)}')">💊 บันทึกรับยา</button><button class="phc-btn" onclick="apptForm('${esc(p.ARVPatientID)}')">📅 สร้างนัด</button>`:''}${isAdmin()?'<button class="phc-btn phc-btn--danger-soft" onclick="regDelete()">🗑 ลบทะเบียน</button>':''}</div></div></div>`;
   let body='';
   if(S.fileTab==='overview') body=fileOverview();
   else if(S.fileTab==='labs') body=`<div class="card">${labTable(f.labs,false)}</div>`;
@@ -1815,7 +1822,7 @@ async function renderSettings(){
   try{ S.settings=await api('apiSettings'); if(S.page==='settings') drawSettings(); }catch(e){ errBox(e); }
 }
 function drawSettings(){
-  const tabs=[['lookups','รายการตัวเลือก'],['regimens','สูตรยา'],['tests','รายการตรวจ Lab'],['line','LINE เจ้าหน้าที่']];
+  const tabs=[['lookups','รายการตัวเลือก'],['regimens','สูตรยา'],['tests','รายการตรวจ Lab'],['line','LINE เจ้าหน้าที่'],['deleted','ทะเบียนที่ลบ']];
   $('content').innerHTML=`<div class="page-head"><div><h2>ตั้งค่า</h2><p>ผู้ดูแลระบบ · ไม่ลบรายการ ใช้ "ปิดใช้งาน" แทน (ข้อมูลเก่ายังอ้างถึงได้)</p></div></div>
   <div class="tabs">${tabs.map(t=>`<button type="button" class="tab ${S.setTab===t[0]?'on':''}" onclick="S.setTab='${t[0]}';drawSettings()">${esc(t[1])}</button>`).join('')}</div><div id="setBody"></div>`;
   const X=S.settings, el=$('setBody');
@@ -1823,6 +1830,7 @@ function drawSettings(){
     <div class="table-wrap"><table class="t"><thead><tr><th>ลำดับ</th><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th><th></th></tr></thead><tbody>${(X.lookups[t[0]]||[]).map(x=>`<tr><td class="num">${esc(x.order)}</td><td>${esc(x.code)}</td><td>${esc(x.label)}${x.seed?' <small>(ค่าตั้งต้น)</small>':''}</td><td>${x.active?chip('ใช้งาน','success'):chip('ปิดใช้งาน','neutral')}</td><td>${x.seed?'':`<button class="phc-btn phc-btn--ghost phc-btn--sm" onclick="lkForm('${t[0]}','${esc(x.id)}')">แก้ไข</button>`}</td></tr>`).join('')||emptyRow(5)}</tbody></table></div></div>`).join('');
   else if(S.setTab==='regimens') el.innerHTML=`<div class="card"><div class="ahead"><h3 class="grow" style="margin:0">สูตรยา</h3><button class="phc-btn phc-btn--sm" onclick="rgForm()">➕ เพิ่ม</button></div><div class="table-wrap"><table class="t"><thead><tr><th>ลำดับ</th><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th><th></th></tr></thead><tbody>${X.regimens.map(x=>`<tr><td class="num">${esc(x.order)}</td><td>${esc(x.code)}</td><td>${esc(x.label)}${x.description?'<small>'+esc(x.description)+'</small>':''}</td><td>${x.active?chip('ใช้งาน','success'):chip('ปิดใช้งาน','neutral')}</td><td><button class="phc-btn phc-btn--ghost phc-btn--sm" onclick="rgForm('${esc(x.id)}')">แก้ไข</button></td></tr>`).join('')||emptyRow(5)}</tbody></table></div></div>`;
   else if(S.setTab==='tests') el.innerHTML=`<div class="card"><div class="ahead"><h3 class="grow" style="margin:0">รายการตรวจ Lab</h3><button class="phc-btn phc-btn--sm" onclick="ltForm()">➕ เพิ่ม</button></div><div class="table-wrap"><table class="t"><thead><tr><th>ลำดับ</th><th>รหัส</th><th>ชื่อ</th><th>ชนิดผล / แปลผล</th><th>ช่วงอ้างอิง</th><th>สถานะ</th><th></th></tr></thead><tbody>${X.tests.map(x=>`<tr><td class="num">${esc(x.order)}</td><td>${esc(x.code)}</td><td>${esc(x.nameTH)}${x.unit?'<small>'+esc(x.unit)+'</small>':''}</td><td>${esc(pairLabel(X.resultTypes,x.resultType))}<small>${esc(pairLabel(X.rules,x.rule))}</small></td><td><small>ชาย ${esc(x.minMale==null?'-':x.minMale)}–${esc(x.maxMale==null?'-':x.maxMale)} · หญิง ${esc(x.minFemale==null?'-':x.minFemale)}–${esc(x.maxFemale==null?'-':x.maxFemale)}</small></td><td>${x.active?chip('ใช้งาน','success'):chip('ปิดใช้งาน','neutral')}</td><td><button class="phc-btn phc-btn--ghost phc-btn--sm" onclick="ltForm('${esc(x.id)}')">แก้ไข</button></td></tr>`).join('')||emptyRow(7)}</tbody></table></div></div>`;
+  else if(S.setTab==='deleted'){ el.innerHTML='<div class="card">'+phcSk(4)+'</div>'; api('apiDeletedPatients').then(L=>{ el.innerHTML=`<div class="card"><h3>ทะเบียนผู้ป่วยที่ลบ</h3><p class="small muted" style="margin-top:0">กู้คืนแล้วผู้ป่วยกลับมาในทุกหน้า · นัดที่ยกเลิกไปแล้วไม่กลับมา · LINE ต้องเชื่อมใหม่</p><div class="table-wrap"><table class="t"><thead><tr><th>ผู้ป่วย</th><th>ลบเมื่อ</th><th>ลบโดย</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td><b>${esc(x.FullName)}</b><small>HN ${esc(x.HN||'-')} · NAP ${esc(x.NAPMasked||'-')}</small></td><td>${esc(dtTh(x.DeletedAt))}</td><td>${esc(x.DeletedBy)}</td><td><button class="phc-btn phc-btn--secondary phc-btn--sm" onclick="regRestore('${esc(x.ARVPatientID)}')">↺ กู้คืน</button></td></tr>`).join('')||emptyRow(4,'ไม่มีทะเบียนที่ลบ')}</tbody></table></div></div>`; }).catch(e=>{ el.innerHTML=errHtml(e.message); }); }
   else { el.innerHTML='<div class="card">'+phcSk(4)+'</div>'; api('apiLineStaff').then(L=>{ el.innerHTML=`<div class="card"><h3>เจ้าหน้าที่ผู้รับผิดชอบผู้ป่วย / เชื่อม LINE แล้ว</h3><div class="table-wrap"><table class="t"><thead><tr><th>เจ้าหน้าที่</th><th>ผู้ป่วยที่รับผิดชอบ</th><th>LINE</th><th></th></tr></thead><tbody>${L.map(s=>`<tr><td><b>${esc(s.fullName)}</b><small>${esc(s.username)}</small></td><td class="num">${esc(s.patients)}</td><td>${lineChip(s)}${s.lineName?' '+esc(s.lineName):''}</td><td><button class="phc-btn phc-btn--ghost phc-btn--sm" onclick="staffInvite('${esc(s.username)}')">ออกใบเชิญ</button>${s.linked?` <button class="phc-btn phc-btn--danger-soft phc-btn--sm" onclick="staffUnlink('${esc(s.username)}')">ยกเลิกการเชื่อม</button>`:''}</td></tr>`).join('')||emptyRow(4)}</tbody></table></div></div>`; }).catch(e=>{ el.innerHTML=errHtml(e.message); }); }
 }
 function activeSeg(cur){ return `<select class="phc-select" id="sActive">${opt('1','ใช้งาน',cur!==false)}${opt('0','ปิดใช้งาน',cur===false)}</select>`; }
@@ -1846,6 +1854,8 @@ async function setSave(fn, p){ const b=$('sBtn'); setBusy(b,true);
 async function staffInvite(u){ try{ const r=await api('apiLineInvite','STAFF',u);
   openModal('ใบเชิญเชื่อม LINE เจ้าหน้าที่',`<p style="margin-top:0">สำหรับ <b>${esc(r.name)}</b> · ใช้ได้ครั้งเดียว หมดอายุ ${esc(dtTh(r.expiresAt))}</p><div class="line-step"><div><h4><span class="line-num">1</span>เพิ่มเพื่อน ${esc(r.oaName)}</h4></div><div class="qr" id="qrOa"></div></div><div class="line-step"><div><h4><span class="line-num">2</span>สแกนเพื่อเชื่อม LINE</h4></div><div class="qr" id="qrLink"></div></div>`,`<button class="phc-btn" onclick="closeModal();drawSettings()">ปิด</button>`,'');
   drawQr('qrOa',r.addFriendUrl); drawQr('qrLink',r.url); }catch(e){ toast(e.message,true); } }
+async function regRestore(id){ if(!await confirmBox('กู้คืนทะเบียนผู้ป่วย','ผู้ป่วยจะกลับมาในทุกหน้า · นัดที่ยกเลิกไปแล้วไม่กลับมา · LINE ต้องเชื่อมใหม่','กู้คืน')) return;
+  try{ await api('apiRestoreRegistry',{ ARVPatientID:id }); toast('กู้คืนแล้ว'); S.plist=null; S.dash=null; drawSettings(); }catch(e){ toast(e.message,true); } }
 async function staffUnlink(u){ if(!await confirmBox('ยกเลิกการเชื่อม LINE',esc(u)+' จะไม่ได้รับแจ้งเตือนทาง LINE','ยกเลิกการเชื่อม',true)) return; try{ await api('apiLineUnlink','STAFF',u); toast('ยกเลิกแล้ว'); drawSettings(); }catch(e){ toast(e.message,true); } }
 
 boot();
