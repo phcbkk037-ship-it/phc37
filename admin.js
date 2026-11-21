@@ -1,4 +1,5 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.5.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน */
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.6.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน
+   1.6.0 (22/11/2569) ฟอร์มผู้ใช้: ระบบกลาง · เลือกรายคน (ติ๊กเพิ่ม/ตัดสิทธิ์) + ได้ทั้งกลุ่มอัตโนมัติ (แสดงอย่างเดียว) แบบ GW7 เดิม */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -125,6 +126,7 @@
     var b = A.boot;
     var role = $('u-role'); role.textContent = '';
     b.roles.forEach(function (r) { var o = el('option', null, P.roleLabel(r.key)); o.value = r.key; role.appendChild(o); });
+    role.onchange = function () { renderCentral(); };
     P.comboFill('u-position', b.positions, '— ไม่ระบุ —', b.positionGroups);
     P.comboFill('u-affiliation', b.affiliations, '— ไม่ระบุ —');
     var gw = $('u-groups'); gw.textContent = '';
@@ -133,6 +135,7 @@
       var c = el('input'); c.type = 'checkbox'; c.value = g.key; c.name = 'grp';
       l.appendChild(c); l.appendChild(el('span', null, g.label));
       gw.appendChild(l);
+      c.addEventListener('change', renderCentral);
     });
     var mw = $('u-menus'); mw.textContent = '';
     var byGroup = {}, order = [];
@@ -148,7 +151,49 @@
       });
       mw.appendChild(box);
     });
-    if (!order.length) mw.appendChild(el('p', 'muted', 'ไม่มีระบบงานที่มอบหมายได้'));
+    if (!order.length && !(b.central || []).length) mw.appendChild(el('p', 'muted', 'ไม่มีระบบงานที่มอบหมายได้'));
+    var cw = el('div', 'menu-group'); cw.id = 'u-central'; mw.appendChild(cw);
+  }
+
+  // ---------- ระบบกลางในฟอร์มผู้ใช้ (GW7 เดิม) ----------
+  // เลือกรายคน = ช่องติ๊ก (บันทึกเป็นสิทธิ์รายคน) แสดงเมื่อกลุ่มงานที่ติ๊กมีสิทธิ์ · ได้ทั้งกลุ่ม = สีเทา แสดงอย่างเดียว
+  var CEN = { picked: [] };
+  function centralEligible(m, groups) {
+    return (m.eligible || []).indexOf('*') >= 0 || (m.eligible || []).some(function (g) { return groups.indexOf(g) >= 0; });
+  }
+  function renderCentral() {
+    var box = $('u-central'); if (!box) return;
+    var list = (A.boot && A.boot.central) || [];
+    Array.prototype.forEach.call(box.querySelectorAll('input[name=menu]'), function (c) {   // จำค่าที่ติ๊กอยู่ก่อนวาดใหม่
+      var i = CEN.picked.indexOf(c.value);
+      if (c.checked && i < 0) CEN.picked.push(c.value);
+      if (!c.checked && i >= 0) CEN.picked.splice(i, 1);
+    });
+    box.textContent = '';
+    var groups = getChecks('grp'), isSuperRole = $('u-role').value === 'superadmin';
+    var person = list.filter(function (m) { return m.mode === 'person' && centralEligible(m, groups); });
+    var auto = list.filter(function (m) { return m.mode !== 'person' && centralEligible(m, groups); });
+    if (!list.length) return;
+    box.appendChild(el('div', 'menu-group-title', 'ระบบกลาง · เลือกรายคน'));
+    if (isSuperRole) box.appendChild(el('p', 'muted small', 'superadmin เห็นทุกระบบอยู่แล้ว'));
+    else if (!groups.length) box.appendChild(el('p', 'muted small', 'เลือกกลุ่มงานก่อน แล้วระบบกลางที่ให้สิทธิ์ได้จะแสดงที่นี่'));
+    else if (!person.length) box.appendChild(el('p', 'muted small', 'ไม่มีระบบกลางแบบเลือกรายคนสำหรับกลุ่มงานที่เลือก'));
+    person.forEach(function (m) {
+      var l = el('label', 'check');
+      var c = el('input'); c.type = 'checkbox'; c.value = m.key; c.name = 'menu'; c.checked = CEN.picked.indexOf(m.key) >= 0;
+      l.appendChild(c); l.appendChild(el('span', null, (m.icon ? m.icon + ' ' : '') + m.name));
+      box.appendChild(l);
+    });
+    if (auto.length && !isSuperRole) {
+      box.appendChild(el('div', 'menu-group-title', 'ระบบกลาง · ได้ทั้งกลุ่มอัตโนมัติ'));
+      auto.forEach(function (m) {
+        var l = el('label', 'check muted'); l.title = 'กำหนดที่ สิทธิ์และเมนู → ระบบงาน';
+        var c = el('input'); c.type = 'checkbox'; c.checked = true; c.disabled = true;
+        l.appendChild(c); l.appendChild(el('span', null, (m.icon ? m.icon + ' ' : '') + m.name + ' (อัตโนมัติ)'));
+        box.appendChild(l);
+      });
+    }
+    box.appendChild(el('p', 'muted small', 'มีช่องติ๊ก = ให้สิทธิ์รายคน (เอาติ๊กออก = ตัดสิทธิ์) · สีเทา = ได้ทั้งกลุ่ม · เปลี่ยนวิธีให้สิทธิ์ได้ที่ สิทธิ์และเมนู → ระบบงาน'));
   }
 
   // ---------- รายชื่อผู้ใช้ ----------
@@ -233,6 +278,9 @@
     $('u-type').value = src.userType === 'external' ? 'external' : 'main';
     $('u-status').value = src.status === 'inactive' ? 'inactive' : 'active';
     setChecks('grp', src.groups || []);
+    var cbox = $('u-central'); if (cbox) cbox.textContent = '';
+    CEN.picked = (src.menuKeys || []).slice();
+    renderCentral();
     setChecks('menu', src.menuKeys || []);
     var ro = A.mode === 'approve';
     $('u-username').readOnly = ro; $('u-fullname').readOnly = ro;
