@@ -1726,6 +1726,27 @@ button,input,select,textarea{font-family:inherit}
 @keyframes ltcSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.ltc-spinner{animation:none}}
 </style>
+<style id="ltc-kit-skin">
+/* LTC × PHC37 UI kit (2.15.0) */
+.top-user-wrap{display:none!important}
+.sidebar{display:flex;flex-direction:column}
+.sidebar-foot{margin-top:auto!important;opacity:1!important}
+.ltc-side-user{display:flex;gap:10px;align-items:center;padding:2px 0}
+.ltc-side-user .ltc-av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--phc-primary-tint);color:var(--phc-primary);font-weight:700;flex:0 0 auto;font-size:16px}
+.ltc-side-user b{display:block;font-size:15px;line-height:1.3;color:var(--phc-ink)}
+.ltc-side-user span{display:block;font-size:13px;line-height:1.45;color:var(--phc-ink-2)}
+.ltc-th-date{display:flex;gap:6px;align-items:stretch}
+.ltc-th-date .input{flex:1 1 auto;min-width:0;cursor:pointer;background:#fff}
+.ltc-th-date .calendar-btn{flex:0 0 auto}
+input[type=date].ltc-th-src{display:none!important}
+@media(min-width:821px){
+  #page-cases .toolbar,#page-dashboard .ops-filter-grid{display:flex!important;flex-wrap:wrap;align-items:flex-end;gap:10px}
+  #page-cases .toolbar>.field,#page-dashboard .ops-filter-grid>.field{flex:1 1 170px;min-width:0}
+  #page-cases .toolbar>.field:first-child{flex:2 1 300px}
+  #page-cases .toolbar>.btn,#page-dashboard .ops-filter-grid>.btn{flex:0 0 auto;width:auto!important;min-height:44px;align-self:flex-end}
+  #page-cases .toolbar>.btn{order:10}
+}
+</style>
 </head>
 <body>
 <a class="skip-link" href="#mainContent">ข้ามไปยังเนื้อหาหลัก</a>
@@ -4906,6 +4927,67 @@ document.addEventListener('visibilitychange',()=>{
 ltcP6InstallWorkflowGuard_();
 ltcP5InstallA11y_();
 boot();
+</script>
+<script>
+/* LTC × PHC37 UI kit (2.15.0) — หน้าตาอย่างเดียว ไม่แตะตรรกะ */
+(function () {
+  var ROLE_TH = { superadmin: 'ผู้ดูแลระบบสูงสุด', admin: 'ผู้ดูแลระบบ', staff: 'เจ้าหน้าที่', viewer: 'ผู้ดูอย่างเดียว' };
+  // 2 การ์ดผู้ใช้ท้ายเมนูซ้าย (แทนข้อความขอบเขต · ข้อมูลเดียวกัน)
+  function sideUser() {
+    var box = document.getElementById('scopeSide'); if (!box || typeof state === 'undefined' || !state.user || !(state.user.fullName || state.user.username)) return;
+    var u = state.user, a = state.access || {}, name = u.fullName || u.username, role = String(a.role || u.role || '').toLowerCase();
+    var key = name + '|' + role + '|' + (a.scopeMessage || '') + '|' + (a.communities || []).length;
+    if (box.getAttribute('data-kit') === key) return;
+    box.setAttribute('data-kit', key);
+    box.innerHTML = '<div class="ltc-side-user"><div class="ltc-av">' + esc(String(name).trim().charAt(0) || '-') + '</div><div><b>' + esc(name) + '</b><span>' +
+      esc(ROLE_TH[role] || role || 'ผู้ใช้งาน') + (a.scopeMessage ? ' · ' + esc(a.scopeMessage) : '') + '</span><span>ชุมชนที่มองเห็น ' + esc((a.communities || []).length) + ' ชุมชน</span></div></div>';
+  }
+  // 4 ป้ายสถานะภาษาไทยครบ (เพิ่มคำที่ระบบเดิมยังขึ้นเป็นภาษาอังกฤษ)
+  var MORE = { scheduled: 'นัดแล้ว', postponed: 'เลื่อนนัด', rescheduled: 'เลื่อนนัด', new: 'ใหม่', read: 'อ่านแล้ว', unread: 'ยังไม่อ่าน', deceased: 'เสียชีวิต',
+    sent: 'ส่งแล้ว', open: 'เปิดอยู่', resolved: 'ปิดเรื่องแล้ว', accepted: 'รับแล้ว', dismissed: 'ซ่อนแล้ว', inactive: 'ปิดใช้งาน', send_failed: 'ส่งไม่สำเร็จ',
+    pulled_back: 'ดึงกลับ', stopped: 'หยุดติดตาม', requeued: 'เข้าคิวใหม่', pending_send: 'รอส่ง', partial_completed: 'ทำได้บางส่วน', due_soon: 'ใกล้ถึงกำหนด',
+    deleted: 'ลบแล้ว', closed: 'ปิดแล้ว', transferred: 'ย้ายแล้ว', returned: 'ส่งกลับ', skipped: 'ข้าม', not_sent: 'ยังไม่ส่ง', not_required: 'ไม่ต้องดำเนินการ',
+    behind_pace: 'ช้ากว่าแผน', normal: 'ปกติ', none: '-', no_group: 'ยังไม่จัดกลุ่ม', used: 'ใช้แล้ว', palliative: 'ประคับประคอง' };
+  if (typeof visitStatusLabel === 'function') {
+    var origLabel = visitStatusLabel;
+    visitStatusLabel = function (v) { var k = String(v || ''); var t = origLabel(v); return t === k && MORE[k] ? MORE[k] : t; };
+  }
+  // 3 ช่องวันที่ของเบราว์เซอร์ (mm/dd/yyyy) → ช่องวันที่ไทย พ.ศ. + ปฏิทินเดิมของ LTC · ช่องจริง (yyyy-mm-dd) ยังอยู่ ตรรกะเดิมอ่านค่าได้เหมือนเดิม
+  var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  function th(iso) { var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + (Number(m[1]) + 543) : ''; }
+  function iso(be) { var d = parseBuddhistDate(be); return d ? localDateInput(d) : ''; }
+  function enhance(real) {
+    if (!real || real.getAttribute('data-th') || !real.id) return;
+    real.setAttribute('data-th', '1'); real.classList.add('ltc-th-src');
+    var wrap = document.createElement('div'); wrap.className = 'date-input-wrap ltc-th-date';
+    var px = document.createElement('input'); px.className = 'input'; px.id = real.id + '__th'; px.readOnly = true; px.placeholder = 'วว/ดด/ปปปป (พ.ศ.)';
+    px.value = th(desc.get.call(real));
+    var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn calendar-btn'; bt.textContent = '📅'; bt.setAttribute('aria-label', 'เลือกวันที่');
+    var open = function () { if (!real.disabled) openBuddhistDatePicker(px.id); };
+    bt.addEventListener('click', open); px.addEventListener('click', open);
+    real.parentNode.insertBefore(wrap, real.nextSibling); wrap.appendChild(px); wrap.appendChild(bt);
+    Object.defineProperty(real, 'value', { configurable: true, get: function () { return desc.get.call(real); },
+      set: function (v) { desc.set.call(real, v); px.value = th(desc.get.call(real)); } });
+  }
+  function scan(root) { Array.prototype.forEach.call((root || document).querySelectorAll('input[type=date]:not([data-th])'), enhance); }
+  function syncFromPicker(target) {
+    if (!target || !/__th$/.test(target)) return;
+    var px = document.getElementById(target), real = document.getElementById(target.slice(0, -4)); if (!px || !real) return;
+    var v = iso(px.value);
+    if (v && real.min && v < real.min) { px.value = th(desc.get.call(real)); toast('เลือกได้ตั้งแต่ ' + th(real.min) + ' เป็นต้นไป', 'warn'); return; }
+    if (v && real.max && v > real.max) { px.value = th(desc.get.call(real)); toast('เลือกได้ถึง ' + th(real.max), 'warn'); return; }
+    desc.set.call(real, v);
+    real.dispatchEvent(new Event('input', { bubbles: true })); real.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  ['selectBuddhistDate', 'selectBuddhistToday', 'clearBuddhistDate'].forEach(function (n) {
+    var f = window[n]; if (typeof f !== 'function') return;
+    window[n] = function () { var t = buddhistPickerTarget; var r = f.apply(this, arguments); syncFromPicker(t); return r; };
+  });
+  function tick() { scan(document); sideUser(); }
+  new MutationObserver(function () { tick(); }).observe(document.body, { childList: true, subtree: true });
+  var ub = document.getElementById('userBox'); if (ub) new MutationObserver(sideUser).observe(ub, { childList: true, subtree: true, characterData: true });
+  tick();
+})();
 </script>
 <script>
 /* ปุ่ม "กลับหน้าหลัก" → หน้าหลักของแอป PHC37 */
