@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.9.1 · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
-var PHC37_APP_VERSION = '2.9.1';
+/* PHC37 PWA — app.js (PHC37-PWA-2.10.0 · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
+var PHC37_APP_VERSION = '2.10.0';
 (function () {
   'use strict';
 
@@ -159,7 +159,7 @@ var PHC37_APP_VERSION = '2.9.1';
   var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc'];
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-legacy', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
     // เว็บลูกมีเมนูของตัวเอง + ปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway (ผู้ใช้กำหนด 18 พ.ย.)
@@ -452,6 +452,7 @@ var PHC37_APP_VERSION = '2.9.1';
         $('login-password').select(); return;
       }
       $('login-password').value = '';
+      if (res.legacyVerify) { openLegacy(res, u); return; }   // 2.10.0 รหัสเดิมของ Gateway เดิม → ยืนยันอีเมล
       if (res.mustChange) {
         state.pcToken = res.token;
         $('setpw-name').textContent = (res.user && res.user.fullName) || u;
@@ -493,6 +494,57 @@ var PHC37_APP_VERSION = '2.9.1';
     });
   });
   $('btn-setpw-cancel').addEventListener('click', function () { showLogin(); });
+
+  // ---------- 2.10.0 เข้าครั้งแรกด้วยรหัสเดิม: ยืนยันอีเมล → รหัส 6 หลัก → ตั้งรหัสใหม่ ----------
+  function openLegacy(res, u) {
+    state.lgToken = res.token;
+    $('lg-name').textContent = (res.user && res.user.fullName) || u;
+    $('lg-email').value = (res.user && res.user.email) || '';
+    $('lg-code').value = ''; $('lg-new').value = ''; $('lg-confirm').value = '';
+    $('lg-step1').hidden = false; $('lg-step2').hidden = true;
+    $('lg-new').dispatchEvent(new Event('input'));
+    setAlert('lg-alert', '');
+    show('view-legacy');
+    setTimeout(function () { $('lg-email').focus(); }, 50);
+  }
+  function legacyExpired(res) {
+    if (res && res.code === 'unauthorized') { state.lgToken = null; showLogin('หมดเวลายืนยันอีเมล (30 นาที) กรุณาเข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่านเดิมอีกครั้ง'); return true; }
+    return false;
+  }
+  function legacySend(btn) {
+    var em = $('lg-email').value.trim();
+    if (!emailOk(em)) return setAlert('lg-alert', em ? 'รูปแบบอีเมลไม่ถูกต้อง' : 'กรุณากรอกอีเมลของคุณ');
+    busy(btn, true, 'กำลังส่งรหัส...');
+    api('auth.legacySendCode', { token: state.lgToken, email: em }).then(function (res) {
+      busy(btn, false);
+      if (legacyExpired(res)) return;
+      if (!res.ok) return setAlert('lg-alert', res.message);
+      $('lg-sent').textContent = res.message;
+      $('lg-step1').hidden = true; $('lg-step2').hidden = false;
+      setAlert('lg-alert', '');
+      setTimeout(function () { $('lg-code').focus(); }, 50);
+    });
+  }
+  $('form-lg-email').addEventListener('submit', function (e) { e.preventDefault(); legacySend($('btn-lg-send')); });
+  $('btn-lg-resend').addEventListener('click', function () { $('lg-step1').hidden = false; $('lg-step2').hidden = true; setAlert('lg-alert', ''); $('lg-email').focus(); });
+  $('form-lg-done').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var code = $('lg-code').value.replace(/\D/g, ''), n = $('lg-new').value, c = $('lg-confirm').value;
+    if (code.length !== 6) return setAlert('lg-alert', 'กรุณากรอกรหัสยืนยัน 6 หลักจากอีเมล');
+    if (!rulesOk(n)) return setAlert('lg-alert', 'รหัสผ่านใหม่ยังไม่ครบเงื่อนไขด้านล่าง');
+    if (n !== c) return setAlert('lg-alert', 'รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน');
+    var btn = $('btn-lg-done'); busy(btn, true, 'กำลังบันทึก...');
+    api('auth.legacyComplete', { token: state.lgToken, code: code, newPassword: n, confirmPassword: c }).then(function (res) {
+      busy(btn, false);
+      if (legacyExpired(res)) return;
+      if (!res.ok) return setAlert('lg-alert', res.message);
+      state.lgToken = null;
+      $('lg-new').value = ''; $('lg-confirm').value = ''; $('lg-code').value = '';
+      enterHome(res);
+      toast('ยืนยันอีเมลและตั้งรหัสผ่านใหม่เรียบร้อยแล้ว', 'ok');
+    });
+  });
+  $('btn-lg-cancel').addEventListener('click', function () { state.lgToken = null; showLogin(); });
   $('btn-go-register').addEventListener('click', function () {
     if (window.PHC37Public) window.PHC37Public.openRegister();
   });
@@ -921,6 +973,7 @@ var PHC37_APP_VERSION = '2.9.1';
     });
   });
   bindRules('setpw-new');
+  bindRules('lg-new');
   bindRules('change-new');
 
   // ---------- ติดตั้งแอพ ----------
