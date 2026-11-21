@@ -347,24 +347,25 @@
             </div>
 
             <div id="tab-logs" class="tab-panel" hidden>
-              <div id="log-alerts" class="alert" hidden></div>
-              <div class="gw-filter">
-                <label class="field"><span>ตั้งแต่วันที่</span><input id="log-from" type="text" class="th-date" required></label>
-                <label class="field"><span>ถึงวันที่</span><input id="log-to" type="text" class="th-date" required></label>
-                <label class="field"><span>เหตุการณ์</span><select id="log-action" class="select"></select></label>
-                <label class="field grow"><span>ผู้ใช้ (username)</span><input id="log-user" placeholder="เช่น somsri" autocapitalize="off"></label>
-                <label class="check"><input id="log-fail" type="checkbox"><span>เฉพาะไม่สำเร็จ</span></label>
-                <button id="log-search" type="button" class="gbtn gbtn-green">🔍 แสดง</button>
-                <button id="log-csv" type="button" class="gbtn">⬇️ CSV</button>
+              <!-- 2.14.0: ประวัติการใช้งานแบบ Gateway เดิม (ความปลอดภัย / การใช้งานระบบ / ทั้งหมด) · superadmin เท่านั้น -->
+              <div class="lg2-tabs" id="lg2-tabs" role="tablist">
+                <button type="button" data-t="security" class="on">🛡️ ความปลอดภัย</button>
+                <button type="button" data-t="usage">📊 การใช้งานระบบ</button>
+                <button type="button" data-t="all">📜 ทั้งหมด</button>
               </div>
-              <div id="log-count" class="gw-count"></div>
-              <div class="gw-table-wrap">
-                <table class="gw-table">
-                  <thead><tr><th>เวลา</th><th>ผู้ใช้</th><th>เหตุการณ์</th><th>เป้าหมาย</th><th>รายละเอียด</th><th>ผล</th></tr></thead>
-                  <tbody id="log-list"></tbody>
-                </table>
+              <div class="lg2-filterbox">
+                <div class="lg2-filters">
+                  <label class="field"><span>ตั้งแต่วันที่</span><input id="log-from" type="text" class="th-date" required></label>
+                  <label class="field"><span>ถึงวันที่</span><input id="log-to" type="text" class="th-date" required></label>
+                  <label class="field"><span>ผู้ใช้ (ชื่อ / username)</span><input id="log-user" placeholder="เช่น สมศรี" autocapitalize="off"></label>
+                  <label class="field lg2-hide-usage"><span>ค้นหาในรายการ</span><input id="log-q" placeholder="เช่น เวชระเบียน / ผู้สูงอายุ"></label>
+                  <label class="field lg2-hide-usage"><span>ผล</span><select id="log-result" class="select"><option value="">ทั้งหมด</option><option value="success">สำเร็จ</option><option value="fail">ไม่สำเร็จ</option></select></label>
+                  <div class="field lg2-acts"><span>&nbsp;</span><div><button id="log-search" type="button" class="gbtn gbtn-green">🔍 แสดง</button><button id="log-reset" type="button" class="gbtn">ล้าง</button><button id="log-csv" type="button" class="gbtn">⬇️ CSV</button></div></div>
+                </div>
+                <div class="lg2-quick"><span>ช่วงเร็ว:</span><button type="button" data-q="0">วันนี้</button><button type="button" data-q="6">7 วัน</button><button type="button" data-q="29">30 วัน</button></div>
               </div>
-              <button id="log-more" type="button" class="gbtn gbtn-gray btn-block" hidden>โหลดเพิ่ม</button>
+              <div id="lg2-alerts"></div>
+              <div id="lg2-body"><div class="empty">ยังไม่ได้โหลดข้อมูล</div></div>
             </div>
 
             <div id="tab-menus" class="tab-panel gw-panel" hidden>

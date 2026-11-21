@@ -1,4 +1,4 @@
-/* PHC37 PWA 1.9.0 — หน้าตาแบบ Gateway เดิม (GW7) : แถบเมนูซ้าย · หัวหน้า · การ์ด · ตาราง
+/* PHC37 PWA 1.9.0 · 2.14.0 — หน้าตาแบบ Gateway เดิม (GW7) · 2.14.0 หน้าประวัติการใช้งาน (lg2-*) : แถบเมนูซ้าย · หัวหน้า · การ์ด · ตาราง
  * ค่าสี/ขนาดวัดจากหน้าเดิมจริง (Index.html GW7) · โหลดต่อจาก styles.css */
 :root {
   --gw7-side: #0F2A1E; --gw7-side-active: #1F5A3D; --gw7-side-ink: #E6F0EA; --gw7-side-muted: #A9C4B4;
@@ -287,3 +287,55 @@ body.pf-lock { overflow: hidden; }
 /* หน้าเว็บลูก (2.1.0): เว็บลูกมีเมนูของตัวเองพร้อมปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway */
 .gw7-shell.gw7-child .gw7-side, .gw7-shell.gw7-child .gw7-scrim, .gw7-shell.gw7-child .gw7-burger { display: none !important; }
 .gw7-shell.gw7-child { background: var(--gw7-ground); }
+
+/* ===== 2.14.0 ประวัติการใช้งานแบบ Gateway เดิม (GW-EXT-2610) ===== */
+#tab-logs .empty { text-align: center; color: #64748b; padding: 22px 10px; }
+.lg2-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.lg2-tabs button { border: 1px solid #e2e8f0; background: #fff; color: #0f172a; border-radius: 999px; padding: 8px 16px; font-weight: 800; cursor: pointer; min-height: 40px; font: inherit; font-weight: 800; }
+.lg2-tabs button.on { background: var(--primary, #15703A); border-color: var(--primary, #15703A); color: #fff; }
+.lg2-filterbox { border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; background: #f8fafc; }
+.lg2-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 10px; align-items: end; }
+.lg2-filters .field { margin: 0; }
+.lg2-filters [hidden] { display: none !important; }
+.lg2-acts { grid-column: 1 / -1; }
+.lg2-acts > span { display: none; }
+.lg2-acts > div { display: flex; gap: 6px; flex-wrap: wrap; }
+.lg2-acts .gbtn { white-space: nowrap; }
+.lg2-quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 13px; color: #64748b; }
+.lg2-quick button { border: 1px solid #e2e8f0; background: #fff; color: var(--primary, #15703A); border-radius: 8px; padding: 4px 10px; font: inherit; font-weight: 700; cursor: pointer; min-height: 32px; }
+.lg2-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+.lg2-card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; background: #fff; }
+.lg2-card span { display: block; color: #64748b; font-size: 13px; font-weight: 700; }
+.lg2-card b { display: block; font-size: 26px; line-height: 1.3; }
+.lg2-card.bad { border-color: #fecaca; background: #fef2f2; } .lg2-card.bad b { color: #b91c1c; }
+.lg2-card.warn { border-color: #fed7aa; background: #fff7ed; } .lg2-card.warn b { color: #c2410c; }
+.lg2-alert { border: 1px solid #fecaca; background: #fef2f2; border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; font-size: 14px; }
+.lg2-alert b { color: #991b1b; }
+.lg2-sub { color: #64748b; font-size: 13px; margin: 12px 0 8px; }
+.lg2-h { margin: 14px 0 8px; font-size: 16px; }
+.lg2-list { display: grid; gap: 8px; }
+.lg2-row { display: grid; grid-template-columns: 110px minmax(160px, 1fr) minmax(0, 2.4fr) 90px; gap: 10px; align-items: start; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; }
+.lg2-row.fail { border-left: 4px solid #dc2626; }
+.lg2-row .t { color: #64748b; font-size: 13px; line-height: 1.4; } .lg2-row .t b { display: block; color: #0f172a; font-size: 14px; }
+.lg2-row .u b { display: block; font-size: 14px; } .lg2-row .u small { color: #64748b; font-size: 12px; }
+.lg2-row .w .sys { display: inline-block; margin-left: 6px; color: var(--primary, #15703A); font-weight: 800; font-size: 13px; }
+.lg2-row .w .d { color: #475569; font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+.lg2-row .r { text-align: right; }
+.lg2-badge { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 700; white-space: normal; }
+.lg2-badge.success { background: #dcfce7; color: #166534; } .lg2-badge.fail { background: #fee2e2; color: #991b1b; }
+.lg2-badge.login { background: #ccfbf1; color: #115e59; } .lg2-badge.request { background: #ffedd5; color: #9a3412; } .lg2-badge.system { background: #e2e8f0; color: #334155; }
+.lg2-more { text-align: center; margin: 12px 0; }
+.lg2-uwrap { overflow-x: auto; }
+.lg2-utable { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; font-size: 14px; }
+.lg2-utable th { background: #f8fafc; text-align: left; padding: 9px 10px; color: #64748b; font-weight: 800; border-bottom: 1px solid #e2e8f0; }
+.lg2-utable td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+.lg2-utable td.who small { display: block; color: #64748b; font-size: 12px; }
+.lg2-utable td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lg2-chip { display: inline-block; background: #f1f5f9; border-radius: 999px; padding: 1px 8px; margin: 2px 4px 0 0; font-size: 12px; font-weight: 700; }
+.lg2-chip.r { background: #ecfdf5; color: #115e59; }
+@media (max-width: 760px) {
+  .lg2-row { grid-template-columns: minmax(0, 1fr) 90px; } .lg2-row .t { grid-column: 1/2; grid-row: 1; } .lg2-row .r { grid-column: 2/3; grid-row: 1; }
+  .lg2-row .u, .lg2-row .w { grid-column: 1/-1; }
+  .lg2-utable thead { display: none; } .lg2-utable tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+  .lg2-utable td { border: 0; padding: 0; } .lg2-utable td.n { text-align: left; } .lg2-utable td.wide, .lg2-utable td.who { grid-column: 1/-1; }
+}

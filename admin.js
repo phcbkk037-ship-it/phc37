@@ -1,4 +1,5 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.6.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.7.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน
+   1.7.0 (22/11/2569) ประวัติการใช้งานแบบ Gateway เดิม (ความปลอดภัย · การใช้งานระบบ · ทั้งหมด) เฉพาะ superadmin
    1.6.0 (22/11/2569) ฟอร์มผู้ใช้: ระบบกลาง · เลือกรายคน (ติ๊กเพิ่ม/ตัดสิทธิ์) + ได้ทั้งกลุ่มอัตโนมัติ (แสดงอย่างเดียว) แบบ GW7 เดิม */
 (function () {
   'use strict';
@@ -37,10 +38,13 @@
     window.scrollTo(0, 0);
     try { history.pushState({ phc37Admin: 1 }, ''); } catch (e) {}
     var admin = isAdminRole();
+    if ((mode === 'logs' && myRole() !== 'superadmin') || (!admin && mode !== 'logs')) {   // 2.14.0: ประวัติการใช้งานเฉพาะ superadmin
+      P.toast(mode === 'logs' ? 'เฉพาะ superadmin เท่านั้นที่ดูประวัติการใช้งานได้' : 'เฉพาะผู้ดูแลระบบเท่านั้น', 'err'); P.goHome(); return;
+    }
     Array.prototype.forEach.call(document.querySelectorAll('#view-admin .tab'), function (t) {
       t.hidden = !admin || (t.dataset.super && myRole() !== 'superadmin');
     });
-    var sec = !admin ? 'logs' : (mode === 'perm' ? (myRole() === 'superadmin' ? 'menus' : 'users') : (mode || 'users'));
+    var sec = mode === 'perm' ? (myRole() === 'superadmin' ? 'menus' : 'users') : (mode || 'users');
     switchTab(sec);
     if (!admin) return;
     if (A.boot && sec === 'logs') return;
@@ -95,7 +99,7 @@
     $('adm-tiles').hidden = !admin || tab === 'logs';
     $('adm-subtabs').hidden = !PERM_GROUP[tab];
     var pg = PAGE[tab] || PAGE.users;
-    $('adm-title').textContent = tab === 'logs' && !admin ? '🧾 ประวัติการใช้งานของฉัน' : pg[2];
+    $('adm-title').textContent = pg[2];
     $('adm-sub').hidden = tab !== 'logs'; $('adm-sub').textContent = 'ช่วงวันที่ที่เลือก · ล่าสุดก่อน';
     P.setPage(pg[0], pg[1]);
     ['users', 'requests', 'perms', 'menus', 'logs', 'bulk', 'settings'].forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
@@ -117,7 +121,7 @@
     if (t === 'users') refreshUsers();
     else if (t === 'requests') loadRequests(true);
     else if (t === 'menus') loadMenus(true);
-    else if (t === 'logs') loadLogs(false);
+    else if (t === 'logs') lgLoad(true);
     else switchTab(t);
   });
 
@@ -618,97 +622,141 @@
   });
 
   // ---------- ประวัติการใช้งาน ----------
-  var ACTION_LABEL = {
-    LOGIN_SUCCESS: 'เข้าสู่ระบบ', LOGIN_FAILED: 'เข้าสู่ระบบไม่สำเร็จ', LOGIN_NEEDS_NEW_PASSWORD: 'เข้าด้วยรหัสชั่วคราว',
-    LOGIN_BLOCKED_MAINTENANCE: 'ถูกกันช่วงปิดปรับปรุง', PASSWORD_SET_FIRST: 'ตั้งรหัสผ่านครั้งแรก', PASSWORD_CHANGED: 'เปลี่ยนรหัสผ่าน',
-    PASSWORD_CHANGE_FAILED: 'เปลี่ยนรหัสไม่สำเร็จ', EMAIL_SET: 'บันทึกอีเมล', REGISTER_REQUEST: 'ส่งคำขอสมัคร',
-    REGISTER_APPROVE: 'อนุมัติคำขอสมัคร', REGISTER_REJECT: 'ไม่อนุมัติคำขอสมัคร', USER_CREATE: 'เพิ่มผู้ใช้', USER_UPDATE: 'แก้ไขผู้ใช้',
-    USER_STATUS: 'เปลี่ยนสถานะผู้ใช้', USER_UNLOCK: 'ปลดล็อกบัญชี', TEMP_PASSWORD_ISSUED: 'ออกรหัสชั่วคราว',
-    TEMP_PASSWORD_EMAILED: 'ส่งรหัสชั่วคราวทางอีเมล', ROLE_PERMISSION_UPDATE: 'แก้สิทธิ์เมนูราย Role',
-    PATIENT_SEARCH: 'ค้นหาผู้ป่วย', PATIENT_VIEW: 'เปิดแฟ้มผู้ป่วย', PATIENT_VIEW_CID: 'ดูเลขบัตรผู้ป่วย',
-    PATIENT_CREATE: 'เพิ่มผู้ป่วย (เวชระเบียนกลาง)', PATIENT_UPDATE: 'แก้ไขผู้ป่วย (เวชระเบียนกลาง)',
-    TASK_CREATE: 'มอบหมายงาน', TASK_APPROVE: 'ตรวจรับงาน', TASK_RETURN: 'ส่งงานกลับแก้ไข', TASK_CANCEL: 'ยกเลิกงาน',
-    MENU_CREATE: 'เพิ่มเมนู', MENU_UPDATE: 'แก้ไขเมนู', MENU_MOVE: 'เลื่อนลำดับเมนู',
-    MAINTENANCE_ON: 'ปิดปรับปรุงระบบ', MAINTENANCE_OFF: 'เปิดระบบหลังปรับปรุง', SETTINGS_UPDATE: 'แก้ตั้งค่าระบบ', CHILD_APP_STATUS: 'เปลี่ยนสถานะแอพลูก',
-    FORGOT_PASSWORD_CODE_SENT: 'ขอรหัสยืนยัน (ลืมรหัส)', FORGOT_PASSWORD_NOMATCH: 'ลืมรหัส: ข้อมูลไม่ตรง',
-    FORGOT_PASSWORD_BAD_CODE: 'ลืมรหัส: รหัสยืนยันผิด', PASSWORD_RESET_BY_EMAIL: 'ตั้งรหัสใหม่ทางอีเมล', MIGRATION_RUN: 'ย้ายข้อมูล'
-  };
-  var LG = { rows: [], next: null, inited: false };
+  // ---------- ประวัติการใช้งาน (2.14.0 · แบบ Gateway เดิม GW-EXT-2610 · superadmin เท่านั้น) ----------
+  var LG = { tab: 'security', rows: [], data: null, busy: false, inited: false, seq: 0 };
   function dateStr(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function lgDay(n) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() - (n || 0) * 86400000)); }
+  /** yyyy-MM-dd[ HH:mm:ss] → dd/MM/พ.ศ.[ HH:mm] */
+  function lgBE(k) { k = String(k || ''); if (k.length < 10) return k; var d = k.slice(0, 10).split('-'); return d[2] + '/' + d[1] + '/' + (Number(d[0]) + 543) + (k.length > 11 ? ' ' + k.slice(11, 16) : ''); }
   function initLogs() {
+    if (myRole() !== 'superadmin') { P.toast('เฉพาะ superadmin เท่านั้นที่ดูประวัติการใช้งานได้', 'err'); P.goHome(); return; }
     if (!LG.inited) {
       LG.inited = true;
-      var sel = $('log-action');
-      var o0 = el('option', null, 'ทั้งหมด'); o0.value = ''; sel.appendChild(o0);
-      Object.keys(ACTION_LABEL).forEach(function (k) { var o = el('option', null, ACTION_LABEL[k]); o.value = k; sel.appendChild(o); });
-      var to = new Date(), from = new Date(Date.now() - 6 * 86400000);
-      P.dateSet($('log-from'), dateStr(from)); P.dateSet($('log-to'), dateStr(to));
+      P.dateSet($('log-from'), lgDay(6)); P.dateSet($('log-to'), lgDay(0));
+      Array.prototype.forEach.call(document.querySelectorAll('#lg2-tabs button'), function (b) { b.addEventListener('click', function () { lgTab(b.dataset.t); }); });
+      Array.prototype.forEach.call(document.querySelectorAll('#tab-logs .lg2-quick button'), function (b) { b.addEventListener('click', function () { lgQuick(Number(b.dataset.q)); }); });
+      $('log-search').addEventListener('click', function () { lgLoad(true); });
+      $('log-reset').addEventListener('click', function () { $('log-user').value = ''; $('log-q').value = ''; $('log-result').value = ''; lgQuick(6); });
+      ['log-user', 'log-q'].forEach(function (id) { $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') lgLoad(true); }); });
+      $('log-csv').addEventListener('click', lgCsv);
     }
-    $('log-user').closest('label').hidden = !isAdminRole();
-    loadLogs(false);
-    if (isAdminRole()) {
-      call('logs.summary').then(function (res) {
-        var a = $('log-alerts');
-        if (!res.ok || !res.alerts.length) { a.hidden = true; return; }
-        a.textContent = '⚠️ 24 ชั่วโมงที่ผ่านมา มีการใส่รหัสผิด/รหัสยืนยันผิดบ่อย: ' +
-          res.alerts.map(function (x) { return x.username + ' (' + x.count + ' ครั้ง)'; }).join(', ');
-        a.hidden = false;
-      });
-    }
+    lgTab(LG.tab || 'security');
   }
-  function logQuery() {
-    var from = P.dateGet($('log-from')), to = P.dateGet($('log-to'));
-    return {
-      from: from ? from + 'T00:00:00+07:00' : '',
-      to: to ? new Date(new Date(to + 'T00:00:00+07:00').getTime() + 86400000).toISOString() : '',
-      action: $('log-action').value, user: $('log-user').value.trim(), result: $('log-fail').checked ? 'fail' : '', limit: 100
-    };
+  function lgTab(t) {
+    LG.tab = t;
+    Array.prototype.forEach.call(document.querySelectorAll('#lg2-tabs button'), function (b) { b.classList.toggle('on', b.dataset.t === t); });
+    Array.prototype.forEach.call(document.querySelectorAll('#tab-logs .lg2-hide-usage'), function (e) { e.hidden = t === 'usage'; });
+    lgLoad(true);
   }
-  function loadLogs(more) {
-    var q = logQuery();
-    if (more && LG.next) q.before = LG.next;
-    if (!more) { LG.rows = []; P.skeleton($('log-list'), 5); P.skeleton($('log-count'), 1, 'line'); }
-    var btn = $('log-more'); if (more) P.busy(btn, true, 'กำลังโหลด...');
-    call('logs.list', q).then(function (res) {
-      if (more) P.busy(btn, false);
-      else $('log-list').textContent = '';
-      if (!res.ok) { $('log-count').textContent = res.message; P.tableMsg($('log-list'), res.message); return; }
-      LG.next = res.nextBefore;
-      LG.rows = LG.rows.concat(res.logs);
-      res.logs.forEach(function (l) { $('log-list').appendChild(logRow(l)); });
-      $('log-count').textContent = 'แสดง ' + LG.rows.length + ' รายการ' + (res.nextBefore ? ' (มีเพิ่ม)' : '') +
-        (res.scope === 'group' ? ' · เฉพาะผู้ใช้ในกลุ่มงานของคุณ' : '');
-      btn.hidden = !res.nextBefore;
-      if (!LG.rows.length) P.tableMsg($('log-list'), 'ไม่พบรายการในช่วงนี้');
+  function lgQuick(n) { P.dateSet($('log-from'), lgDay(n)); P.dateSet($('log-to'), lgDay(0)); lgLoad(true); }
+  function lgFilter(offset) {
+    var usage = LG.tab === 'usage';
+    return { tab: LG.tab, from: P.dateGet($('log-from')) || '', to: P.dateGet($('log-to')) || '', user: $('log-user').value.trim(),
+      q: usage ? '' : $('log-q').value.trim(), result: usage ? '' : $('log-result').value, offset: offset || 0, limit: 50 };
+  }
+  function lgLoad(reset) {
+    if (LG.busy && !reset) return;
+    var seq = ++LG.seq, tab = LG.tab;
+    LG.busy = true;
+    var f = lgFilter(reset ? 0 : LG.rows.length);
+    if (reset) { LG.rows = []; $('lg2-alerts').textContent = ''; P.skeleton($('lg2-body'), 6, 'line'); }
+    else { var mb = $('lg2-morebtn'); if (mb) P.busy(mb, true, 'กำลังโหลด...'); }
+    call('logs.view', f).then(function (res) {
+      if (seq !== LG.seq || tab !== LG.tab) return;
+      LG.busy = false;
+      if (!res.ok) { var b = $('lg2-body'); b.textContent = ''; b.appendChild(el('div', 'empty', res.message || 'โหลดข้อมูลไม่สำเร็จ')); return; }
+      LG.data = res; LG.rows = LG.rows.concat(res.rows || []);
+      P.dateSet($('log-from'), res.from); P.dateSet($('log-to'), res.to);
+      $('adm-sub').textContent = lgBE(res.from) + ' – ' + lgBE(res.to) + ' · ล่าสุดก่อน';
+      lgRender();
     });
   }
-  function logRow(l) {
-    var tr = el('tr', l.result === 'fail' ? 'fail' : null);
-    tr.appendChild(el('td', 'nowrap', fmtDate(l.at)));
-    var who = el('td', 'nowrap', l.actor); if (l.role) who.appendChild(el('span', 'sub', P.roleLabel(l.role))); tr.appendChild(who);
-    tr.appendChild(el('td', null, ACTION_LABEL[l.action] || l.action));
-    tr.appendChild(el('td', null, l.targetId && l.targetId !== l.actor ? (l.targetLabel || l.targetId) : '-'));
-    tr.appendChild(el('td', null, l.detail || ''));
-    var r = el('td'); r.appendChild(el('span', 'gw-st ' + (l.result === 'fail' ? 'danger' : 'on'), l.result === 'fail' ? 'ไม่สำเร็จ' : 'สำเร็จ')); tr.appendChild(r);
-    return tr;
+  function chipEl(text, cls) { return el('span', 'lg2-chip' + (cls ? ' ' + cls : ''), text); }
+  function lgWho(r) {
+    var d = el('div', 'u');
+    if (!r.user) { d.appendChild(el('b', null, '-')); return d; }
+    d.appendChild(el('b', null, r.fullName || r.user));
+    d.appendChild(el('small', null, r.fullName ? r.user : (r.known ? '' : 'ไม่พบบัญชีนี้ในระบบ')));
+    return d;
   }
-  $('log-search').addEventListener('click', function () { loadLogs(false); });
-  $('log-more').addEventListener('click', function () { loadLogs(true); });
-  $('log-csv').addEventListener('click', function () {
+  function lgRow(r) {
+    var row = el('div', 'lg2-row' + (r.result === 'fail' ? ' fail' : ''));
+    var at = lgBE(r.at), t = el('div', 't');
+    t.appendChild(el('b', null, at.slice(11) + ' น.')); t.appendChild(document.createTextNode(at.slice(0, 10)));
+    row.appendChild(t); row.appendChild(lgWho(r));
+    var w = el('div', 'w');
+    w.appendChild(el('span', 'lg2-badge ' + (r.cat === 'security' ? 'request' : (r.cat === 'usage' ? 'login' : 'system')), r.label));
+    if (r.system) w.appendChild(el('span', 'sys', r.system));
+    var about = [r.system ? '' : r.targetName, r.detail].filter(function (x) { return x && x !== '-' && x !== r.user && x !== r.fullName; }).join(' · ');
+    if (about) w.appendChild(el('div', 'd', about));
+    row.appendChild(w);
+    var rr = el('div', 'r'); rr.appendChild(el('span', 'lg2-badge ' + (r.result === 'fail' ? 'fail' : 'success'), r.result === 'fail' ? 'ไม่สำเร็จ' : 'สำเร็จ'));
+    row.appendChild(rr);
+    return row;
+  }
+  function lgRender() {
+    var d = LG.data, al = $('lg2-alerts'), body = $('lg2-body');
+    al.textContent = ''; body.textContent = '';
+    if (LG.tab === 'security' && d.alerts) {
+      var a = d.alerts, cards = el('div', 'lg2-cards');
+      [['ใส่รหัสผิดถี่ผิดปกติ', a.burst.length + ' บัญชี', a.burst.length ? 'bad' : ''], ['เข้าสู่ระบบไม่สำเร็จ', a.failTotal + ' ครั้ง', a.failTotal ? 'warn' : ''],
+       ['ถูกระงับชั่วคราว', a.throttled + ' ครั้ง', a.throttled ? 'warn' : ''], ['คำขอสมัคร / ลืมรหัส', String(a.requests), ''], ['เปลี่ยนผู้ใช้ / สิทธิ์', String(a.accountChanges), '']]
+        .forEach(function (c) { var x = el('div', 'lg2-card' + (c[2] ? ' ' + c[2] : '')); x.appendChild(el('span', null, c[0])); x.appendChild(el('b', null, c[1])); cards.appendChild(x); });
+      al.appendChild(cards);
+      a.burst.forEach(function (x) {
+        var line = el('div', 'lg2-alert'); line.appendChild(document.createTextNode('⚠️ ')); line.appendChild(el('b', null, x.fullName || x.user));
+        line.appendChild(document.createTextNode((x.fullName ? ' (' + x.user + ')' : (x.known ? '' : ' — ไม่พบบัญชีนี้ อาจมีคนเดาชื่อผู้ใช้')) +
+          ' ใส่รหัสผิด ' + x.count + ' ครั้งภายใน 15 นาที (ทั้งช่วง ' + x.total + ' ครั้ง) ล่าสุด ' + lgBE(x.lastAt) + ' น.'));
+        al.appendChild(line);
+      });
+    }
+    if (LG.tab === 'usage') {
+      var u = d.usage || [];
+      body.appendChild(el('h4', 'lg2-h', 'สรุปการใช้งานรายคน (' + u.length + ' คน)'));
+      if (u.length) {
+        var wrap = el('div', 'lg2-uwrap'), tb = el('table', 'lg2-utable'), th = el('thead'), hr = el('tr');
+        ['ผู้ใช้', 'วันที่ใช้', 'เข้าสู่ระบบ', 'ระบบที่เปิด', 'เวชระเบียนกลาง', 'ล่าสุด'].forEach(function (h) { hr.appendChild(el('th', null, h)); });
+        th.appendChild(hr); tb.appendChild(th);
+        var tbody = el('tbody');
+        u.forEach(function (x) {
+          var tr = el('tr'), who = el('td', 'who');
+          who.appendChild(el('b', null, x.fullName || x.user));
+          if (x.fullName) who.appendChild(el('small', 'sub', x.user + (x.role ? ' · ' + P.roleLabel(x.role) : '')));
+          tr.appendChild(who);
+          tr.appendChild(el('td', 'n', x.days + ' วัน')); tr.appendChild(el('td', 'n', 'เข้า ' + x.logins + ' ครั้ง'));
+          var sy = el('td', 'wide'); if (x.systems.length) x.systems.forEach(function (s) { sy.appendChild(chipEl(s.name + ' ×' + s.count)); }); else sy.appendChild(el('span', 'muted', '-'));
+          var rd = el('td', 'wide'); if (x.reads.length) x.reads.forEach(function (s) { rd.appendChild(chipEl(s.name + ' ×' + s.count, 'r')); }); else rd.appendChild(el('span', 'muted', '-'));
+          tr.appendChild(sy); tr.appendChild(rd); tr.appendChild(el('td', 'wide', lgBE(x.last)));
+          tbody.appendChild(tr);
+        });
+        tb.appendChild(tbody); wrap.appendChild(tb); body.appendChild(wrap);
+      } else body.appendChild(el('div', 'empty', 'ไม่มีการใช้งานในช่วงนี้'));
+      body.appendChild(el('h4', 'lg2-h', 'รายการ (' + d.total + ')'));
+    } else {
+      body.appendChild(el('div', 'lg2-sub', 'พบ ' + d.total + ' รายการ' + (LG.rows.length < d.total ? ' · แสดง ' + LG.rows.length : '')));
+    }
+    if (LG.rows.length) { var list = el('div', 'lg2-list'); LG.rows.forEach(function (r) { list.appendChild(lgRow(r)); }); body.appendChild(list); }
+    else body.appendChild(el('div', 'empty', 'ไม่พบรายการในช่วงนี้'));
+    if (LG.rows.length < d.total) {
+      var more = el('div', 'lg2-more'), b = el('button', 'gbtn', 'โหลดเพิ่ม (เหลือ ' + (d.total - LG.rows.length) + ')');
+      b.type = 'button'; b.id = 'lg2-morebtn'; b.addEventListener('click', function () { lgLoad(false); });
+      more.appendChild(b); body.appendChild(more);
+    }
+  }
+  function lgCsv() {
     if (!LG.rows.length) return P.toast('ยังไม่มีข้อมูลให้ดาวน์โหลด');
     var esc = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    var lines = [['เวลา', 'ผู้ใช้', 'Role', 'เหตุการณ์', 'รหัสเหตุการณ์', 'เป้าหมาย', 'รายละเอียด', 'ผล'].join(',')];
+    var lines = [['เวลา', 'ผู้ใช้', 'ชื่อ-สกุล', 'Role', 'เหตุการณ์', 'รหัสเหตุการณ์', 'ระบบ', 'เป้าหมาย', 'รายละเอียด', 'ผล'].join(',')];
     LG.rows.forEach(function (l) {
-      lines.push([fmtDate(l.at), l.actor, l.role, ACTION_LABEL[l.action] || l.action, l.action,
-        l.targetLabel || l.targetId, l.detail, l.result].map(esc).join(','));
+      lines.push([lgBE(l.at), l.user, l.fullName, l.role, l.label, l.action, l.system, l.targetName || l.targetID, l.detail, l.result === 'fail' ? 'ไม่สำเร็จ' : 'สำเร็จ'].map(esc).join(','));
     });
     var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'phc37-logs-' + dateStr(new Date()) + '.csv';
+    a.download = 'phc37-logs-' + LG.tab + '-' + dateStr(new Date()) + '.csv';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  });
+  }
 
   // ---------- วันเวลา (datetime-local ↔ ISO) ----------
   function toLocalInput(iso) {
