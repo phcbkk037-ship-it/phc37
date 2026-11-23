@@ -1,4 +1,5 @@
-/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.2.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน */
+/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.3.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน
+ * 1.3.0: งานจากระบบ (แบบสอบถามกลาง / ระบบเบิก–จ่ายวัสดุ) — สถานะตามระบบนั้น · ปุ่มเปิดระบบในแอพ */
 (function () {
   'use strict';
   var P = window.PHC37;
@@ -31,8 +32,12 @@
     create: '📝 มอบหมายงาน', accept: '✋ รับงาน', reject: '🚫 ปฏิเสธงาน', progress: '⏳ ความคืบหน้า', submit: '📤 ส่งผลงาน',
     approve: '✅ ตรวจรับ', 'return': '↩️ ส่งกลับแก้ไข', cancel: '🛑 ยกเลิกงาน'
   };
-  var NF_ICON = { assigned: '📝', accepted: '✋', rejected: '🚫', submitted: '📤', approved: '✅', returned: '↩️', cancelled: '🛑', due_soon: '⏰', overdue: '⚠️' };
+  var NF_ICON = { start: '📣', assigned: '📝', accepted: '✋', rejected: '🚫', submitted: '📤', approved: '✅', returned: '↩️', cancelled: '🛑', due_soon: '⏰', overdue: '⚠️' };
   var ASSIGNEE_BOX = { todo: 1, sent: 1, done: 1 };
+  // งานจากระบบ: ชื่อระบบ + ป้ายสถานะตามกล่อง (ต้องทำ / รอตรวจรับ / ดำเนินการเรียบร้อย)
+  var SYS_SRC = { survey: '📝 แบบสอบถาม', mr2: '📦 เบิก–จ่ายวัสดุ' };
+  var SYS_ST = { assigned: ['ต้องทำ', 'info'], submitted: ['รอตรวจรับ', 'warn'], approved: ['ดำเนินการเรียบร้อย', 'ok'], cancelled: ['ปิดแล้ว', ''] };
+  function srcLabel(app) { return SYS_SRC[app] || app; }
 
   var S = { box: 'todo', summary: null, sumAt: 0, opts: null, cur: null };
 
@@ -142,8 +147,8 @@
     if (PRIO[it.priority]) { t.appendChild(chip(PRIO[it.priority][0], PRIO[it.priority][1])); t.appendChild(document.createTextNode(' ')); }
     t.appendChild(document.createTextNode(it.title));
     main.appendChild(t);
-    var di = dueInfo(it.dueAt, closed);
-    var sub = el('span', 'row-sub', (it.createdByName ? 'จาก ' + it.createdByName + ' · ' : '') + 'มอบเมื่อ ' + P.fmtTime(it.createdAt, true));
+    var di = it.system ? (it.dueLabel ? [it.dueLabel, ''] : null) : dueInfo(it.dueAt, closed);
+    var sub = el('span', 'row-sub', (it.createdByName ? 'จาก ' + it.createdByName + ' · ' : '') + (it.system ? 'เมื่อ ' : 'มอบเมื่อ ') + P.fmtTime(it.createdAt, true));
     main.appendChild(sub);
     if (di) main.appendChild(el('span', 'tk-due ' + di[1], '📅 ' + di[0]));
     row.appendChild(main);
@@ -154,10 +159,11 @@
     var closed = it.taskStatus !== 'open' || ['approved', 'rejected', 'cancelled'].indexOf(it.myStatus) >= 0;
     var x = rowBase(it, closed);
     var f = el('span', 'row-flags');
-    var st = ST_LABEL[it.myStatus] || [it.myStatus, ''];
+    var st = (it.system ? SYS_ST[it.myStatus] : ST_LABEL[it.myStatus]) || [it.myStatus, ''];
     f.appendChild(chip(st[0], st[1]));
     if (it.returnCount) f.appendChild(chip('แก้ไข ' + it.returnCount + ' ครั้ง', ''));
-    if (it.sourceApp) f.appendChild(chip('จาก ' + it.sourceApp, 'info'));
+    if (it.system) f.appendChild(chip('งานจากระบบ · ' + srcLabel(it.sourceApp), 'info'));
+    else if (it.sourceApp) f.appendChild(chip('จาก ' + it.sourceApp, 'info'));
     x.main.appendChild(f);
     if (!closed && it.progress > 0) x.main.appendChild(progressBar(it.progress));
     return x.row;
@@ -350,8 +356,43 @@
     if (title) s.appendChild(el('h3', null, title));
     return s;
   }
+  /** ปุ่มของงานจากระบบ: #app:survey/<มุมมอง> · #app:material */
+  function openApp(url) {
+    var m = /^#app:([a-z]+)(?:\/(.*))?$/.exec(String(url || ''));
+    if (!m) return;
+    var menus = ((P.profile() || {}).menus) || [];
+    if (m[1] === 'survey') {
+      if (!window.PHC37Survey) { P.toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err'); return; }
+      $('dlg-task').close(); window.PHC37Survey.open(m[2] || 'inbox'); return;
+    }
+    if (m[1] === 'material') {
+      var mm = menus.filter(function (x) { return String(x.key || '').toLowerCase() === 'material_requisition'; })[0];
+      if (!mm) { P.toast('บัญชีนี้ยังไม่มีสิทธิ์เข้าระบบเบิก–จ่ายวัสดุ', 'err'); return; }
+      $('dlg-task').close(); P.openMenu(mm);
+    }
+  }
+  function renderSystem(r) {
+    var t = r.task, body = $('tk-body'), me = r.me;
+    var head = el('div', 'row-flags tk-head-flags');
+    var st = me ? (SYS_ST[me.status] || [me.status, '']) : (TASK_ST[t.status] || [t.status, '']);
+    head.appendChild(chip(st[0], st[1]));
+    head.appendChild(chip('งานจากระบบ · ' + srcLabel(t.sourceApp), 'info'));
+    body.appendChild(head);
+    body.appendChild(el('p', 'muted tk-meta', (t.createdByName || 'ระบบ') + ' · ' + P.fmtTime(t.startAt && new Date(t.startAt) > new Date(t.createdAt) ? t.startAt : t.createdAt)));
+    if (t.dueLabel) body.appendChild(el('p', 'tk-due big', '📅 ' + t.dueLabel));
+    if (t.detail) body.appendChild(el('div', 'tk-detail', t.detail));
+    if (t.actionUrl && /^#app:/.test(t.actionUrl)) {
+      var open = me && me.status === 'assigned' && t.status === 'open';
+      var ab = el('button', 'btn ' + (open ? 'btn-primary' : 'btn-edit btn-sm'), '➡️ ' + (t.actionLabel || 'เปิดระบบที่เกี่ยวข้อง'));
+      ab.type = 'button';
+      ab.addEventListener('click', function () { openApp(t.actionUrl); });
+      var acts = el('div', 'dialog-actions tk-acts'); acts.appendChild(ab); body.appendChild(acts);
+    }
+    body.appendChild(el('p', 'muted', 'ℹ️ งานนี้สร้างโดยระบบ — สถานะจะเปลี่ยนเองเมื่อดำเนินการในระบบนั้น ไม่ต้องกดรับหรือส่งงาน'));
+  }
   function renderTask(r) {
     var t = r.task, body = $('tk-body'); body.textContent = '';
+    if (t.isSystem) { $('tk-title').textContent = t.title; renderSystem(r); return; }
     $('tk-title').textContent = t.title;
     var head = el('div', 'row-flags tk-head-flags');
     var ts = TASK_ST[t.status] || [t.status, ''];

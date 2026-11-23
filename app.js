@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.18.0 · 2.18.0 ระบบแบบสอบถามกลาง (เมนูแบบสอบถาม · ป้ายรอตอบ) · 2.17.0 หน้าโหลดตอนเข้าทุกระบบเป็นเส้นชีพจรแบบ Gateway (ยกเว้น NCD) · 2.16.0 ระบบส่งต่อหน้าตาตาม UI kit · 2.15.0 LTC หน้าตาตาม UI kit · 2.14.0 หน้าประวัติการใช้งานแบบ Gateway เดิม เฉพาะ superadmin · 2.13.1 ฟอร์มผู้ใช้มีระบบกลาง (เลือกรายคน/อัตโนมัติ) · 2.13.0 เวชระเบียนกลางเป็นตัวจริงที่ระบบใหม่ (แจ้งในหน้าเวชระเบียนกลาง · เวลาบันทึก) · 2.12.2 ข้อความเมื่อ Supabase ตัดคำสั่งเพราะทรัพยากรไม่พอ (546) · 2.12.1 ARV: admin ลบ/กู้คืนทะเบียนผู้ป่วย · 2.12.0 ระบบติดตามการรักษาและรับยา ARV (สร้างใหม่) + หน้า LINE ARV · 2.11.0 ระบบ IC Watch + หน้าเชื่อม LINE IC + ปุ่มเปิดเคสจาก LINE (?open=ic&case=…) · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
-var PHC37_APP_VERSION = '2.18.0';
+/* PHC37 PWA — app.js (PHC37-PWA-2.19.0 · 2.19.0 งานจากระบบ (แบบสอบถาม / เบิก–จ่ายวัสดุ) ในกล่องงานของฉัน + กระดิ่ง · 2.18.1 เมนู ระบบแบบสอบถามกลาง ในหน้าสิทธิ์และเมนู · 2.18.0 ระบบแบบสอบถามกลาง (เมนูแบบสอบถาม · ป้ายรอตอบ) · 2.17.0 หน้าโหลดตอนเข้าทุกระบบเป็นเส้นชีพจรแบบ Gateway (ยกเว้น NCD) · 2.16.0 ระบบส่งต่อหน้าตาตาม UI kit · 2.15.0 LTC หน้าตาตาม UI kit · 2.14.0 หน้าประวัติการใช้งานแบบ Gateway เดิม เฉพาะ superadmin · 2.13.1 ฟอร์มผู้ใช้มีระบบกลาง (เลือกรายคน/อัตโนมัติ) · 2.13.0 เวชระเบียนกลางเป็นตัวจริงที่ระบบใหม่ (แจ้งในหน้าเวชระเบียนกลาง · เวลาบันทึก) · 2.12.2 ข้อความเมื่อ Supabase ตัดคำสั่งเพราะทรัพยากรไม่พอ (546) · 2.12.1 ARV: admin ลบ/กู้คืนทะเบียนผู้ป่วย · 2.12.0 ระบบติดตามการรักษาและรับยา ARV (สร้างใหม่) + หน้า LINE ARV · 2.11.0 ระบบ IC Watch + หน้าเชื่อม LINE IC + ปุ่มเปิดเคสจาก LINE (?open=ic&case=…) · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
+var PHC37_APP_VERSION = '2.19.0';
 (function () {
   'use strict';
 
@@ -657,6 +657,9 @@ var PHC37_APP_VERSION = '2.18.0';
   function isPersonnelMenu(m) { return String(m.key || '').toLowerCase() === 'personnel_master'; }
   /** ระบบเบิก–จ่ายวัสดุ — เปิดหน้าเดิมในแอป (2.1.0) */
   function isMaterialMenu(m) { return String(m.key || '').toLowerCase() === 'material_requisition'; }
+  /** ระบบแบบสอบถามกลาง (2.18.1 · เมนู survey_center) — เปิด svy.html ในแอป */
+  function isSurveyMenu(m) { return String(m.key || '').toLowerCase() === 'survey_center' || String(m.url || '').trim().toLowerCase() === '#survey'; }
+  function surveyMenu() { var a = allMenus().filter(isSurveyMenu); return a[0] || null; }
   function isItAssetMenu(m) { return String(m.key || '').toLowerCase() === 'it_asset_repair'; }
   function isCnrMenu(m) { return String(m.key || '').toLowerCase() === 'community_ncd_risk'; }
   function isOssMenu(m) { return String(m.key || '').toLowerCase() === 'oss_evaluation'; }
@@ -825,6 +828,10 @@ var PHC37_APP_VERSION = '2.18.0';
       el = makeTile(iconOf(m, '🖥️'), m.name, groupNote(m), '', function () {
         if (window.PHC37ItAsset) window.PHC37ItAsset.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
       });
+    } else if (isSurveyMenu(m)) {
+      el = makeTile(iconOf(m, '📝'), m.name, groupNote(m), '', function () {
+        if (window.PHC37Survey) window.PHC37Survey.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
+      });
     } else if (isPersonnelMenu(m)) {
       el = makeTile(iconOf(m, '👥'), m.name, groupNote(m), '', function () {
         if (window.PHC37Personnel) window.PHC37Personnel.open(m); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
@@ -891,6 +898,7 @@ var PHC37_APP_VERSION = '2.18.0';
   function renderNav() {
     var u = (state.profile && state.profile.user) || {};
     $('nav-patients').hidden = !hasPatientMenu();
+    $('nav-svy').hidden = !(surveyMenu() || u.role === 'superadmin');   // ปิดใช้งานเมนู survey_center = ซ่อน (superadmin เห็นเสมอ)
     $('nav-admin').hidden = !canManage();
     $('nav-perm').hidden = u.role !== 'superadmin';
     $('nav-logs').hidden = u.role !== 'superadmin';
@@ -901,7 +909,7 @@ var PHC37_APP_VERSION = '2.18.0';
     var box = $('gw7-apps'); box.textContent = '';
     var menus = allMenus(), n = 0;
     menus.forEach(function (m) {
-      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isPersonnelMenu(m) && !isMaterialMenu(m) && !isItAssetMenu(m) && !isCnrMenu(m) && !isLtcMenu(m) && !isOssMenu(m) && !isCdcMenu(m) && !isLvsMenu(m) && !isEldMenu(m) && !isRefMenu(m) && !isImcMenu(m) && !isAdpMenu(m) && !isScrMenu(m) && !isNcdMenu(m) && !isWbcMenu(m) && !isIcMenu(m) && !isArvMenu(m))) return;
+      if (isGroupMenu(m, menus) || isPatientMenu(m) || isLogsMenu(m) || (!isRealUrl(m.url) && !isSurveyMenu(m) && !isPersonnelMenu(m) && !isMaterialMenu(m) && !isItAssetMenu(m) && !isCnrMenu(m) && !isLtcMenu(m) && !isOssMenu(m) && !isCdcMenu(m) && !isLvsMenu(m) && !isEldMenu(m) && !isRefMenu(m) && !isImcMenu(m) && !isAdpMenu(m) && !isScrMenu(m) && !isNcdMenu(m) && !isWbcMenu(m) && !isIcMenu(m) && !isArvMenu(m))) return;
       var b = document.createElement('button'); b.type = 'button'; b.className = 'gw7-app';
       var ic = document.createElement('span'); ic.className = 'gw7-app-ic'; ic.textContent = iconOf(m, '📌'); ic.setAttribute('aria-hidden', 'true');
       var t = document.createElement('span'); t.className = 'gw7-nav-text'; t.textContent = m.name;
@@ -921,7 +929,11 @@ var PHC37_APP_VERSION = '2.18.0';
     if (key === 'home') { window.PHC37.goHome(); return; }
     if (key === 'tasks' || key === 'assign') { if (window.PHC37Tasks) window.PHC37Tasks.open(key === 'assign' ? 'assigned' : 'todo', key === 'assign'); return; }
     if (key === 'patients') { if (window.PHC37Patients) window.PHC37Patients.open(); return; }
-    if (key === 'survey') { if (window.PHC37Survey) window.PHC37Survey.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err'); return; }
+    if (key === 'survey') {
+      var sm = surveyMenu(), su = (state.profile && state.profile.user) || {};
+      if (sm && sm.maintenance && su.role !== 'superadmin') { toast('"' + sm.name + '" ปิดปรับปรุงชั่วคราว'); return; }
+      if (window.PHC37Survey) window.PHC37Survey.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err'); return;
+    }
     if (window.PHC37Admin) window.PHC37Admin.open(key); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
   }
   Array.prototype.forEach.call(document.querySelectorAll('#gw7-side .gw7-nav[data-go]'), function (b) {
@@ -1181,6 +1193,7 @@ var PHC37_APP_VERSION = '2.18.0';
     },
     cacheGet: cacheGet, cacheSet: cacheSet, swr: swr,
     fmtTime: fmtTime, dateGet: dateGet, dateSet: dateSet, initDatePickers: initDatePickers,
+    surveyOn: function () { var u = (state.profile && state.profile.user) || {}; var sm = surveyMenu(); return u.role === 'superadmin' || !!(sm && !sm.maintenance); },
     groupLabel: function (g) { return GROUP_LABEL[g] || g; },
     roleLabel: function (r) { return ROLE_LABEL[r] || r; }
   };
