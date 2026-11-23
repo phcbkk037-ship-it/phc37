@@ -1,5 +1,5 @@
-/* PHC37 PWA — app.js (PHC37-PWA-2.17.0 · 2.17.0 หน้าโหลดตอนเข้าทุกระบบเป็นเส้นชีพจรแบบ Gateway (ยกเว้น NCD) · 2.16.0 ระบบส่งต่อหน้าตาตาม UI kit · 2.15.0 LTC หน้าตาตาม UI kit · 2.14.0 หน้าประวัติการใช้งานแบบ Gateway เดิม เฉพาะ superadmin · 2.13.1 ฟอร์มผู้ใช้มีระบบกลาง (เลือกรายคน/อัตโนมัติ) · 2.13.0 เวชระเบียนกลางเป็นตัวจริงที่ระบบใหม่ (แจ้งในหน้าเวชระเบียนกลาง · เวลาบันทึก) · 2.12.2 ข้อความเมื่อ Supabase ตัดคำสั่งเพราะทรัพยากรไม่พอ (546) · 2.12.1 ARV: admin ลบ/กู้คืนทะเบียนผู้ป่วย · 2.12.0 ระบบติดตามการรักษาและรับยา ARV (สร้างใหม่) + หน้า LINE ARV · 2.11.0 ระบบ IC Watch + หน้าเชื่อม LINE IC + ปุ่มเปิดเคสจาก LINE (?open=ic&case=…) · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
-var PHC37_APP_VERSION = '2.17.0';
+/* PHC37 PWA — app.js (PHC37-PWA-2.18.0 · 2.18.0 ระบบแบบสอบถามกลาง (เมนูแบบสอบถาม · ป้ายรอตอบ) · 2.17.0 หน้าโหลดตอนเข้าทุกระบบเป็นเส้นชีพจรแบบ Gateway (ยกเว้น NCD) · 2.16.0 ระบบส่งต่อหน้าตาตาม UI kit · 2.15.0 LTC หน้าตาตาม UI kit · 2.14.0 หน้าประวัติการใช้งานแบบ Gateway เดิม เฉพาะ superadmin · 2.13.1 ฟอร์มผู้ใช้มีระบบกลาง (เลือกรายคน/อัตโนมัติ) · 2.13.0 เวชระเบียนกลางเป็นตัวจริงที่ระบบใหม่ (แจ้งในหน้าเวชระเบียนกลาง · เวลาบันทึก) · 2.12.2 ข้อความเมื่อ Supabase ตัดคำสั่งเพราะทรัพยากรไม่พอ (546) · 2.12.1 ARV: admin ลบ/กู้คืนทะเบียนผู้ป่วย · 2.12.0 ระบบติดตามการรักษาและรับยา ARV (สร้างใหม่) + หน้า LINE ARV · 2.11.0 ระบบ IC Watch + หน้าเชื่อม LINE IC + ปุ่มเปิดเคสจาก LINE (?open=ic&case=…) · 2.10.0 เข้าครั้งแรกด้วยรหัสเดิมของ Gateway เดิม + ยืนยันอีเมล · 2.9.1 หน้าเชื่อม LINE คลินิกเด็กดี: เชื่อมแล้วไม่ต้องกรอกซ้ำ + แสดงนัด · 2.9.0 คลินิกสุขภาพเด็กดี (WBC) + หน้าเชื่อม LINE ในแอป · 2.8.0 ระบบ NCD ในแอป · 2.7.0 ระบบส่งต่อกลาง + IMC + ผ้าอ้อมผู้ใหญ่ + แบบบันทึกผู้ใช้บริการสังคมฯ ในแอป · 2.6.0 ระบบสำรวจลูกน้ำยุงลาย + ระบบบันทึกข้อมูลผู้สูงอายุในแอป · 2.5.0 ระบบประเมินสุขภาพ อสส. + ระบบควบคุมโรคติดต่อในแอป · 2.4.0 ระบบดูแลและติดตามผู้มีภาวะพึ่งพิง (LTC) ในแอป · 2.3.0 ระบบคัดกรองและติดตามกลุ่มเสี่ยงโรคเรื้อรังในชุมชนในแอป · 2.2.0 ทะเบียนครุภัณฑ์คอมพิวเตอร์และแจ้งซ่อมในแอป · 2.0.0 ทะเบียนบุคลากรกลางในแอป · 2.1.0 ระบบเบิก–จ่ายวัสดุในแอป · 2.1.1 หน้าเว็บลูกซ่อนเมนู Gateway) */
+var PHC37_APP_VERSION = '2.18.0';
 (function () {
   'use strict';
 
@@ -159,11 +159,11 @@ var PHC37_APP_VERSION = '2.17.0';
   }
 
   // ---------- UI helpers ----------
-  var CHILD_VIEWS = ['view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-arv'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
-  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-arv'];
+  var CHILD_VIEWS = ['view-svy', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-arv'];   // หน้าเว็บลูก: ไม่แสดงเมนู Gateway
+  var IN_APP = ['view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-svy', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-arv'];
   function show(view) {
     bootHide();
-    ['view-login', 'view-setpw', 'view-legacy', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-arv', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
+    ['view-login', 'view-setpw', 'view-legacy', 'view-home', 'view-admin', 'view-tasks', 'view-patients', 'view-svy', 'view-personnel', 'view-material', 'view-itasset', 'view-cnr', 'view-ltc', 'view-oss', 'view-cdc', 'view-lvs', 'view-eld', 'view-ref', 'view-imc', 'view-adp', 'view-scr', 'view-ncd', 'view-wbc', 'view-ic', 'view-arv', 'view-register', 'view-forgot'].forEach(function (v) { $(v).hidden = v !== view; });
     var inApp = IN_APP.indexOf(view) >= 0;
     $('shell').hidden = !inApp; $('app').hidden = inApp;
     // เว็บลูกมีเมนูของตัวเอง + ปุ่มกลับเมนูหลัก → ซ่อนเมนู Gateway (ผู้ใช้กำหนด 18 พ.ย.)
@@ -601,6 +601,7 @@ var PHC37_APP_VERSION = '2.17.0';
     renderNav();
     show('view-home');
     if (window.PHC37Tasks) window.PHC37Tasks.refresh(true);
+    if (window.PHC37Survey) window.PHC37Survey.refresh(true);
     if (u.needsEmail) askEmail();
     else setTimeout(openPending, 0);
   }
@@ -920,6 +921,7 @@ var PHC37_APP_VERSION = '2.17.0';
     if (key === 'home') { window.PHC37.goHome(); return; }
     if (key === 'tasks' || key === 'assign') { if (window.PHC37Tasks) window.PHC37Tasks.open(key === 'assign' ? 'assigned' : 'todo', key === 'assign'); return; }
     if (key === 'patients') { if (window.PHC37Patients) window.PHC37Patients.open(); return; }
+    if (key === 'survey') { if (window.PHC37Survey) window.PHC37Survey.open(); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err'); return; }
     if (window.PHC37Admin) window.PHC37Admin.open(key); else toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err');
   }
   Array.prototype.forEach.call(document.querySelectorAll('#gw7-side .gw7-nav[data-go]'), function (b) {
@@ -1166,6 +1168,7 @@ var PHC37_APP_VERSION = '2.17.0';
     goHome: function () {
       state.groupKey = null; renderMenus(); show('view-home'); window.scrollTo(0, 0);
       if (window.PHC37Tasks) window.PHC37Tasks.refresh(false);
+      if (window.PHC37Survey) window.PHC37Survey.refresh(false);
     },
     refreshProfile: function () {
       return api('auth.me', { token: sget(KEY_TOKEN) }).then(function (res) {

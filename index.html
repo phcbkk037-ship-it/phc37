@@ -51,6 +51,7 @@
       <div class="gw7-sec">ทั่วไป</div>
       <button type="button" class="gw7-nav" data-go="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg><span class="gw7-nav-text">หน้าหลัก</span></button>
       <button type="button" class="gw7-nav" data-go="tasks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v3H9zM6 6h12v15H6z"></path><path d="M9 12l2 2 4-4"></path></svg><span class="gw7-nav-text">งานของฉัน</span><span id="nav-task-badge" class="gw7-badge" hidden></span></button>
+      <button type="button" id="nav-svy" class="gw7-nav" data-go="survey"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v3H9zM6 6h12v15H6z"></path><path d="M9 12l2 2 4-4M9 17h6"></path></svg><span class="gw7-nav-text">แบบสอบถาม</span><span id="nav-svy-badge" class="gw7-badge" style="margin-left:auto" hidden></span></button>
       <button type="button" id="gw7-apps-toggle" class="gw7-nav" aria-expanded="false" aria-controls="gw7-apps"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg><span class="gw7-nav-text">ระบบงานของฉัน</span><span id="gw7-apps-chev" class="gw7-chev" aria-hidden="true">+</span></button>
       <div id="gw7-apps" class="gw7-apps" hidden></div>
       <button type="button" id="nav-patients" class="gw7-nav" data-go="patients" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span class="gw7-nav-text">เวชระเบียนกลาง</span></button>
@@ -95,6 +96,7 @@
         <!-- หน้าหลัก -->
         <section id="view-home" class="view" hidden>
           <div id="home-maint" class="alert warn" role="status" hidden></div>
+          <div id="home-svy" class="svy-home" role="status" hidden><span class="svy-home-ic" aria-hidden="true">📝</span><span id="home-svy-text" class="svy-home-text"></span><button type="button" id="home-svy-go" class="svy-home-go">ตอบเลย</button></div>
           <div id="home-tasks" class="gw-inbox" hidden>
             <div class="gw-inbox-head">
               <div id="home-tasks-ic" class="gw-inbox-ic" aria-hidden="true">✅</div>
@@ -166,6 +168,10 @@
         <section id="view-ncd" class="view mr-view" hidden>
           <div id="ncd-note" class="mr-note" role="status" hidden></div>
           <iframe id="ncd-frame" class="mr-frame" title="ระบบบริหารการดูแลผู้ป่วย NCD"></iframe>
+        </section>
+        <!-- 2.18.0 ระบบแบบสอบถามกลาง (svy.html · svy.js) -->
+        <section id="view-svy" class="view mr-view" hidden>
+          <iframe id="svy-frame" class="mr-frame" title="ระบบแบบสอบถามกลาง"></iframe>
         </section>
         <!-- 2.12.0 ระบบติดตามการรักษาและรับยา ARV (ARV2 สร้างใหม่ · arv.html · arv.js) -->
         <section id="view-arv" class="view mr-view" hidden>
@@ -890,6 +896,7 @@
   <script src="patient-form.js"></script>
   <script src="patients.js"></script>
   <script src="personnel.js"></script>
+  <script src="svy.js"></script>
   <script src="material.js"></script>
   <script src="itasset.js"></script>
   <script src="cnr.js"></script>

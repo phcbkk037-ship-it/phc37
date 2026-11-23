@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ระบบแบบสอบถามกลาง · PHC37</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="svy-run.css">
+<!-- PHC37 PWA 2.18.0 — svy.html (PHC37-SVY-APP-1.0.0 · 23 พ.ย. 2569) : ระบบแบบสอบถามกลาง (หน้าเจ้าหน้าที่ · เปิดในแอปผ่าน svy.js)
+     เมนู: รอฉันตอบ · แบบสอบถามของกลุ่มงาน · สร้าง · ผลที่แชร์ถึงฉัน · ภาพรวมทั้งหมด (superadmin) · กลับหน้าหลัก
+     ข้อตกลงผู้ใช้ 22–23 พ.ย. 2569 อยู่ในเอกสาร claude/PHC37_SurveyCenter.md -->
+<style>
+:root{--g:#15703A;--g2:#3DA852;--gl:#EAF6EC;--bg:#F4F6F4;--line:#DCE7DF;--ink:#1F3326;--mute:#5B6B60;--warn:#B45309;--warnbg:#FFF4E0;--red:#B42318;--redbg:#FDECEA;--blue:#1D4F91;--bluebg:#E8F1FB}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Sarabun','Noto Sans Thai',system-ui,sans-serif;font-size:15px}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+.app{display:flex;min-height:100%}
+.side{width:236px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 10px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px}
+.brand .lg{width:38px;height:38px;border-radius:11px;background:var(--g);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
+.brand b{display:block;font-size:15px}.brand span{font-size:12px;color:var(--mute)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:10px 12px;border-radius:10px;color:var(--ink);cursor:pointer;min-height:42px}
+.nav button:hover{background:#F1F6F2}
+.nav button.on{background:var(--gl);color:var(--g);font-weight:600}
+.nav .bd{margin-left:auto;background:#E5484D;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:0 7px;line-height:20px}
+.side-foot{margin-top:auto;padding:8px 4px 0}
+.who{font-size:12px;color:var(--mute);padding:0 8px 8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:#B9CDBF}
+.btn.pri{background:var(--g);border-color:var(--g);color:#fff}
+.btn.edit{background:#FFF1E2;border-color:#F8D7B0;color:#9A4A00}
+.btn.view{background:var(--gl);border-color:#CDEBD3;color:var(--g)}
+.btn.dan{background:#fff;border-color:#F4C7C3;color:var(--red)}
+.btn.sm{min-height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.block{width:100%}
+main{flex:1;min-width:0;padding:20px 22px 60px}
+.head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.head h1{font-size:22px;margin:0;line-height:1.35}
+.head p{margin:2px 0 0;color:var(--mute);font-size:14px}
+.head .sp{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:default}
+.kpi.click{cursor:pointer}.kpi.click:hover{border-color:#B9CDBF}
+.kpi span{display:block;font-size:13px;color:var(--mute)}
+.kpi b{display:block;font-size:26px;line-height:1.25;margin-top:2px}
+.kpi small{display:block;font-size:12px;color:var(--mute)}
+.bar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;min-height:34px;padding:0 14px;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.search{margin-left:auto;min-width:220px;min-height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px}
+table.tb{width:100%;border-collapse:collapse}
+.tb th{font-size:13px;color:var(--mute);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:#FAFCFA}
+.tb td{padding:12px;border-bottom:1px solid #EEF3EF;vertical-align:middle;font-size:14px}
+.tb tr:last-child td{border-bottom:0}
+.tb .t b{display:block;font-size:15px}.tb .t small{color:var(--mute)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.st{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.st.open{background:#DCFCE7;color:#166534}.st.draft{background:#EEF1EF;color:#475569}.st.closed{background:#E5E7EB;color:#374151}.st.wait{background:var(--warnbg);color:var(--warn)}
+.empty{padding:36px 16px;text-align:center;color:var(--mute)}
+.empty .big{font-size:40px}
+.inbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.ib{padding:16px;display:flex;flex-direction:column;gap:6px}
+.ib h3{margin:0;font-size:17px;line-height:1.4}
+.ib p{margin:0;color:var(--mute);font-size:14px;white-space:pre-line}
+.ib .meta{font-size:13px;color:var(--mute)}
+.ib .btn{margin-top:8px}
+/* ฟอร์มสร้าง */
+.form{display:grid;gap:14px;max-width:880px}
+.sec{padding:16px}
+.sec h2{font-size:17px;margin:0 0 10px}
+.sec .sub{font-size:13px;color:var(--mute);margin:-6px 0 10px}
+.f{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.f label{font-size:13px;font-weight:600;color:var(--mute)}
+.in,.ta,.sel{border:1px solid var(--line);border-radius:10px;min-height:40px;padding:6px 10px;background:#fff;color:var(--ink);width:100%}
+.ta{min-height:70px;resize:vertical}
+.in:focus,.ta:focus,.sel:focus{outline:3px solid #CFEAD5;border-color:var(--g2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{border:0;background:none;min-height:38px;padding:0 14px;cursor:pointer;color:var(--ink);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--g);color:#fff}
+.seg button:disabled{cursor:default;opacity:.6}
+.hint{font-size:13px;color:var(--mute);line-height:1.5;margin:8px 0 0}
+.note{font-size:13px;border-radius:10px;padding:8px 12px;line-height:1.5;margin:8px 0 0}
+.note.info{background:var(--bluebg);color:var(--blue)}.note.warn{background:var(--warnbg);color:var(--warn)}.note.lock{background:#F1F5F9;color:#334155}
+.sw{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:36px}
+.sw input{width:20px;height:20px;accent-color:var(--g)}
+.masc{display:flex;gap:10px;flex-wrap:wrap}
+.masc button{border:2px solid var(--line);background:#F3FBEF;border-radius:14px;padding:6px 8px 4px;cursor:pointer;width:104px;text-align:center}
+.masc button.on{border-color:var(--g2);background:var(--gl)}
+.masc svg{width:74px;height:80px}
+.masc span{display:block;font-size:12px;color:var(--mute)}
+.pick{border:1px dashed #C9D9CE;border-radius:12px;padding:10px;margin-top:8px;background:#FCFEFC}
+.pick .gl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;background:#fff;min-height:32px;padding:0 10px;cursor:pointer;font-size:13px}
+.tag.on{background:var(--gl);border-color:#9FD3AB;color:var(--g);font-weight:600}
+.tag .x{font-weight:700;color:var(--mute)}
+.pres{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:6px;background:#fff}
+.pres div{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;font-size:14px;border-bottom:1px solid #F0F4F1}
+.pres div:hover{background:#F6FAF7}
+.pres small{color:var(--mute);margin-left:auto}
+/* คำถาม */
+.qadd{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.qi{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:#fff}
+.qi.secq{background:#F6FAF7}
+.qi-h{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.qi-h b{font-size:13px;color:var(--g)}
+.qi-h .sp{flex:1}
+.ib2{border:1px solid var(--line);background:#fff;border-radius:8px;min-width:32px;min-height:32px;cursor:pointer}
+.ib2:disabled{opacity:.4;cursor:default}
+.opt{display:flex;gap:6px;align-items:center;margin-top:6px}
+.opt .sel{width:64px;flex:none;padding:4px}
+.styles{display:flex;gap:6px;flex-wrap:wrap}
+.styles button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:40px}
+.styles button.on{border-color:var(--g2);background:var(--gl);font-weight:600}
+.styles svg{width:22px;height:22px}
+.save-bar{position:sticky;bottom:0;background:rgba(244,246,244,.96);border-top:1px solid var(--line);padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-width:880px;z-index:4}
+.save-bar .sp{flex:1}
+.dirty{font-size:13px;color:var(--warn)}
+/* สรุป */
+.qs{padding:16px;margin-bottom:12px}
+.qs h3{margin:0 0 4px;font-size:16px}
+.qs .meta{font-size:13px;color:var(--mute);margin-bottom:10px}
+.hb{display:grid;grid-template-columns:120px 1fr 92px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.hb .tr{height:14px;background:#EEF3EF;border-radius:7px;overflow:hidden}
+.hb .tr i{display:block;height:100%;border-radius:7px}
+.hb .n{text-align:right;color:var(--mute);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tx{border-top:1px solid #EEF3EF;padding:10px 0}
+.tx p{margin:0 0 4px;white-space:pre-line}
+.tx small{color:var(--mute)}
+.mini th,.mini td{padding:8px 10px}
+/* modal / toast */
+.modal{position:fixed;inset:0;background:rgba(15,30,20,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal[hidden]{display:none}
+.mc{background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:92vh;overflow:auto;position:relative}
+.mc.wide{max-width:440px;background:transparent}
+.mc .x{position:absolute;right:10px;top:10px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);cursor:pointer;font-size:18px}
+.mb{padding:20px}
+.qrbox{display:flex;justify-content:center;margin:10px 0}
+.qrbox svg{width:240px;height:240px}
+.link{display:flex;gap:6px}
+.link input{flex:1}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1F3326;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}#toast.err{background:var(--red)}
+.runwrap{max-width:560px;margin:0 auto;border-radius:22px;overflow:hidden;border:1px solid var(--line);min-height:70vh;display:flex}
+.runwrap>.sr{flex:1}
+/* หน้าเปิดระบบ (เส้นชีพจร) */
+.p37b{position:fixed;inset:0;z-index:70;background:#F4F6F4;display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .25s ease}
+.p37b.out{opacity:0;pointer-events:none}
+.p37b-card{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:320px}
+.p37b-logo{display:block;width:84px;height:84px;border-radius:20px;border:1px solid #D8DED9;background:#fff url(icons/icon-192.png) center/88% no-repeat;animation:p37bBeat 1.6s ease-in-out infinite}
+.p37b-ecg{width:200px;height:44px;overflow:visible}
+.p37b-ecg path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p37b-ecg-base{stroke:#D3E9D6;stroke-width:2.5}
+.p37b-ecg-run{stroke:#3DA852;stroke-width:3;stroke-dasharray:90 310;stroke-dashoffset:400;animation:p37bRun 1.6s linear infinite}
+.p37b-text{font-size:16px;font-weight:600;color:#15703A;min-height:24px;line-height:1.5}
+.p37b-brand{font-size:13px;color:#4A5550;margin-top:6px}
+@keyframes p37bRun{to{stroke-dashoffset:0}}
+@keyframes p37bBeat{0%,100%{transform:scale(1)}52%{transform:scale(1)}58%{transform:scale(1.06)}66%{transform:scale(.99)}72%{transform:scale(1.03)}}
+@media (max-width:860px){
+  .app{flex-direction:column}
+  .side{width:auto;height:auto;position:sticky;top:0;z-index:5;flex-direction:row;align-items:center;padding:6px 8px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto;gap:4px}
+  .brand,.who{display:none}
+  .nav{flex-direction:row;gap:4px}
+  .nav button{white-space:nowrap;padding:8px 10px;min-height:38px}
+  .side-foot{margin:0 0 0 4px;padding:0}
+  .side-foot .btn{white-space:nowrap}
+  main{padding:14px 12px 60px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row2,.grid2{grid-template-columns:1fr}
+  .search{margin-left:0;min-width:0;width:100%}
+  table.tb thead{display:none}
+  table.tb,.tb tbody,.tb tr,.tb td{display:block;width:100%}
+  .tb tr{border-bottom:1px solid var(--line);padding:8px 0}
+  .tb td{border:0;padding:4px 12px}
+  .tb td[data-l]:before{content:attr(data-l) ' · ';color:var(--mute);font-size:12px}
+  .hb{grid-template-columns:90px 1fr 76px}
+}
+@media print{
+  .side,.save-bar,.bar-row,.no-print,#toast{display:none!important}
+  main{padding:0}
+  .card,.kpi{break-inside:avoid}
+  body{background:#fff}
+}
+@media (prefers-reduced-motion:reduce){.p37b-logo,.p37b-ecg-run{animation:none}}
+</style>
+</head>
+<body>
+<div id="p37b" class="p37b" role="status" aria-live="polite"><div class="p37b-card"><span class="p37b-logo" role="img" aria-label="ตรา ศบส.37"></span>
+<svg class="p37b-ecg" viewBox="0 0 180 40" aria-hidden="true"><path class="p37b-ecg-base" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180"/><path class="p37b-ecg-run" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180" pathLength="400"/></svg>
+<div class="p37b-text" id="p37bText">กำลังเปิดระบบแบบสอบถาม</div><div class="p37b-brand">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div></div></div>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="lg">37</div><div><b>แบบสอบถามกลาง</b><span>PHC37</span></div></div>
+    <nav class="nav" id="nav">
+      <button type="button" data-v="inbox">📝 รอฉันตอบ <span class="bd" id="bd" hidden></span></button>
+      <button type="button" data-v="mine">📋 ของกลุ่มงาน</button>
+      <button type="button" data-v="create">➕ สร้างแบบสอบถาม</button>
+      <button type="button" data-v="shared">🤝 ผลที่แชร์ถึงฉัน</button>
+      <button type="button" data-v="all" id="nav-all" hidden>🌐 ภาพรวมทั้งหมด</button>
+    </nav>
+    <div class="side-foot">
+      <div class="who" id="who"></div>
+      <button type="button" class="btn block" id="home">← กลับหน้าหลัก</button>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="modal" class="modal" hidden><div class="mc" id="mc"><button type="button" class="x" id="mx" aria-label="ปิด">✕</button><div id="mbody"></div></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="svy-run.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = null; try { P = window.parent && window.parent.PHC37 ? window.parent.PHC37 : null; } catch (e) { P = null; }
+  var $ = function (id) { return document.getElementById(id); };
+  var main = $('main');
+  var ST = { me: null, view: '', dirty: false, people: null, list: {}, filter: 'all', q: '' };
+  var TH_M = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  var ICONS = ['', '🩺', '💉', '👶', '🤰', '🦷', '💊', '🏥', '🏠', '📋', '🧪', '👴', '🚶', '⏱️', '📞', '💬', '✨', '😊', '⚡', '👍', '❤️', '❓'];
+  var KIND_L = { rating: 'คะแนน', single: 'เลือกข้อเดียว', multi: 'เลือกหลายข้อ', text: 'ข้อความ', yesno: 'ใช่ / ไม่ใช่', section: 'หัวข้อส่วน' };
+  var STYLE_L = { face5: 'หน้าอารมณ์ 5 หน้า', face3: 'หน้าอารมณ์ 3 หน้า', star: 'ดาว 1–5', words: 'ระดับคำ' };
+  var MASC_L = { A: 'หมอน้อยคลาสสิก', B: 'หมอน้อยผู้หญิง', D: 'หมอหัวใจ' };
+  var REACT_D = { hi: 'เย้! ขอบคุณมากนะคะ', mid: 'ขอบคุณที่แสดงความคิดเห็นค่ะ', lo: 'ขอบคุณที่แสดงความคิดเห็นค่ะ เราจะนำไปปรับปรุง' };
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined && text !== null) e.textContent = text; return e; }
+  function btn(text, cls, fn) { var b = el('button', 'btn' + (cls ? ' ' + cls : ''), text); b.type = 'button'; if (fn) b.addEventListener('click', fn); return b; }
+  function toast(t, err) { var x = $('toast'); x.textContent = t; x.className = 'show' + (err ? ' err' : ''); clearTimeout(toast.t); toast.t = setTimeout(function () { x.className = ''; }, 3200); }
+  function thDate(s) { if (!s) return ''; var p = String(s).slice(0, 10).split('-'); if (p.length < 3) return s; return (+p[2]) + ' ' + TH_M[+p[1] - 1] + ' ' + (+p[0] + 543); }
+  function range(a, b) { if (!a && !b) return 'ไม่กำหนด'; if (a && b) return thDate(a) + ' – ' + thDate(b); return a ? 'ตั้งแต่ ' + thDate(a) : 'ถึง ' + thDate(b); }
+  function gLabel(k) { var w = (ST.me && ST.me.workgroups) || []; for (var i = 0; i < w.length; i++) if (w[i].group_key === k) return w[i].label; return k || ''; }
+  function api(action, data) {
+    if (!P) return Promise.resolve({ ok: false, message: 'กรุณาเปิดผ่านแอป PHC37' });
+    data = data || {}; data.token = P.token();
+    return P.api(action, data).then(function (r) {
+      if (r && !r.ok && r.code === 'unauthorized') { try { P.showLogin(r.message); } catch (e) {} }
+      return r || { ok: false, message: 'ไม่มีการตอบกลับ' };
+    }, function () { return { ok: false, message: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่' }; });
+  }
+  function loading(t) { main.textContent = ''; var d = el('div', 'empty'); d.appendChild(el('div', 'big', '⏳')); d.appendChild(el('div', null, t || 'กำลังโหลด…')); main.appendChild(d); }
+  function head(title, sub, right) {
+    var h = el('div', 'head'), t = el('div');
+    t.appendChild(el('h1', null, title)); if (sub) t.appendChild(el('p', null, sub));
+    h.appendChild(t); h.appendChild(el('div', 'sp'));
+    (right || []).forEach(function (b) { h.appendChild(b); });
+    main.appendChild(h); return h;
+  }
+  function badge(n) {
+    var b = $('bd'); b.textContent = String(n || 0); b.hidden = !n;
+    try { if (window.parent.PHC37Survey) window.parent.PHC37Survey.badge(n || 0); } catch (e) {}
+  }
+  function statusOf(x) {
+    if (x.status === 'draft') return ['draft', 'ร่าง'];
+    if (x.status === 'closed') return ['closed', 'ปิดแล้ว'];
+    if (x.openNow) return ['open', 'เปิดรับคำตอบ'];
+    var today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+    if (x.openOn && today < x.openOn) return ['wait', 'ยังไม่ถึงวันเปิด'];
+    return ['wait', 'เลยวันปิดรับ'];
+  }
+  function audL(a) { return a === 'staff' ? 'เจ้าหน้าที่' : (a === 'public' ? 'ประชาชน' : 'ทั้งสอง'); }
+  function sendL(x) { var s = x.audience === 'public' ? '' : (x.scope === 'custom' ? 'เจาะจง' : 'ทุกกลุ่มงาน'); if (x.audience !== 'staff') s = s ? s + ' + QR' : 'QR / ลิงก์'; return s; }
+  function confirmLeave() { return !ST.dirty || window.confirm('ยังไม่ได้บันทึกการแก้ไข ออกจากหน้านี้เลยไหม?'); }
+
+  // ---------- เส้นทาง ----------
+  function go(v) {
+    if (ST.view.indexOf('edit') === 0 || ST.view === 'create') { if (!confirmLeave()) return; }
+    ST.dirty = false;
+    v = v || 'mine';
+    if (location.hash.slice(1) !== v) { try { history.replaceState(null, '', '#' + v); } catch (e) {} }
+    ST.view = v;
+    var base = v.split('/')[0];
+    Array.prototype.forEach.call(document.querySelectorAll('#nav button'), function (b) { b.classList.toggle('on', b.dataset.v === base || (base === 'edit' && b.dataset.v === 'create' && !v.split('/')[1])); });
+    window.scrollTo(0, 0);
+    var id = v.split('/')[1];
+    if (base === 'inbox') return vInbox();
+    if (base === 'mine' || base === 'shared' || base === 'all') return vList(base);
+    if (base === 'create') return vEdit(null);
+    if (base === 'edit') return vEdit(id);
+    if (base === 'sum') return vSum(id, 'all');
+    if (base === 'answer') return vAnswer(id);
+    vList('mine');
+  }
+  window.SvyApp = { go: go };
+
+  // ---------- รอฉันตอบ ----------
+  function vInbox() {
+    loading();
+    api('svy.inbox', {}).then(function (r) {
+      main.textContent = '';
+      head('แบบสอบถามรอฉันตอบ', 'แบบสอบถามที่แจกถึงคุณและยังไม่ได้ตอบ');
+      if (!r.ok) { main.appendChild(el('div', 'empty', r.message)); return; }
+      badge(r.items.length);
+      if (!r.items.length) {
+        var e = el('div', 'card empty'); e.appendChild(el('div', 'big', '🎉')); e.appendChild(el('div', null, 'ไม่มีแบบสอบถามรอตอบ ขอบคุณที่ช่วยกันนะคะ')); main.appendChild(e); return;
+      }
+      var g = el('div', 'inbox');
+      r.items.forEach(function (x) {
+        var c = el('div', 'card ib');
+        c.appendChild(el('h3', null, x.title));
+        if (x.description) c.appendChild(el('p', null, x.description));
+        c.appendChild(el('div', 'meta', 'จาก ' + gLabel(x.owner) + (x.closeOn ? ' · ปิดรับ ' + thDate(x.closeOn) : '')));
+        c.appendChild(btn('ตอบเลย', 'pri', function () { go('answer/' + x.id); }));
+        g.appendChild(c);
+      });
+      main.appendChild(g);
+    });
+  }
+  function vAnswer(id) {
+    loading('กำลังเปิดแบบสอบถาม…');
+    api('svy.form', { id: id }).then(function (r) {
+      main.textContent = '';
+      if (!r.ok) { toast(r.message || 'เปิดไม่สำเร็จ', true); go('inbox'); return; }
+      var w = el('div', 'runwrap'); main.appendChild(w);
+      SvyRun.mount(w, r, {
+        submit: function (p) { return api('svy.submit', { id: id, answers: p.answers }); },
+        onDone: function () { go('inbox'); }, doneLabel: 'กลับไปหน้ารอตอบ'
+      });
+    });
+  }
+
+  // ---------- รายการ ----------
+  function vList(scope) {
+    loading();
+    api('svy.list', { scope: scope }).then(function (r) {
+      main.textContent = '';
+      var titles = { mine: 'แบบสอบถามของกลุ่มงาน', shared: 'ผลที่แชร์ถึงฉัน', all: 'ภาพรวมแบบสอบถามทั้งหมด' };
+      var subs = { mine: 'ทุกคนในกลุ่มงานสร้าง แจก และดูสรุปได้ · เห็นเฉพาะของกลุ่มงานตัวเอง (' + (ST.me.groups || []).map(gLabel).join(', ') + ')',
+        shared: 'แบบสอบถามของกลุ่มงานอื่นที่แชร์ผลสรุปให้คุณ', all: 'เฉพาะผู้ดูแลระบบสูงสุด' };
+      head(titles[scope], subs[scope], scope === 'shared' ? [] : [btn('+ สร้างแบบสอบถาม', 'pri', function () { go('create'); })]);
+      if (!r.ok) { main.appendChild(el('div', 'empty', r.message)); return; }
+      var items = r.items;
+      var cnt = { all: items.length, open: 0, draft: 0, closed: 0 };
+      items.forEach(function (x) { var s = statusOf(x)[0]; if (s === 'open') cnt.open++; else if (s === 'draft') cnt.draft++; else cnt.closed++; });
+      var k = el('div', 'kpis');
+      [['all', 'ทั้งหมด', cnt.all], ['open', 'เปิดรับคำตอบ', cnt.open], ['draft', 'ร่าง', cnt.draft], ['closed', 'ปิดแล้ว / หมดเวลา', cnt.closed]].forEach(function (a) {
+        var c = el('div', 'kpi click'); c.appendChild(el('span', null, a[1])); var b = el('b', null, String(a[2])); if (a[0] === 'open') b.style.color = 'var(--g)'; c.appendChild(b);
+        c.addEventListener('click', function () { ST.filter = a[0]; draw(); }); k.appendChild(c);
+      });
+      main.appendChild(k);
+      var bar = el('div', 'bar-row'), chips = [];
+      [['all', 'ทั้งหมด'], ['open', 'เปิดรับคำตอบ'], ['draft', 'ร่าง'], ['closed', 'ปิดแล้ว']].forEach(function (a) {
+        var c = el('button', 'chip', a[1]); c.type = 'button'; c.dataset.f = a[0]; c.addEventListener('click', function () { ST.filter = a[0]; draw(); }); chips.push(c); bar.appendChild(c);
+      });
+      var s = el('input', 'search'); s.type = 'search'; s.placeholder = 'ค้นหาชื่อแบบสอบถาม'; s.value = ST.q; s.setAttribute('aria-label', 'ค้นหา');
+      s.addEventListener('input', function () { ST.q = s.value; draw(); }); bar.appendChild(s);
+      main.appendChild(bar);
+      var box = el('div', 'card'); main.appendChild(box);
+      function draw() {
+        chips.forEach(function (c) { c.classList.toggle('on', c.dataset.f === ST.filter); });
+        var q = ST.q.trim().toLowerCase();
+        var list = items.filter(function (x) {
+          var s0 = statusOf(x)[0], f = ST.filter;
+          if (f === 'open' && s0 !== 'open') return false;
+          if (f === 'draft' && s0 !== 'draft') return false;
+          if (f === 'closed' && (s0 === 'open' || s0 === 'draft')) return false;
+          return !q || x.title.toLowerCase().indexOf(q) >= 0;
+        });
+        box.textContent = '';
+        if (!list.length) {
+          var e = el('div', 'empty'); e.appendChild(el('div', 'big', scope === 'shared' ? '🤝' : '📋'));
+          e.appendChild(el('div', null, items.length ? 'ไม่พบตามตัวกรอง' : (scope === 'shared' ? 'ยังไม่มีผลที่แชร์ถึงคุณ' : 'ยังไม่มีแบบสอบถาม เริ่มสร้างชุดแรกได้เลย')));
+          box.appendChild(e); return;
+        }
+        var t = el('table', 'tb'), th = el('thead'), tr = el('tr');
+        ['แบบสอบถาม', 'ผู้ตอบ', 'แจกถึง', 'ตัวตน', 'ช่วงเวลา', 'ตอบแล้ว', 'สถานะ', 'จัดการ'].forEach(function (h) { tr.appendChild(el('th', null, h)); });
+        th.appendChild(tr); t.appendChild(th);
+        var tb = el('tbody');
+        list.forEach(function (x) {
+          var r2 = el('tr'), st = statusOf(x);
+          var c1 = el('td', 't'); c1.appendChild(el('b', null, x.title)); c1.appendChild(el('small', null, gLabel(x.owner) + (x.createdBy ? ' · สร้างโดย ' + x.createdBy : ''))); r2.appendChild(c1);
+          var td = function (l, v) { var c = el('td', null, v); c.dataset.l = l; r2.appendChild(c); return c; };
+          td('ผู้ตอบ', audL(x.audience)); td('แจกถึง', sendL(x)); td('ตัวตน', x.audience === 'public' ? '—' : (x.identity === 'named' ? 'ระบุตัวตน' : 'ไม่ระบุตัวตน'));
+          td('ช่วงเวลา', range(x.openOn, x.closeOn));
+          td('ตอบแล้ว', x.status === 'draft' && !x.total ? '—' : String(x.total) + (x.staffN && x.publicN ? ' (จนท. ' + x.staffN + ' · ปชช. ' + x.publicN + ')' : ''));
+          var cs = el('td'); cs.dataset.l = 'สถานะ'; cs.appendChild(el('span', 'st ' + st[0], st[1])); r2.appendChild(cs);
+          var ca = el('td'), acts = el('div', 'acts'); ca.appendChild(acts);
+          if (x.status !== 'draft' || x.total) acts.appendChild(btn('ดูสรุป', 'view sm', function () { go('sum/' + x.id); }));
+          if (scope !== 'shared') {
+            if (!x.locked) acts.appendChild(btn('แก้ไข', 'edit sm', function () { go('edit/' + x.id); }));
+            else { acts.appendChild(btn('ตั้งค่า', 'sm', function () { go('edit/' + x.id); })); }
+          }
+          if (x.locked || scope === 'shared') acts.appendChild(btn('คัดลอกเป็นชุดใหม่', 'edit sm', function () { copy(x.id); }));
+          if (x.audience !== 'staff' && x.status !== 'draft') acts.appendChild(btn('QR', 'sm', function () { qr(x); }));
+          r2.appendChild(ca); tb.appendChild(r2);
+        });
+        t.appendChild(tb); box.appendChild(t);
+      }
+      draw();
+    });
+  }
+  function copy(id) {
+    api('svy.copy', { id: id }).then(function (r) {
+      if (!r.ok) return toast(r.message, true);
+      toast('คัดลอกเป็นชุดใหม่แล้ว (ร่าง) แก้ไขแล้วกดเปิดรับได้เลย'); go('edit/' + r.survey.id);
+    });
+  }
+
+  // ---------- QR ----------
+  function pubUrl(code) {
+    var base = (ST.me && ST.me.pwaUrl) || '';
+    if (!base) { try { base = new URL('./', window.parent.location.href).href; } catch (e) { base = new URL('./', location.href).href; } }
+    return base + 'survey.html?s=' + encodeURIComponent(code);
+  }
+  function loadQrLib() {
+    if (window.qrcode) return Promise.resolve(true);
+    return new Promise(function (res) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; s.onload = function () { res(!!window.qrcode); }; s.onerror = function () { res(false); }; document.head.appendChild(s); });
+  }
+  function qrSvg(url, cell) { return loadQrLib().then(function (ok) { if (!ok || !window.qrcode) return ''; var q = window.qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize: cell || 4, margin: 2, scalable: true }); }); }
+  function modal(node, wide) { var b = $('mbody'); b.textContent = ''; b.appendChild(node); $('mc').className = 'mc' + (wide ? ' wide' : ''); $('modal').hidden = false; }
+  function closeModal() { $('modal').hidden = true; $('mbody').textContent = ''; }
+  $('mx').addEventListener('click', closeModal);
+  $('modal').addEventListener('click', function (e) { if (e.target === $('modal')) closeModal(); });
+  function qr(x) {
+    var url = pubUrl(x.code), d = el('div', 'mb');
+    d.appendChild(el('h2', null, 'QR สำหรับประชาชน')); d.lastChild.style.margin = '0 0 4px';
+    d.appendChild(el('div', 'hint', x.title));
+    var q = el('div', 'qrbox', 'กำลังสร้าง QR…'); d.appendChild(q);
+    var row = el('div', 'link'), inp = el('input', 'in'); inp.value = url; inp.readOnly = true; row.appendChild(inp);
+    row.appendChild(btn('คัดลอก', 'sm', function () { inp.select(); try { navigator.clipboard.writeText(url).then(function () { toast('คัดลอกลิงก์แล้ว'); }, function () { document.execCommand('copy'); toast('คัดลอกลิงก์แล้ว'); }); } catch (e) { document.execCommand('copy'); toast('คัดลอกลิงก์แล้ว'); } }));
+    d.appendChild(row);
+    var acts = el('div', 'acts'); acts.style.marginTop = '12px';
+    acts.appendChild(btn('พิมพ์ QR ติดจุดบริการ', 'pri', function () { printQr(x, url); }));
+    acts.appendChild(btn('เปิดดูหน้าตอบ', '', function () { window.open(url, '_blank'); }));
+    d.appendChild(acts);
+    d.appendChild(el('div', 'hint', 'ประชาชนสแกนแล้วตอบได้ทันที ไม่ต้องเข้าสู่ระบบ · ใช้มือถือหรือแท็บเล็ตของเจ้าหน้าที่ยื่นให้ตอบต่อกันได้'));
+    if (x.status !== 'open') d.appendChild(el('div', 'note warn', 'ตอนนี้ยังไม่เปิดรับคำตอบ — สแกนแล้วจะขึ้นว่าปิดรับ'));
+    modal(d);
+    qrSvg(url, 6).then(function (svg) { q.innerHTML = svg || '<span class="hint">แสดง QR ไม่ได้ (เน็ตไม่ออก) ใช้ลิงก์แทน</span>'; });
+  }
+  function printQr(x, url) {
+    qrSvg(url, 10).then(function (svg) {
+      if (!svg) return toast('สร้าง QR ไม่ได้ ใช้ลิงก์แทน', true);
+      var w = window.open('', '_blank'); if (!w) return toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์', true);
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      w.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><title>QR แบบสอบถาม</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap"><style>body{font-family:Sarabun,sans-serif;text-align:center;padding:12mm;color:#1F3326}h1{font-size:26pt;margin:0 0 4mm}h2{font-size:18pt;font-weight:400;margin:0 0 8mm}.q{width:120mm;height:120mm;margin:0 auto}.q svg{width:100%;height:100%}p{font-size:15pt;line-height:1.6}.u{font-size:10pt;color:#555;word-break:break-all}</style></head><body>' +
+        '<h1>📝 สแกนเพื่อทำแบบสอบถาม</h1><h2>' + esc(x.title) + '</h2><div class="q">' + svg + '</div><p>ใช้เวลาไม่ถึง 2 นาที · ไม่ถามชื่อ เลขบัตร หรือเบอร์โทร</p><p class="u">' + esc(url) + '</p><p>ศูนย์บริการสาธารณสุข 37 ประสงค์ - สุดสาคร ตู้จินดา</p><script>setTimeout(function(){print()},600)<\/script></body></html>');
+      w.document.close();
+    });
+  }
+
+  // ---------- เลือกกลุ่มงาน/บุคคล ----------
+  function loadPeople() { if (ST.people) return Promise.resolve(ST.people); return api('svy.people', {}).then(function (r) { ST.people = r.ok ? r.people : []; return ST.people; }); }
+  function picker(list, onChange, disabled) {
+    var box = el('div', 'pick');
+    box.appendChild(el('div', 'hint', 'กลุ่มงาน')); box.lastChild.style.margin = '0 0 6px';
+    var gl = el('div', 'gl'); box.appendChild(gl);
+    (ST.me.workgroups || []).forEach(function (g) {
+      var on = list.some(function (t) { return t.kind === 'group' && t.key === g.group_key; });
+      var t = el('button', 'tag' + (on ? ' on' : ''), (on ? '✓ ' : '') + g.label); t.type = 'button'; t.disabled = !!disabled;
+      t.addEventListener('click', function () {
+        var i = list.findIndex(function (x) { return x.kind === 'group' && x.key === g.group_key; });
+        if (i >= 0) list.splice(i, 1); else list.push({ kind: 'group', key: g.group_key });
+        onChange(); redraw();
+      });
+      gl.appendChild(t);
+    });
+    box.appendChild(el('div', 'hint', 'บุคคล')); box.lastChild.style.margin = '6px 0';
+    var sel = el('div', 'gl'); box.appendChild(sel);
+    var s = el('input', 'in'); s.placeholder = 'พิมพ์ชื่อเพื่อค้นหาเจ้าหน้าที่'; s.disabled = !!disabled; box.appendChild(s);
+    var res = el('div', 'pres'); res.hidden = true; box.appendChild(res);
+    function redraw() { var nb = picker(list, onChange, disabled); box.replaceWith(nb); }
+    function nameOf(id) { var p = (ST.people || []).filter(function (x) { return x.id === id; })[0]; return p ? p.name : 'ผู้ใช้'; }
+    loadPeople().then(function () {
+      list.filter(function (t) { return t.kind === 'user'; }).forEach(function (t) {
+        var c = el('span', 'tag on'); c.appendChild(el('span', null, nameOf(t.key)));
+        if (!disabled) { var x = el('span', 'x', '✕'); c.appendChild(x); c.addEventListener('click', function () { var i = list.indexOf(t); list.splice(i, 1); onChange(); redraw(); }); }
+        sel.appendChild(c);
+      });
+    });
+    s.addEventListener('input', function () {
+      var q = s.value.trim(); res.textContent = ''; res.hidden = !q;
+      if (!q) return;
+      loadPeople().then(function (pp) {
+        pp.filter(function (p) { return p.name.indexOf(q) >= 0 && !list.some(function (t) { return t.kind === 'user' && t.key === p.id; }); }).slice(0, 30).forEach(function (p) {
+          var d = el('div'); d.appendChild(el('span', null, p.name)); d.appendChild(el('small', null, p.groups.map(gLabel).join(', ')));
+          d.addEventListener('click', function () { list.push({ kind: 'user', key: p.id }); onChange(); redraw(); });
+          res.appendChild(d);
+        });
+        if (!res.children.length) res.appendChild(el('div', null, 'ไม่พบชื่อนี้'));
+      });
+    });
+    return box;
+  }
+
+  // ---------- สร้าง / แก้ไข ----------
+  function blankQ(kind) {
+    var q = { kind: kind, title: '', help: '', required: kind === 'rating', style: kind === 'rating' ? 'face5' : null, options: [] };
+    if (kind === 'single' || kind === 'multi') q.options = [{ label: '', icon: '' }, { label: '', icon: '' }];
+    return q;
+  }
+  function vEdit(id) {
+    loading();
+    var p = id ? api('svy.get', { id: id }) : Promise.resolve({ ok: true, survey: {
+      id: null, title: '', description: '', owner: ST.me.primary || (ST.me.isSuper && (ST.me.workgroups || [])[0] ? ST.me.workgroups[0].group_key : ''), audience: 'both', identity: 'anon', scope: 'all', breakdown: true, mode: 'fun', mascot: 'A',
+      reactions: {}, ageBands: [35, 60], share: 'none', openOn: null, closeOn: null, status: 'draft', locked: false }, questions: [blankQ('rating')], targets: [], shares: [] });
+    p.then(function (r) {
+      main.textContent = '';
+      if (!r.ok) { main.appendChild(el('div', 'empty', r.message)); return; }
+      buildEditor(r);
+    });
+  }
+  function buildEditor(r) {
+    var S = JSON.parse(JSON.stringify(r.survey)), QS = JSON.parse(JSON.stringify(r.questions || [])), TG = (r.targets || []).slice(), SH = (r.shares || []).slice();
+    S.reactions = S.reactions || {};
+    var locked = !!S.locked;
+    function dirty() { ST.dirty = true; dmark.textContent = '● ยังไม่ได้บันทึก'; }
+    var st = statusOf(S);
+    head(S.id ? S.title || 'แก้ไขแบบสอบถาม' : 'สร้างแบบสอบถาม', S.id ? 'สถานะ: ' + st[1] + (locked ? ' · มีผู้ตอบแล้ว' : '') : 'ทุกคนในกลุ่มงานสร้างได้ · บันทึกเป็นร่างก่อน แล้วกด "เปิดรับคำตอบ"',
+      S.id && S.status !== 'draft' ? [btn('ดูสรุป', 'view', function () { go('sum/' + S.id); })] : []);
+    var form = el('div', 'form'); main.appendChild(form);
+    if (locked) form.appendChild(el('div', 'note lock', '🔒 มีผู้ตอบแล้ว — ล็อกคำถาม กลุ่มผู้ตอบ และโหมดตัวตนไว้ เพื่อไม่ให้ผลสรุปเพี้ยน · แก้ชื่อ วันที่ การแจก การแชร์ และหน้าตาได้ · ถ้าต้องเปลี่ยนคำถามให้ใช้ "คัดลอกเป็นชุดใหม่"'));
+
+    // ข้อมูลทั่วไป
+    var s1 = el('div', 'card sec'); s1.appendChild(el('h2', null, '1. ข้อมูลทั่วไป')); form.appendChild(s1);
+    function field(parent, label, input) { var f = el('div', 'f'), l = el('label', null, label); f.appendChild(l); f.appendChild(input); parent.appendChild(f); return f; }
+    var tTitle = el('input', 'in'); tTitle.value = S.title; tTitle.maxLength = 200; tTitle.placeholder = 'เช่น ความพึงพอใจการรับบริการ OPD ปีงบ 2569';
+    tTitle.addEventListener('input', function () { S.title = tTitle.value; dirty(); }); field(s1, 'ชื่อแบบสอบถาม *', tTitle);
+    var tDesc = el('textarea', 'ta'); tDesc.value = S.description || ''; tDesc.maxLength = 1000; tDesc.placeholder = 'ข้อความสั้น ๆ ที่ผู้ตอบจะเห็นตอนเริ่ม (ไม่บังคับ)';
+    tDesc.addEventListener('input', function () { S.description = tDesc.value; dirty(); }); field(s1, 'คำอธิบาย', tDesc);
+    var row = el('div', 'row2'); s1.appendChild(row);
+    var gOwn = el('select', 'sel');
+    var ownList = ST.me.isSuper ? (ST.me.workgroups || []).map(function (g) { return g.group_key; }) : (ST.me.groups || []);
+    if (S.owner && ownList.indexOf(S.owner) < 0) ownList = [S.owner].concat(ownList);
+    ownList.forEach(function (k) { var o = el('option', null, gLabel(k)); o.value = k; if (k === S.owner) o.selected = true; gOwn.appendChild(o); });
+    gOwn.addEventListener('change', function () { S.owner = gOwn.value; dirty(); }); field(row, 'กลุ่มงานเจ้าของ', gOwn);
+    var dWrap = el('div', 'row2'); dWrap.style.gap = '6px';
+    var dOpen = el('input', 'in'); dOpen.type = 'date'; dOpen.value = S.openOn || ''; dOpen.addEventListener('change', function () { S.openOn = dOpen.value || null; dirty(); });
+    var dClose = el('input', 'in'); dClose.type = 'date'; dClose.value = S.closeOn || ''; dClose.addEventListener('change', function () { S.closeOn = dClose.value || null; dirty(); });
+    var fo = el('div', 'f'); fo.appendChild(el('label', null, 'เปิดรับ')); fo.appendChild(dOpen); var ho = el('small', 'hint', thDate(S.openOn)); ho.style.margin = '0'; fo.appendChild(ho); dWrap.appendChild(fo);
+    var fc = el('div', 'f'); fc.appendChild(el('label', null, 'ปิดรับ')); fc.appendChild(dClose); var hc = el('small', 'hint', thDate(S.closeOn)); hc.style.margin = '0'; fc.appendChild(hc); dWrap.appendChild(fc);
+    dOpen.addEventListener('change', function () { ho.textContent = thDate(dOpen.value); });
+    dClose.addEventListener('change', function () { hc.textContent = thDate(dClose.value); });
+    row.appendChild(dWrap);
+    s1.appendChild(el('div', 'hint', 'ไม่ใส่วันที่ = เปิดรับตั้งแต่กด "เปิดรับคำตอบ" จนกว่าจะกด "ปิดรับ"'));
+
+    // ผู้ตอบ / การแจก
+    var s2 = el('div', 'card sec'); s2.appendChild(el('h2', null, '2. ผู้ตอบและการแจก')); form.appendChild(s2);
+    function seg(items, cur, onPick, dis) {
+      var w = el('div', 'seg');
+      items.forEach(function (it) { var b = el('button', it[0] === cur ? 'on' : '', it[1]); b.type = 'button'; b.disabled = !!dis; b.addEventListener('click', function () { onPick(it[0]); }); w.appendChild(b); });
+      return w;
+    }
+    var audBox = el('div'); s2.appendChild(audBox);
+    function drawAud() {
+      audBox.textContent = '';
+      field(audBox, 'ใครเป็นผู้ตอบ', seg([['staff', 'เจ้าหน้าที่'], ['public', 'ประชาชน'], ['both', 'ทั้งสอง']], S.audience, function (v) { S.audience = v; dirty(); drawAud(); }, locked));
+      if (S.audience !== 'staff') audBox.appendChild(el('div', 'note info', 'ฝั่งประชาชน: ไม่เก็บข้อมูลส่วนบุคคล เก็บเฉพาะ "อายุ (ปี)" ที่กรอกเป็นตัวเลข · ตอบผ่านลิงก์หรือ QR ไม่ต้องเข้าสู่ระบบ · ระบบเพิ่มคำถามอายุให้เอง'));
+      if (S.audience !== 'public') {
+        var w = el('div'); w.style.marginTop = '12px'; audBox.appendChild(w);
+        field(w, 'แจกให้เจ้าหน้าที่', seg([['all', 'ทุกกลุ่มงาน'], ['custom', 'เจาะจงกลุ่มงาน / บุคคล']], S.scope, function (v) { S.scope = v; dirty(); drawAud(); }));
+        if (S.scope === 'custom') w.appendChild(picker(TG, dirty));
+        var w2 = el('div'); w2.style.marginTop = '12px'; audBox.appendChild(w2);
+        field(w2, 'การตอบของเจ้าหน้าที่', seg([['anon', 'ไม่ระบุตัวตน'], ['named', 'ระบุตัวตน']], S.identity, function (v) { S.identity = v; dirty(); drawAud(); }, locked));
+        w2.appendChild(el('div', 'hint', S.identity === 'anon' ? 'ระบบจำแค่ว่าใครตอบแล้ว (กันตอบซ้ำ) แต่ไม่ผูกชื่อกับคำตอบ และเก็บแค่วันที่ ไม่เก็บเวลา' : 'ผู้สร้างเห็นว่าใครตอบอะไร · ผู้ตอบจะเห็นข้อความแจ้งก่อนเริ่ม'));
+        var sw = el('label', 'sw'), cb = el('input'); cb.type = 'checkbox'; cb.checked = S.breakdown !== false;
+        cb.addEventListener('change', function () { S.breakdown = cb.checked; dirty(); drawAud(); }); sw.appendChild(cb); sw.appendChild(el('span', null, 'สรุปผลแยกรายกลุ่มงาน')); w2.appendChild(sw);
+        if (S.breakdown !== false && S.identity === 'anon') w2.appendChild(el('div', 'note warn', 'แสดงทุกกลุ่มแม้มีผู้ตอบคนเดียว — หน้าตอบจะแจ้งผู้ตอบว่า "กลุ่มที่มีคนน้อยอาจทำให้รู้ได้ว่าใครตอบ"'));
+      }
+      if (S.audience !== 'staff') {
+        var w3 = el('div'); w3.style.marginTop = '12px'; audBox.appendChild(w3);
+        var ab = el('input', 'in'); ab.value = (S.ageBands || [35, 60]).join(', '); ab.placeholder = '35, 60';
+        ab.addEventListener('input', function () { S.ageBands = ab.value.split(/[,\s]+/).map(function (x) { return parseInt(x, 10); }).filter(function (n) { return n > 0 && n < 120; }); dirty(); });
+        field(w3, 'จุดแบ่งช่วงอายุในสรุปผล (ปี)', ab);
+        w3.appendChild(el('div', 'hint', 'เช่น 35, 60 = ต่ำกว่า 35 ปี · 35–59 ปี · 60 ปีขึ้นไป'));
+      }
+    }
+    drawAud();
+
+    // หน้าตา
+    var s3 = el('div', 'card sec'); s3.appendChild(el('h2', null, '3. หน้าตาตอนตอบ')); form.appendChild(s3);
+    var lookBox = el('div'); s3.appendChild(lookBox);
+    function drawLook() {
+      lookBox.textContent = '';
+      field(lookBox, 'โหมด', seg([['fun', '🎈 สดใส'], ['plain', '📄 เรียบ']], S.mode, function (v) { S.mode = v; dirty(); drawLook(); }));
+      lookBox.appendChild(el('div', 'hint', S.mode === 'fun' ? 'มีหมอน้อย ต้นกล้าแสดงความคืบหน้า เอฟเฟกต์ และพลุตอนจบ' : 'ไม่มีมาสคอตและพลุ เหมาะกับเรื่องจริงจังหรือเรื่องอ่อนไหว'));
+      if (S.mode !== 'fun') return;
+      var m = el('div', 'masc'); m.style.marginTop = '10px';
+      ['A', 'B', 'D'].forEach(function (k) {
+        var b = el('button', k === S.mascot ? 'on' : ''); b.type = 'button'; b.innerHTML = SvyRun.mascotSvg(k, 'hi'); b.appendChild(el('span', null, MASC_L[k]));
+        b.addEventListener('click', function () { S.mascot = k; dirty(); drawLook(); }); m.appendChild(b);
+      });
+      field(lookBox, 'หมอน้อย', m);
+      var rw = el('div'); rw.style.marginTop = '6px'; lookBox.appendChild(rw);
+      rw.appendChild(el('div', 'hint', 'ข้อความที่หมอน้อยพูดหลังให้คะแนน (เว้นว่าง = ใช้ข้อความมาตรฐาน) · คะแนนต่ำควรเป็นคำขอบคุณ ไม่ทำให้ผู้ตอบรู้สึกผิด'));
+      [['hi', 'คะแนนสูง (4–5)'], ['mid', 'คะแนนกลาง (3)'], ['lo', 'คะแนนต่ำ (1–2)']].forEach(function (a) {
+        var i = el('input', 'in'); i.maxLength = 200; i.value = S.reactions[a[0]] && S.reactions[a[0]] !== REACT_D[a[0]] ? S.reactions[a[0]] : ''; i.placeholder = REACT_D[a[0]];
+        i.addEventListener('input', function () { S.reactions[a[0]] = i.value; dirty(); }); field(rw, a[1], i);
+      });
+    }
+    drawLook();
+
+    // การแชร์ผล
+    var s4 = el('div', 'card sec'); s4.appendChild(el('h2', null, '4. การแชร์ผลสรุป')); form.appendChild(s4);
+    var shBox = el('div'); s4.appendChild(shBox);
+    function drawShare() {
+      shBox.textContent = '';
+      shBox.appendChild(seg([['none', 'ไม่แชร์'], ['custom', 'แชร์ให้กลุ่มงาน / บุคคล']], S.share, function (v) { S.share = v; dirty(); drawShare(); }));
+      shBox.appendChild(el('div', 'hint', S.share === 'none' ? 'เฉพาะกลุ่มงาน ' + gLabel(S.owner) + ' (เจ้าของ) และผู้ดูแลระบบสูงสุดเท่านั้นที่ดูผลได้' : 'ผู้ที่ได้รับแชร์ดูสรุปผลได้ แต่แก้ไขไม่ได้'));
+      if (S.share === 'custom') shBox.appendChild(picker(SH, dirty));
+    }
+    drawShare();
+
+    // คำถาม
+    var s5 = el('div', 'card sec'); s5.appendChild(el('h2', null, '5. คำถาม')); form.appendChild(s5);
+    s5.appendChild(el('div', 'sub', 'ผู้ตอบจะเห็นทีละข้อ ทีละหน้าจอ · คำถามคะแนนเลือกหน้าตาได้: หน้าอารมณ์ ดาว หรือระดับคำ'));
+    var qBox = el('div'); s5.appendChild(qBox);
+    function drawQs() {
+      qBox.textContent = '';
+      if (S.audience !== 'staff') {
+        var ag = el('div', 'qi secq'); ag.appendChild(el('div', 'qi-h')).appendChild(el('b', null, 'ข้อบังคับ · ประชาชนเท่านั้น · ระบบเพิ่มให้อัตโนมัติ'));
+        ag.appendChild(el('div', null, 'อายุ (ปี) — ตัวเลข')); qBox.appendChild(ag);
+      }
+      var n = 0;
+      QS.forEach(function (q, i) {
+        var box = el('div', 'qi' + (q.kind === 'section' ? ' secq' : ''));
+        var h = el('div', 'qi-h');
+        h.appendChild(el('b', null, q.kind === 'section' ? 'หัวข้อส่วน' : 'ข้อ ' + (++n) + ' · ' + KIND_L[q.kind] + (q.kind === 'rating' ? ' · ' + STYLE_L[q.style || 'face5'] : '')));
+        h.appendChild(el('span', 'sp'));
+        if (!locked) {
+          var up = el('button', 'ib2', '↑'); up.type = 'button'; up.disabled = i === 0; up.setAttribute('aria-label', 'เลื่อนขึ้น');
+          up.addEventListener('click', function () { QS.splice(i - 1, 0, QS.splice(i, 1)[0]); dirty(); drawQs(); });
+          var dn = el('button', 'ib2', '↓'); dn.type = 'button'; dn.disabled = i === QS.length - 1; dn.setAttribute('aria-label', 'เลื่อนลง');
+          dn.addEventListener('click', function () { QS.splice(i + 1, 0, QS.splice(i, 1)[0]); dirty(); drawQs(); });
+          var rm = el('button', 'ib2', '🗑'); rm.type = 'button'; rm.setAttribute('aria-label', 'ลบข้อนี้');
+          rm.addEventListener('click', function () { QS.splice(i, 1); dirty(); drawQs(); });
+          h.appendChild(up); h.appendChild(dn); h.appendChild(rm);
+        }
+        box.appendChild(h);
+        var t = el('input', 'in'); t.value = q.title; t.maxLength = 300; t.disabled = locked;
+        t.placeholder = q.kind === 'section' ? 'ชื่อส่วน เช่น เกี่ยวกับการมาวันนี้' : 'พิมพ์คำถาม เช่น วันนี้พอใจบริการโดยรวมแค่ไหนคะ?';
+        t.addEventListener('input', function () { q.title = t.value; dirty(); }); box.appendChild(t);
+        if (q.kind !== 'section') {
+          var hp = el('input', 'in'); hp.style.marginTop = '6px'; hp.value = q.help || ''; hp.maxLength = 300; hp.disabled = locked; hp.placeholder = 'คำอธิบายใต้คำถาม (ไม่บังคับ)';
+          hp.addEventListener('input', function () { q.help = hp.value; dirty(); }); box.appendChild(hp);
+        }
+        if (q.kind === 'rating') {
+          var sty = el('div', 'styles'); sty.style.marginTop = '8px';
+          [['face5', 5], ['face3', 3], ['star', 0], ['words', 0]].forEach(function (a) {
+            var b = el('button', (q.style || 'face5') === a[0] ? 'on' : ''); b.type = 'button'; b.disabled = locked;
+            if (a[0] === 'face5' || a[0] === 'face3') b.innerHTML = SvyRun.faceSvg(5); else if (a[0] === 'star') b.innerHTML = SvyRun.starSvg().replace('class="sr-fill"', 'class="sr-fill" style="opacity:1"');
+            b.appendChild(el('span', null, STYLE_L[a[0]]));
+            b.addEventListener('click', function () { q.style = a[0]; dirty(); drawQs(); }); sty.appendChild(b);
+          });
+          box.appendChild(sty);
+          if (q.style === 'face3') box.appendChild(el('div', 'hint', '3 หน้า = ไม่พอใจ / เฉย ๆ / พอใจ (คะแนน 1–3) · เทียบกับแบบ 5 ระดับตรง ๆ ไม่ได้'));
+        }
+        if (q.kind === 'single' || q.kind === 'multi') {
+          q.options = q.options || [];
+          q.options.forEach(function (o, k) {
+            var r1 = el('div', 'opt'), ic = el('select', 'sel'); ic.disabled = locked; ic.setAttribute('aria-label', 'ไอคอน');
+            ICONS.forEach(function (x) { var op = el('option', null, x || '—'); op.value = x; if (x === (o.icon || '')) op.selected = true; ic.appendChild(op); });
+            ic.addEventListener('change', function () { o.icon = ic.value; dirty(); });
+            var li = el('input', 'in'); li.value = o.label || ''; li.maxLength = 120; li.disabled = locked; li.placeholder = 'ตัวเลือกที่ ' + (k + 1);
+            li.addEventListener('input', function () { o.label = li.value; dirty(); });
+            r1.appendChild(ic); r1.appendChild(li);
+            if (!locked) { var x = el('button', 'ib2', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'ลบตัวเลือก'); x.addEventListener('click', function () { q.options.splice(k, 1); dirty(); drawQs(); }); r1.appendChild(x); }
+            box.appendChild(r1);
+          });
+          if (!locked) { var ao = btn('+ ตัวเลือก', 'sm', function () { q.options.push({ label: '', icon: '' }); dirty(); drawQs(); }); ao.style.marginTop = '6px'; box.appendChild(ao); }
+        }
+        if (q.kind !== 'section') {
+          var sw = el('label', 'sw'), cb = el('input'); cb.type = 'checkbox'; cb.checked = !!q.required; cb.disabled = locked;
+          cb.addEventListener('change', function () { q.required = cb.checked; dirty(); }); sw.appendChild(cb); sw.appendChild(el('span', null, 'ต้องตอบ (บังคับ)'));
+          box.appendChild(sw);
+        }
+        qBox.appendChild(box);
+      });
+      if (!QS.length) qBox.appendChild(el('div', 'hint', 'ยังไม่มีคำถาม กดปุ่มด้านล่างเพื่อเพิ่ม'));
+      if (!locked) {
+        var add = el('div', 'qadd');
+        [['rating', '+ คะแนน'], ['single', '+ เลือกข้อเดียว'], ['multi', '+ เลือกหลายข้อ'], ['yesno', '+ ใช่ / ไม่ใช่'], ['text', '+ ข้อความ'], ['section', '+ หัวข้อส่วน']].forEach(function (a) {
+          add.appendChild(btn(a[1], 'sm', function () { QS.push(blankQ(a[0])); dirty(); drawQs(); }));
+        });
+        qBox.appendChild(add);
+      }
+    }
+    drawQs();
+
+    // แถบบันทึก
+    var bar = el('div', 'save-bar'); main.appendChild(bar);
+    var dmark = el('span', 'dirty', ''); bar.appendChild(dmark); bar.appendChild(el('span', 'sp'));
+    function payload() { return { survey: S, questions: QS, targets: S.scope === 'custom' ? TG : [], shares: S.share === 'custom' ? SH : [] }; }
+    function check() {
+      if (!String(S.title || '').trim()) { toast('กรุณาตั้งชื่อแบบสอบถาม', true); tTitle.focus(); return false; }
+      for (var i = 0; i < QS.length; i++) {
+        if (!String(QS[i].title || '').trim()) { toast('กรุณาพิมพ์ ' + (QS[i].kind === 'section' ? 'ชื่อหัวข้อส่วน' : 'คำถามให้ครบทุกข้อ'), true); return false; }
+        if ((QS[i].kind === 'single' || QS[i].kind === 'multi') && QS[i].options.filter(function (o) { return String(o.label || '').trim(); }).length < 2) { toast('ข้อ "' + QS[i].title + '" ต้องมีตัวเลือกอย่างน้อย 2 ข้อ', true); return false; }
+      }
+      return true;
+    }
+    function save(then) {
+      if (!check()) return;
+      bSave.disabled = true;
+      api('svy.save', payload()).then(function (res) {
+        bSave.disabled = false;
+        if (!res.ok) return toast(res.message, true);
+        ST.dirty = false;
+        if (then) return then(res);
+        toast('บันทึกแล้ว'); ST.view = 'edit/' + res.survey.id; try { history.replaceState(null, '', '#edit/' + res.survey.id); } catch (e) {}
+        main.textContent = ''; buildEditor(res);
+      });
+    }
+    var bSave = btn(S.status === 'draft' ? 'บันทึกร่าง' : 'บันทึก', '', function () { save(); });
+    bar.appendChild(btn('ดูตัวอย่าง', '', function () { preview(S, QS); }));
+    bar.appendChild(bSave);
+    if (S.status !== 'open') bar.appendChild(btn('เปิดรับคำตอบ', 'pri', function () {
+      if (!QS.some(function (q) { return q.kind !== 'section'; })) return toast('ต้องมีคำถามอย่างน้อย 1 ข้อ', true);
+      save(function (res) {
+        api('svy.open', { id: res.survey.id }).then(function (o) {
+          if (!o.ok) { toast(o.message, true); main.textContent = ''; buildEditor(res); return; }
+          toast('เปิดรับคำตอบแล้ว'); ST.view = 'edit/' + o.survey.id; try { history.replaceState(null, '', '#edit/' + o.survey.id); } catch (e) {}
+          main.textContent = ''; buildEditor(o);
+          if (o.survey.audience !== 'staff') qr({ id: o.survey.id, code: o.survey.code, title: o.survey.title, status: 'open' });
+        });
+      });
+    }));
+    if (S.id && S.status === 'open') bar.appendChild(btn('ปิดรับ', 'dan', function () {
+      if (!window.confirm('ปิดรับคำตอบแบบสอบถามนี้? (ผลที่ตอบแล้วยังอยู่ครบ)')) return;
+      api('svy.close', { id: S.id }).then(function (o) { if (!o.ok) return toast(o.message, true); toast('ปิดรับแล้ว'); main.textContent = ''; buildEditor(o); });
+    }));
+    if (S.id && S.audience !== 'staff' && S.status !== 'draft') bar.appendChild(btn('QR', '', function () { qr({ id: S.id, code: S.code, title: S.title, status: S.status }); }));
+    if (S.id && ((S.status === 'draft' && !locked) || ST.me.isSuper)) bar.appendChild(btn('ลบ', 'dan', function () {
+      if (!window.confirm(locked ? 'ลบแบบสอบถามที่มีผู้ตอบแล้ว (ผู้ดูแลระบบสูงสุด)? ผลทั้งหมดจะไม่แสดงอีก' : 'ลบร่างแบบสอบถามนี้?')) return;
+      api('svy.remove', { id: S.id }).then(function (o) { if (!o.ok) return toast(o.message, true); ST.dirty = false; toast('ลบแล้ว'); go('mine'); });
+    }));
+    ST.dirty = false;
+  }
+  function preview(S, QS) {
+    var qs = QS.filter(function (q) { return String(q.title || '').trim(); }).map(function (q, i) { var c = JSON.parse(JSON.stringify(q)); c.id = 'p' + i; c.options = (c.options || []).filter(function (o) { return String(o.label || '').trim(); }); return c; });
+    var w = el('div', 'runwrap'); w.style.minHeight = '82vh'; w.style.border = '0';
+    modal(w, true);
+    SvyRun.mount(w, { survey: { title: S.title || 'ตัวอย่างแบบสอบถาม', description: S.description, mode: S.mode, mascot: S.mascot, reactions: S.reactions,
+      channel: S.audience === 'staff' ? 'staff' : 'public', identity: S.identity, breakdown: S.breakdown !== false && S.audience !== 'public', askAge: S.audience !== 'staff' }, questions: qs },
+      { submit: function () { return Promise.resolve({ ok: true }); }, onDone: closeModal, doneLabel: 'ปิดตัวอย่าง' });
+  }
+
+  // ---------- สรุปผล ----------
+  var BAR_C = { 1: '#E53935', 2: '#F57C1F', 3: '#F5C518', 4: '#8BC34A', 5: '#2EAD4B' };
+  function vSum(id, ch) {
+    loading('กำลังสรุปผล…');
+    api('svy.summary', { id: id, channel: ch }).then(function (r) {
+      main.textContent = '';
+      if (!r.ok) { main.appendChild(el('div', 'empty', r.message)); return; }
+      var S = r.survey, st = statusOf(S);
+      var right = [];
+      if (r.canManage) right.push(btn('ตั้งค่า / แชร์ผล', 'edit', function () { go('edit/' + S.id); }));
+      if (S.audience !== 'staff' && S.status !== 'draft') right.push(btn('QR', '', function () { qr({ id: S.id, code: S.code, title: S.title, status: S.status }); }));
+      right.push(btn('ส่งออก Excel', '', function () { exportCsv(S.id); }));
+      right.push(btn('พิมพ์ / PDF', '', function () { window.print(); }));
+      head(S.title, st[1] + ' · ' + audL(S.audience) + (S.audience !== 'public' ? ' · ' + (S.identity === 'named' ? 'ระบุตัวตน' : 'ไม่ระบุตัวตน') : '') + ' · ' + range(S.openOn, S.closeOn) + ' · ' + gLabel(S.owner), right);
+      if (S.audience === 'both') {
+        var bar = el('div', 'bar-row');
+        [['all', 'ทั้งหมด'], ['staff', 'เจ้าหน้าที่'], ['public', 'ประชาชน']].forEach(function (a) {
+          var c = el('button', 'chip' + (a[0] === ch ? ' on' : ''), a[1]); c.type = 'button'; c.addEventListener('click', function () { vSum(id, a[0]); }); bar.appendChild(c);
+        });
+        main.appendChild(bar);
+      }
+      var k = el('div', 'kpis');
+      function kpi(label, val, small, color) { var c = el('div', 'kpi'); c.appendChild(el('span', null, label)); var b = el('b', null, val); if (color) b.style.color = color; c.appendChild(b); if (small) c.appendChild(el('small', null, small)); k.appendChild(c); }
+      kpi('ผู้ตอบ', String(r.total), S.audience === 'both' ? 'เจ้าหน้าที่ ' + r.staffN + ' · ประชาชน ' + r.publicN : '');
+      if (r.kpi && r.kpi.avg !== null) kpi('คะแนนเฉลี่ย (ข้อแรก)', r.kpi.avg.toFixed(2) + ' / ' + r.kpi.max, 'ระดับ "' + r.kpi.level + '"', 'var(--g)');
+      else kpi('คะแนนเฉลี่ย', '—', 'ยังไม่มีคำถามคะแนน');
+      if (r.kpi && r.kpi.goodPct !== null) kpi('ร้อยละพึงพอใจ', r.kpi.goodPct + '%', 'ให้ ' + (r.kpi.max === 3 ? '"พอใจ"' : '4–5 คะแนน') + ' (' + r.kpi.goodN + ' จาก ' + r.kpi.n + ')');
+      else kpi('ร้อยละพึงพอใจ', '—', '');
+      if (S.audience !== 'public') kpi('อัตราตอบ (เจ้าหน้าที่)', r.rate === null ? '—' : r.rate + '%', r.doneN + ' จาก ' + r.recipients + ' คนที่ได้รับแจก');
+      else kpi('ตอบวันนี้ได้ที่', 'QR', 'สแกนจากจุดบริการ');
+      main.appendChild(k);
+      if (!r.total) { var e = el('div', 'card empty'); e.appendChild(el('div', 'big', '🌱')); e.appendChild(el('div', null, 'ยังไม่มีผู้ตอบ')); main.appendChild(e); return; }
+      var n = 0;
+      r.questions.forEach(function (q) {
+        var c = el('div', 'card qs'); n++;
+        c.appendChild(el('h3', null, 'ข้อ ' + n + ' · ' + q.title));
+        if (q.kind === 'rating') {
+          c.appendChild(el('div', 'meta', 'ตอบ ' + q.n + ' คน' + (q.avg !== null ? ' · เฉลี่ย ' + q.avg.toFixed(2) + ' (' + q.level + ') · พึงพอใจ ' + q.goodPct + '%' : '')));
+          var labs = q.max === 3 ? ['ไม่พอใจ', 'เฉย ๆ', 'พอใจ'] : (q.style === 'face5' ? ['ไม่พอใจมาก', 'ไม่พอใจ', 'เฉย ๆ', 'พอใจ', 'พอใจมาก'] : ['น้อยที่สุด', 'น้อย', 'ปานกลาง', 'มาก', 'มากที่สุด']);
+          for (var v = q.max; v >= 1; v--) hbar(c, v + ' ' + labs[v - 1], q.counts[v - 1], q.n, BAR_C[q.max === 3 ? [1, 3, 5][v - 1] : v]);
+        } else if (q.kind === 'single' || q.kind === 'multi') {
+          c.appendChild(el('div', 'meta', 'ตอบ ' + q.n + ' คน' + (q.kind === 'multi' ? ' · เลือกได้หลายข้อ' : '')));
+          q.options.forEach(function (o) { hbar(c, (o.icon ? o.icon + ' ' : '') + o.label, o.n, q.n, '#3DA852'); });
+        } else if (q.kind === 'yesno') {
+          c.appendChild(el('div', 'meta', 'ตอบ ' + q.n + ' คน'));
+          hbar(c, '👍 ใช่', q.yes, q.n, '#2EAD4B'); hbar(c, '👎 ไม่ใช่', q.no, q.n, '#F57C1F');
+        } else if (q.kind === 'text') {
+          c.appendChild(el('div', 'meta', q.items.length + (q.more ? '+' + q.more : '') + ' ข้อความ'));
+          q.items.slice(0, 60).forEach(function (t) {
+            var d = el('div', 'tx'); d.appendChild(el('p', null, '“' + t.text + '”'));
+            d.appendChild(el('small', null, [t.channel === 'staff' ? 'เจ้าหน้าที่' : 'ประชาชน', t.name, t.group, t.band, thDate(t.date)].filter(Boolean).join(' · ')));
+            c.appendChild(d);
+          });
+          if (q.items.length > 60) c.appendChild(el('div', 'hint', 'แสดง 60 ข้อความล่าสุด · ดูทั้งหมดได้จาก "ส่งออก Excel"'));
+        }
+        main.appendChild(c);
+      });
+      var g2 = el('div', 'grid2');
+      if (r.byGroup.length) g2.appendChild(miniTable('เจ้าหน้าที่ · แยกกลุ่มงาน', ['กลุ่มงาน', 'ผู้ตอบ', 'เฉลี่ย'], r.byGroup.map(function (x) { return [x.group, x.n, x.avg === null ? '—' : x.avg.toFixed(2)]; }),
+        S.identity === 'anon' ? 'แสดงทุกกลุ่มตามที่ตั้งไว้ · กลุ่มที่มีผู้ตอบน้อยอาจระบุตัวผู้ตอบได้ ใช้ผลอย่างระมัดระวัง' : ''));
+      if (r.byAge.length) g2.appendChild(miniTable('ประชาชน · แยกช่วงอายุ', ['ช่วงอายุ', 'ผู้ตอบ', 'เฉลี่ย'], r.byAge.map(function (x) { return [x.band, x.n, x.avg === null ? '—' : x.avg.toFixed(2)]; }), 'จัดช่วงจากอายุที่กรอก · ปรับจุดแบ่งได้ในหน้าตั้งค่า'));
+      if (g2.children.length) main.appendChild(g2);
+    });
+  }
+  function hbar(c, label, n, total, color) {
+    var row = el('div', 'hb'); row.appendChild(el('span', null, label));
+    var tr = el('div', 'tr'), i = el('i'); i.style.width = (total ? Math.round(n * 100 / total) : 0) + '%'; i.style.background = color; tr.appendChild(i); row.appendChild(tr);
+    row.appendChild(el('span', 'n', n + ' (' + (total ? Math.round(n * 1000 / total) / 10 : 0) + '%)')); c.appendChild(row);
+  }
+  function miniTable(title, cols, rows, note) {
+    var c = el('div', 'card qs'); c.appendChild(el('h3', null, title));
+    var t = el('table', 'tb mini'), th = el('thead'), tr = el('tr');
+    cols.forEach(function (x) { tr.appendChild(el('th', null, x)); }); th.appendChild(tr); t.appendChild(th);
+    var tb = el('tbody');
+    rows.forEach(function (r) { var tr2 = el('tr'); r.forEach(function (v, i) { var td = el('td', null, String(v)); td.dataset.l = cols[i]; tr2.appendChild(td); }); tb.appendChild(tr2); });
+    t.appendChild(tb); c.appendChild(t);
+    if (note) c.appendChild(el('div', 'hint', note));
+    return c;
+  }
+  function exportCsv(id) {
+    toast('กำลังเตรียมไฟล์…');
+    api('svy.export', { id: id }).then(function (r) {
+      if (!r.ok) return toast(r.message, true);
+      var q = function (v) { v = v === null || v === undefined ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      var lines = [r.head.map(q).join(',')].concat(r.rows.map(function (row) { return row.map(q).join(','); }));
+      var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = (r.title || 'survey').replace(/[\\\/:*?"<>|]/g, '_').slice(0, 80) + '.csv';
+      document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      toast('ส่งออกแล้ว ' + r.rows.length + ' แถว (เปิดด้วย Excel ได้)');
+    });
+  }
+
+  // ---------- เริ่ม ----------
+  Array.prototype.forEach.call(document.querySelectorAll('#nav button'), function (b) { b.addEventListener('click', function () { go(b.dataset.v); }); });
+  $('home').addEventListener('click', function () { if (!confirmLeave()) return; ST.dirty = false; try { window.parent.PHC37.goHome(); } catch (e) {} });
+  window.addEventListener('beforeunload', function (e) { if (ST.dirty) { e.preventDefault(); e.returnValue = ''; } });
+  function hideBoot() { var b = $('p37b'); b.classList.add('out'); setTimeout(function () { b.style.display = 'none'; }, 300); }
+  api('svy.boot', {}).then(function (r) {
+    if (!r.ok) { $('p37bText').textContent = r.message || 'เปิดระบบไม่สำเร็จ'; return; }
+    ST.me = r;
+    $('who').textContent = 'เข้าใช้ในนาม: ' + r.user.name + ((r.groups || []).length ? ' · ' + r.groups.map(gLabel).join(', ') : '');
+    $('nav-all').hidden = !r.isSuper;
+    badge(r.inboxCount);
+    hideBoot();
+    var h = location.hash.slice(1);
+    go(h || (r.inboxCount ? 'inbox' : 'mine'));
+  });
+})();
+</script>
+</body>
+</html>

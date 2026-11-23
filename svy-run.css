@@ -1,0 +1,114 @@
+/* PHC37 PWA — svy-run.css (PHC37-SVY-RUN-1.0.0 · 23 พ.ย. 2569) : หน้าตอบแบบสอบถาม (ใช้ร่วม: survey.html ประชาชน + svy.html เจ้าหน้าที่)
+ * ทีละข้อ ทีละการ์ด · โหมดสดใส (หมอน้อย · ต้นกล้า · พลุ) / เรียบ · หน้าอารมณ์ + ดาวแบบมีมิติ · ปิดการเคลื่อนไหวเมื่อเครื่องตั้ง "ลดการเคลื่อนไหว" */
+.sr{--sr-ink:#1F3326;--sr-mute:#6B7A70;--sr-green:#15703A;--sr-green2:#3DA852;--sr-line:#DCE7DF;
+  font-family:'Sarabun','Noto Sans Thai',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--sr-ink);
+  position:relative;min-height:100%;display:flex;flex-direction:column;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.sr *{box-sizing:border-box}
+.sr.sr-fun{background:#F3FBEF;background-image:radial-gradient(#D9F0CF 1.5px,transparent 1.5px);background-size:18px 18px}
+.sr.sr-plain{background:#F6F7F6}
+.sr-top{display:flex;align-items:center;gap:10px;padding:12px 14px 6px;max-width:560px;width:100%;margin:0 auto}
+.sr-lg{width:34px;height:34px;border-radius:10px;background:var(--sr-green);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.sr-tt{font-size:13px;line-height:1.35;min-width:0}
+.sr-tt b{display:block;font-weight:600;color:var(--sr-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-tt span{color:var(--sr-mute)}
+.sr-bk{margin-left:auto;flex:none;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:var(--sr-ink);font-size:20px;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.sr-bk[hidden]{display:block;visibility:hidden}
+.sr-prog{display:flex;align-items:center;gap:10px;padding:2px 14px 8px;max-width:560px;width:100%;margin:0 auto;min-height:54px}
+.sr-prog svg{width:48px;height:48px;flex:none}
+.sr-prog-t{font-size:14px;color:#2E4A36}
+.sr-bar{height:6px;background:#E3E8E4;border-radius:3px;margin:8px 14px 12px;overflow:hidden;max-width:532px}
+.sr-bar i{display:block;height:100%;background:var(--sr-green2);transition:width .4s}
+.sr-stage{flex:1;padding:0 14px 20px;max-width:560px;width:100%;margin:0 auto;position:relative}
+.sr-card{background:#fff;border-radius:22px;padding:20px 16px;border:1px solid #E1EDE3;box-shadow:0 2px 0 rgba(21,112,58,.08);animation:srIn .35s ease-out}
+.sr-plain .sr-card{box-shadow:none;border-color:#E3E6E4;animation:none}
+@keyframes srIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+.sr-sec{font-size:13px;font-weight:600;color:var(--sr-green);margin:0 0 6px}
+.sr-q{font-size:20px;font-weight:600;line-height:1.45;margin:0 0 4px;color:var(--sr-ink);word-break:break-word}
+.sr-qs{font-size:14px;color:var(--sr-mute);margin:0 0 16px;line-height:1.5}
+.sr-req{color:#C0392B}
+.sr-desc{white-space:pre-line}
+.sr-go{width:100%;min-height:54px;border-radius:16px;border:0;background:var(--sr-green);color:#fff;font-size:18px;font-weight:600;margin-top:16px;cursor:pointer;font-family:inherit}
+.sr-go:disabled{background:#B9CDBF;cursor:default}
+.sr-go.sr-ghost{background:#fff;color:var(--sr-green);border:1.5px solid #CFE6D3}
+.sr-skip{display:block;margin:10px auto 0;border:0;background:none;color:var(--sr-mute);font-size:15px;text-decoration:underline;cursor:pointer;font-family:inherit;min-height:40px}
+.sr-err{font-size:14px;color:#C0392B;margin-top:8px;min-height:20px;text-align:center}
+.sr-note{font-size:13px;color:#2E5A8A;background:#E8F1FB;border-radius:12px;padding:8px 12px;margin:0 0 12px;line-height:1.5}
+.sr-warn{font-size:13px;color:#8A6D1F;background:#FFF6DA;border-radius:12px;padding:8px 12px;margin-top:8px}
+/* หมอน้อย */
+.sr-mz{display:flex;align-items:flex-end;gap:8px;margin:14px 0 0;min-height:96px}
+.sr-mz svg{width:84px;height:92px;flex:none;overflow:visible}
+.sr-bub{background:#fff;border:1px solid #CFE6D3;border-radius:16px 16px 16px 4px;padding:8px 12px;font-size:15px;color:var(--sr-ink);margin-bottom:38px;animation:srBub .3s ease-out;max-width:240px;line-height:1.45}
+@keyframes srBub{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.sr-who{transform-origin:50px 100px}
+.sr-eyes{transform-origin:50px 46px;animation:srBlink 4s infinite}
+@keyframes srBlink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.sr-breathe{animation:srBr 3s ease-in-out infinite;transform-origin:50px 106px}
+@keyframes srBr{50%{transform:scaleY(1.02)}}
+.sr-m-hi .sr-arm{transform-origin:72px 82px;animation:srWave .55s ease-in-out 6 alternate}
+.sr-m-hi.sr-heart .sr-arm{transform-origin:80px 52px}
+@keyframes srWave{from{transform:rotate(10deg)}to{transform:rotate(-30deg)}}
+.sr-m-happy .sr-who{animation:srHop .6s ease-out 3}
+@keyframes srHop{0%,100%{transform:none}40%{transform:translateY(-9px)}}
+.sr-m-listen .sr-head{transform-origin:50px 70px;animation:srNod 1.4s ease-in-out 2}
+@keyframes srNod{0%,100%{transform:rotate(0)}30%{transform:rotate(6deg) translateY(2px)}60%{transform:rotate(0)}}
+/* หน้าอารมณ์ */
+.sr-faces{display:flex;justify-content:space-between;gap:2px;position:relative}
+.sr-f{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;padding:6px 0;border-radius:14px;cursor:pointer;min-height:48px;font-family:inherit}
+.sr-f svg{width:56px;height:56px;transition:transform .2s,filter .2s,opacity .2s;overflow:visible}
+.sr-faces.sr-n3 .sr-f svg{width:72px;height:72px}
+.sr-f span{font-size:12px;color:var(--sr-mute);text-align:center;line-height:1.3}
+.sr-f.on span{color:var(--sr-ink);font-weight:600}
+.sr-dim .sr-f:not(.on) svg{filter:grayscale(.6);opacity:.5}
+.sr-fun .sr-f.on svg{animation:srPop .5s cubic-bezier(.3,1.8,.5,1) forwards}
+.sr-plain .sr-f.on svg{transform:scale(1.12)}
+@keyframes srPop{0%{transform:scale(.7)}60%{transform:scale(1.3) translateY(-4px)}100%{transform:scale(1.18) translateY(-2px)}}
+/* ดาว */
+.sr-stars{display:flex;justify-content:center;gap:4px;position:relative;padding-top:20px}
+.sr-st{border:0;background:transparent;padding:3px;cursor:pointer;min-height:48px}
+.sr-st svg{width:52px;height:52px;overflow:visible}
+.sr-st .sr-fill{opacity:0;transition:opacity .15s}
+.sr-st.on .sr-fill{opacity:1}
+.sr-fun .sr-st.on svg{animation:srSpop .45s cubic-bezier(.3,1.8,.5,1) both;animation-delay:var(--d)}
+@keyframes srSpop{0%{transform:scale(.6) rotate(-20deg)}70%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1.08)}}
+.sr-fun .sr-st.on .sr-shine{animation:srShine 1.2s ease-in-out both;animation-delay:calc(var(--d) + .3s)}
+@keyframes srShine{from{transform:translateX(-60px)}to{transform:translateX(60px)}}
+.sr-fun .sr-st.sad svg{animation:srShake .5s ease-in-out .3s}
+@keyframes srShake{0%,100%{transform:none}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.sr-st-lab{text-align:center;font-size:14px;color:var(--sr-mute);margin-top:6px;min-height:20px}
+/* เอฟเฟกต์ */
+.sr-cloud{position:absolute;top:-4px;pointer-events:none;animation:srCl 1.6s ease-out forwards}
+@keyframes srCl{0%{opacity:0;transform:translateY(6px)}20%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+.sr-drop{position:absolute;width:3px;height:8px;border-radius:2px;background:#4FA3E0;animation:srDr .7s ease-in forwards;pointer-events:none}
+@keyframes srDr{from{transform:translateY(0);opacity:1}to{transform:translateY(26px);opacity:0}}
+.sr-ring{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:3px solid;pointer-events:none;animation:srRing .6s ease-out forwards}
+@keyframes srRing{from{transform:scale(.6);opacity:.8}to{transform:scale(1.8);opacity:0}}
+.sr-pt{position:absolute;pointer-events:none;font-size:15px;line-height:1;animation:srFly .9s ease-out forwards}
+@keyframes srFly{from{transform:translate(0,0) scale(.4);opacity:1}to{transform:translate(var(--x),var(--y)) scale(1.1) rotate(var(--r));opacity:0}}
+.sr-conf{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;pointer-events:none;animation:srFall linear forwards;z-index:5}
+@keyframes srFall{to{transform:translateY(110vh) rotate(720deg)}}
+/* ตัวเลือก */
+.sr-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sr-chips.sr-one{grid-template-columns:1fr}
+.sr-chip{display:flex;align-items:center;gap:10px;min-height:58px;border-radius:16px;border:1.5px solid var(--sr-line);background:#fff;padding:8px 12px;font-size:16px;color:var(--sr-ink);cursor:pointer;text-align:left;font-family:inherit;line-height:1.35}
+.sr-chip .sr-ic{font-size:22px;flex:none}
+.sr-chip .sr-box{width:22px;height:22px;border-radius:6px;border:2px solid #B9CDBF;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.sr-chip.on{border-color:var(--sr-green2);background:#EAF6EC}
+.sr-chip.on .sr-box{background:var(--sr-green2);border-color:var(--sr-green2)}
+.sr-fun .sr-chip.on{animation:srPop2 .35s ease-out}
+@keyframes srPop2{50%{transform:scale(1.04)}}
+.sr-yn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sr-yn .sr-chip{justify-content:center;font-size:18px;min-height:72px;flex-direction:column;gap:2px}
+.sr-yn .sr-chip .sr-ic{font-size:30px}
+.sr-age{display:flex;align-items:center;justify-content:center;gap:14px}
+.sr-age button{width:60px;height:60px;border-radius:50%;font-size:28px;background:#EAF6EC;border:0;color:var(--sr-green);cursor:pointer;font-family:inherit}
+.sr-age input{width:120px;height:68px;font-size:36px;text-align:center;border-radius:16px;border:1.5px solid #CFE6D3;color:var(--sr-ink);font-family:inherit}
+.sr-ta{width:100%;min-height:120px;border-radius:14px;border:1.5px solid var(--sr-line);padding:12px;font-size:17px;font-family:inherit;resize:vertical}
+.sr-ta:focus,.sr-age input:focus{outline:3px solid #BDE5C5;border-color:var(--sr-green2)}
+.sr-end{text-align:center}
+.sr-end .sr-mz{justify-content:center}
+.sr-big-ok{font-size:64px;color:var(--sr-green2);line-height:1}
+.sr-count{font-size:13px;color:var(--sr-mute);margin-top:8px}
+.sr-busy{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 0;color:var(--sr-mute)}
+.sr-spin{width:36px;height:36px;border-radius:50%;border:4px solid #DDEBE0;border-top-color:var(--sr-green2);animation:srSpin .9s linear infinite}
+@keyframes srSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sr *{animation:none!important;transition:none!important}.sr-pt,.sr-ring,.sr-conf,.sr-cloud,.sr-drop{display:none}}

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15703A">
+<meta name="robots" content="noindex">
+<title>แบบสอบถาม · ศบส.37</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="svy-run.css">
+<!-- PHC37 PWA 2.18.0 — survey.html (PHC37-SURVEY-PUBLIC-1.0.0 · 23 พ.ย. 2569) : หน้าตอบแบบสอบถามของประชาชน · ไม่ต้องเข้าสู่ระบบ
+     ลิงก์/QR: survey.html?s=<รหัส> · ไม่เก็บชื่อ/เลขบัตร/เบอร์ · เก็บแค่อายุ · ใช้เครื่องเดียวตอบต่อกันได้ (ปุ่ม "ให้คนถัดไปตอบ") -->
+<style>
+html,body{margin:0;height:100%;background:#F3FBEF}
+#app{min-height:100%;display:flex;flex-direction:column}
+#app>.sr{flex:1}
+/* หน้าเปิดระบบแบบเดียวกับ Gateway (เส้นชีพจร) */
+.p37b{position:fixed;inset:0;z-index:50;background:#F4F6F4;display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .25s ease;font-family:'Sarabun',Tahoma,sans-serif}
+.p37b.out{opacity:0;pointer-events:none}
+.p37b-card{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:320px}
+.p37b-logo{display:block;width:84px;height:84px;border-radius:20px;border:1px solid #D8DED9;background:#fff url(icons/icon-192.png) center/88% no-repeat;animation:p37bBeat 1.6s ease-in-out infinite}
+.p37b-ecg{width:200px;height:44px;overflow:visible}
+.p37b-ecg path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p37b-ecg-base{stroke:#D3E9D6;stroke-width:2.5}
+.p37b-ecg-run{stroke:#3DA852;stroke-width:3;stroke-dasharray:90 310;stroke-dashoffset:400;animation:p37bRun 1.6s linear infinite}
+.p37b-text{font-size:16px;font-weight:600;color:#15703A;min-height:24px;line-height:1.5}
+.p37b-brand{font-size:13px;color:#4A5550;margin-top:6px}
+@keyframes p37bRun{to{stroke-dashoffset:0}}
+@keyframes p37bBeat{0%,100%{transform:scale(1)}52%{transform:scale(1)}58%{transform:scale(1.06)}66%{transform:scale(.99)}72%{transform:scale(1.03)}}
+.msg{max-width:440px;margin:15vh auto 0;padding:24px 18px;background:#fff;border-radius:22px;border:1px solid #E1EDE3;text-align:center;font-family:'Sarabun',Tahoma,sans-serif;color:#1F3326}
+.msg h1{font-size:20px;margin:8px 0}
+.msg p{color:#6B7A70;line-height:1.6;margin:0 0 12px}
+.msg button{min-height:48px;border-radius:14px;border:0;background:#15703A;color:#fff;font-size:16px;padding:0 22px;font-family:inherit;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.p37b-logo,.p37b-ecg-run{animation:none}}
+</style>
+</head>
+<body>
+<div id="p37b" class="p37b" role="status" aria-live="polite"><div class="p37b-card"><span class="p37b-logo" role="img" aria-label="ตรา ศบส.37"></span>
+<svg class="p37b-ecg" viewBox="0 0 180 40" aria-hidden="true"><path class="p37b-ecg-base" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180"/><path class="p37b-ecg-run" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180" pathLength="400"/></svg>
+<div class="p37b-text">กำลังเปิดแบบสอบถาม…</div><div class="p37b-brand">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div></div></div>
+<div id="app"></div>
+<script src="config.js"></script>
+<script src="svy-run.js"></script>
+<script>
+(function () {
+  'use strict';
+  var CFG = window.PHC37_CONFIG || {};
+  var app = document.getElementById('app'), boot = document.getElementById('p37b');
+  function hideBoot() { boot.classList.add('out'); setTimeout(function () { boot.style.display = 'none'; }, 300); }
+  function api(action, data) {
+    if (!CFG.API_URL) return Promise.reject(new Error('config'));
+    var ctrl = ('AbortController' in window) ? new AbortController() : null, t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 30000);
+    return fetch(CFG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, data: data }),
+      signal: ctrl ? ctrl.signal : undefined }).then(function (r) { clearTimeout(t); return r.json(); });
+  }
+  function message(icon, title, text, retry) {
+    hideBoot(); app.textContent = '';
+    var box = document.createElement('div'); box.className = 'msg';
+    var i = document.createElement('div'); i.style.fontSize = '44px'; i.textContent = icon; box.appendChild(i);
+    var h = document.createElement('h1'); h.textContent = title; box.appendChild(h);
+    var p = document.createElement('p'); p.textContent = text; box.appendChild(p);
+    if (retry) { var b = document.createElement('button'); b.type = 'button'; b.textContent = 'ลองใหม่'; b.onclick = load; box.appendChild(b); }
+    app.appendChild(box);
+  }
+  var code = '';
+  try { code = (new URLSearchParams(location.search).get('s') || '').trim(); } catch (e) {}
+  function load() {
+    if (!code) return message('🔗', 'ลิงก์ไม่ครบ', 'กรุณาสแกน QR หรือเปิดลิงก์แบบสอบถามอีกครั้ง', false);
+    boot.style.display = ''; boot.classList.remove('out');
+    api('svy.pubForm', { code: code }).then(function (res) {
+      if (!res || !res.ok) {
+        if (res && res.code === 'closed') return message('🙏', 'ปิดรับคำตอบแล้ว', res.message || 'แบบสอบถามนี้ปิดรับคำตอบแล้ว ขอบคุณที่สนใจค่ะ', false);
+        if (res && res.code === 'not_found') return message('🔍', 'ไม่พบแบบสอบถาม', res.message || 'ลิงก์อาจไม่ถูกต้อง', false);
+        return message('⚠️', 'เปิดไม่สำเร็จ', (res && res.message) || 'กรุณาลองใหม่อีกครั้ง', true);
+      }
+      document.title = res.survey.title + ' · ศบส.37';
+      hideBoot();
+      SvyRun.mount(app, res, { kiosk: true, submit: function (p) { return api('svy.pubSubmit', { code: code, age: p.age, answers: p.answers }); } });
+    }, function () { message('📶', 'เชื่อมต่อไม่ได้', 'ตรวจสัญญาณอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง', true); });
+  }
+  load();
+})();
+</script>
+</body>
+</html>
