@@ -885,13 +885,35 @@ table.stk td{vertical-align:middle}
 @media(max-width:560px){.g4,.g3{grid-template-columns:1fr 1fr}.toolbar .phc-input,.toolbar .phc-select{min-width:0;width:100%}}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
+<style id="phc37-ecg-boot">
+/* ---------- PHC37-ECG-BOOT 1.0.0 : หน้าเปิดระบบแบบเดียวกับ Gateway ---------- */
+.p37b{position:fixed;inset:0;z-index:2147482995;background:#F4F6F4;display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .25s ease;font-family:var(--phc-font,'Sarabun',Tahoma,sans-serif)}
+.p37b.out{opacity:0;pointer-events:none}
+.p37b-card{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:320px}
+.p37b-logo{display:block;flex:none;width:84px;height:84px;border-radius:20px;border:1px solid #D8DED9;background:#FFFFFF var(--phc-logo-mark) center/88% no-repeat;animation:p37bBeat 1.6s ease-in-out infinite;box-sizing:border-box}
+.p37b-ecg{width:200px;height:44px;overflow:visible}
+.p37b-ecg path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p37b-ecg-base{stroke:#D3E9D6;stroke-width:2.5}
+.p37b-ecg-run{stroke:#3DA852;stroke-width:3;stroke-dasharray:90 310;stroke-dashoffset:400;animation:p37bRun 1.6s linear infinite}
+.p37b-text{font-size:16px;font-weight:600;color:#15703A;min-height:24px;margin:0;line-height:1.5}
+.p37b-brand{font-size:13px;color:#4A5550;margin:6px 0 0}
+@keyframes p37bRun{to{stroke-dashoffset:0}}
+@keyframes p37bBeat{0%,100%{transform:scale(1)}52%{transform:scale(1)}58%{transform:scale(1.06)}66%{transform:scale(.99)}72%{transform:scale(1.03)}}
+/* 13 ระบบ: การ์ด #gate เดิม → หน้าเปิดระบบ */
+#gate.p37b-gate{background:#F4F6F4}
+#gate.p37b-gate .gate-card{background:transparent;border:0;box-shadow:none;padding:0;width:auto;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:14px}
+#gate.p37b-gate .gate-card h2{font-size:16px;font-weight:600;color:#15703A;min-height:24px;margin:0;line-height:1.5}
+#gate.p37b-gate .gate-card p{font-size:13px;color:#4A5550;margin:6px 0 0}
+html.p37b-on #loading{visibility:hidden!important}
+@media (prefers-reduced-motion:reduce){.p37b-logo{animation:none}.p37b-ecg-run{animation:none;stroke-dasharray:none;stroke-dashoffset:0}}
+</style>
 </head>
 <body class="phc-app">
 <script>
 /* MR2-1.2.1: ถ้าโค้ดหน้าเว็บโหลดไม่สำเร็จ ให้แสดงข้อความแทนการค้างที่หน้า "กำลังเปิดระบบ" */
 window.addEventListener('error',function(e){ try{ if(window.__mr2Booted) return; var g=document.getElementById('gate'),eg=document.getElementById('errGate'),t=document.getElementById('errText'); if(!eg||!t) return; if(g) g.className+=' hidden'; t.textContent='หน้าเว็บโหลดไม่สำเร็จ: '+(e.message||'ไม่ทราบสาเหตุ')+' (ตำแหน่ง '+(e.lineno||'-')+':'+(e.colno||'-')+') กรุณาแจ้งผู้ดูแลระบบ'; eg.className=eg.className.replace(/\bhidden\b/g,''); }catch(x){} });
 </script>
-<div id="gate" class="gate" data-phc-boot><div class="gate-card"><div class="phc-ld-logo" style="margin:0 auto"><span class="phc-ld-ring"></span><div class="phc-ld-mark"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#15703A" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16"></path></svg></div></div><h2>กำลังเปิดระบบเบิก–จ่ายวัสดุ</h2><div class="phc-ld-bar" role="progressbar" aria-label="กำลังโหลด" style="margin:4px 0"><span></span></div><p class="muted">กรุณารอสักครู่</p></div></div>
+<div id="gate" class="gate p37b-gate" data-phc-boot><div class="gate-card" role="status" aria-live="polite"><span class="p37b-logo" role="img" aria-label="ตรา ศบส.37"></span><svg class="p37b-ecg" viewBox="0 0 180 40" aria-hidden="true"><path class="p37b-ecg-base" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180"/><path class="p37b-ecg-run" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180" pathLength="400"/></svg><h2>กำลังเปิดระบบเบิก–จ่ายวัสดุ</h2><p class="muted">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</p></div></div>
 <div id="errGate" class="gate hidden" data-phc-boot><div class="gate-card"><div class="phc-brand-mark" style="width:52px;height:52px"></div><h2>ไม่สามารถเปิดระบบได้</h2><p id="errText" class="muted"></p><button class="phc-btn" onclick="goGateway()">↩️ กลับเมนูหลัก</button><button class="phc-btn phc-btn--secondary" onclick="phcRetryBoot()" style="margin-top:8px">↻ ลองใหม่</button></div></div>
 
 <div id="app" class="app hidden">

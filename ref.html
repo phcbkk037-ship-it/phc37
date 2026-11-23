@@ -1020,8 +1020,41 @@ body > .topbar{display:none!important}
 #reportRefreshBtn:disabled,#reportPrintBtn:disabled{background:#fff!important;color:var(--phc-ink-2)!important;border:1px dashed var(--phc-border-input)!important;box-shadow:none!important;opacity:1!important;filter:none!important;cursor:not-allowed}
 .ref-kit-hint{font-size:13px;color:var(--phc-ink-2);align-self:center}
 </style>
+<style id="phc37-ecg-boot">
+/* ---------- PHC37-ECG-BOOT 1.0.0 : หน้าเปิดระบบแบบเดียวกับ Gateway ---------- */
+.p37b{position:fixed;inset:0;z-index:2147482995;background:#F4F6F4;display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .25s ease;font-family:var(--phc-font,'Sarabun',Tahoma,sans-serif)}
+.p37b.out{opacity:0;pointer-events:none}
+.p37b-card{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:320px}
+.p37b-logo{display:block;flex:none;width:84px;height:84px;border-radius:20px;border:1px solid #D8DED9;background:#FFFFFF var(--phc-logo-mark) center/88% no-repeat;animation:p37bBeat 1.6s ease-in-out infinite;box-sizing:border-box}
+.p37b-ecg{width:200px;height:44px;overflow:visible}
+.p37b-ecg path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.p37b-ecg-base{stroke:#D3E9D6;stroke-width:2.5}
+.p37b-ecg-run{stroke:#3DA852;stroke-width:3;stroke-dasharray:90 310;stroke-dashoffset:400;animation:p37bRun 1.6s linear infinite}
+.p37b-text{font-size:16px;font-weight:600;color:#15703A;min-height:24px;margin:0;line-height:1.5}
+.p37b-brand{font-size:13px;color:#4A5550;margin:6px 0 0}
+@keyframes p37bRun{to{stroke-dashoffset:0}}
+@keyframes p37bBeat{0%,100%{transform:scale(1)}52%{transform:scale(1)}58%{transform:scale(1.06)}66%{transform:scale(.99)}72%{transform:scale(1.03)}}
+/* 13 ระบบ: การ์ด #gate เดิม → หน้าเปิดระบบ */
+#gate.p37b-gate{background:#F4F6F4}
+#gate.p37b-gate .gate-card{background:transparent;border:0;box-shadow:none;padding:0;width:auto;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:14px}
+#gate.p37b-gate .gate-card h2{font-size:16px;font-weight:600;color:#15703A;min-height:24px;margin:0;line-height:1.5}
+#gate.p37b-gate .gate-card p{font-size:13px;color:#4A5550;margin:6px 0 0}
+html.p37b-on #loading{visibility:hidden!important}
+@media (prefers-reduced-motion:reduce){.p37b-logo{animation:none}.p37b-ecg-run{animation:none;stroke-dasharray:none;stroke-dashoffset:0}}
+</style>
 </head>
 <body>
+<!--p37b:start--><div id="p37b" class="p37b" role="status" aria-live="polite" data-phc-boot><div class="p37b-card"><span class="p37b-logo" role="img" aria-label="ตรา ศบส.37"></span><svg class="p37b-ecg" viewBox="0 0 180 40" aria-hidden="true"><path class="p37b-ecg-base" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180"/><path class="p37b-ecg-run" d="M0 22 H62 L70 22 L76 12 L82 22 L90 22 L96 4 L104 38 L110 16 L116 22 H180" pathLength="400"/></svg><div class="p37b-text" id="p37bText">กำลังเปิดระบบผ่าน Gateway</div><div class="p37b-brand">ศบส.37 ประสงค์ - สุดสาคร ตู้จินดา</div></div></div>
+<script>
+/* PHC37-ECG-BOOT 1.0.0 */
+(function(){var b=document.getElementById("p37b"),done=false,t0=Date.now(),MAX=30000;try{document.documentElement.classList.add("p37b-on")}catch(e){}
+function hide(){if(done)return;done=true;try{document.documentElement.classList.remove("p37b-on")}catch(e){}b.classList.add("out");setTimeout(function(){if(b.classList.contains("out"))b.style.display="none"},300)}
+function show(m){if(m)document.getElementById("p37bText").textContent=m;if(!done)return;done=false;b.style.display="";b.classList.remove("out");try{document.documentElement.classList.add("p37b-on")}catch(e){}}
+window.P37Boot={hide:hide,show:show};
+setTimeout(function(){if(!done&&!window.__p37bHeld)hide()},MAX);
+window.__p37bHeld=false;var L=window.PHC37Load;if(L&&L.boot){var o=L.boot;L.boot={show:function(m){window.__p37bHeld=true;show(m)},hide:function(){hide();try{o.hide()}catch(e){}},fail:function(m,r){hide();o.fail(m,r)}}}
+})();
+</script><!--p37b:end-->
 <script>
   window.REFC_BOOTSTRAP = {"version":"V1.4.9.GPT.วันที่ 21/08/2569","appName":"ระบบส่งต่อกลาง","appCode":"REFC","menuKey":"Referral_Center","launchToken":"pwa","resumeMode":false,"gatewayReturnUrl":"","gatewayFallbackUrl":"","sessionToken":""};
 </script>
