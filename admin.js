@@ -1,4 +1,5 @@
-/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.7.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน
+/* PHC37 PWA — admin.js (PHC37-PWA-ADMIN-1.8.0) : จัดการระบบกลาง + สิทธิ์เมนู + ประวัติการใช้งาน
+   1.8.0 (27/11/2569) หน้าการใช้ทรัพยากร (usage.report) เฉพาะ superadmin — Egress / ฐานข้อมูล / เรียก Edge เทียบเพดานแผนฟรี
    1.7.0 (22/11/2569) ประวัติการใช้งานแบบ Gateway เดิม (ความปลอดภัย · การใช้งานระบบ · ทั้งหมด) เฉพาะ superadmin
    1.6.0 (22/11/2569) ฟอร์มผู้ใช้: ระบบกลาง · เลือกรายคน (ติ๊กเพิ่ม/ตัดสิทธิ์) + ได้ทั้งกลุ่มอัตโนมัติ (แสดงอย่างเดียว) แบบ GW7 เดิม */
 (function () {
@@ -38,6 +39,7 @@
     window.scrollTo(0, 0);
     try { history.pushState({ phc37Admin: 1 }, ''); } catch (e) {}
     var admin = isAdminRole();
+    if (mode === 'usage' && myRole() !== 'superadmin') { P.toast('เฉพาะ superadmin เท่านั้น', 'err'); P.goHome(); return; }
     if ((mode === 'logs' && myRole() !== 'superadmin') || (!admin && mode !== 'logs')) {   // 2.14.0: ประวัติการใช้งานเฉพาะ superadmin
       P.toast(mode === 'logs' ? 'เฉพาะ superadmin เท่านั้นที่ดูประวัติการใช้งานได้' : 'เฉพาะผู้ดูแลระบบเท่านั้น', 'err'); P.goHome(); return;
     }
@@ -84,7 +86,8 @@
     users: ['users', 'ผู้ใช้งาน', '⚙️ จัดการระบบกลาง'], bulk: ['users', 'ผู้ใช้งาน', '⚙️ จัดการระบบกลาง'],
     requests: ['requests', 'คำขอรออนุมัติ', '⚙️ จัดการระบบกลาง'], menus: ['perm', 'สิทธิ์และเมนู', '⚙️ จัดการระบบกลาง'],
     perms: ['perm', 'สิทธิ์และเมนู', '⚙️ จัดการระบบกลาง'], settings: ['perm', 'สิทธิ์และเมนู', '⚙️ จัดการระบบกลาง'],
-    logs: ['logs', 'บันทึกการใช้งาน (Log)', '🧾 ประวัติการใช้งาน']
+    logs: ['logs', 'บันทึกการใช้งาน (Log)', '🧾 ประวัติการใช้งาน'],
+    usage: ['usage', 'การใช้ทรัพยากร', '⚙️ จัดการระบบกลาง']
   };
   function switchTab(tab) {
     A.tab = tab;
@@ -102,7 +105,8 @@
     $('adm-title').textContent = pg[2];
     $('adm-sub').hidden = tab !== 'logs'; $('adm-sub').textContent = 'ช่วงวันที่ที่เลือก · ล่าสุดก่อน';
     P.setPage(pg[0], pg[1]);
-    ['users', 'requests', 'perms', 'menus', 'logs', 'bulk', 'settings'].forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
+    ['users', 'requests', 'perms', 'menus', 'logs', 'bulk', 'settings', 'usage'].forEach(function (t) { $('tab-' + t).hidden = t !== tab; });
+    if (tab === 'usage') loadUsage();
     if (tab === 'menus') loadMenus();
     if (tab === 'settings') loadSettings();
     if (tab === 'requests') loadRequests();
@@ -122,6 +126,7 @@
     else if (t === 'requests') loadRequests(true);
     else if (t === 'menus') loadMenus(true);
     else if (t === 'logs') lgLoad(true);
+    else if (t === 'usage') loadUsage();
     else switchTab(t);
   });
 
@@ -995,6 +1000,81 @@
       loadMenus(true); P.refreshProfile();
     });
   });
+
+  // ---------- การใช้ทรัพยากร (1.8.0) ----------
+  var APP_NAME = { ncd: 'NCD', ref: 'ส่งต่อ', adp: 'ผ้าอ้อม', wbc: 'WBC', arv: 'ARV', ic: 'IC', ltc: 'LTC', mr: 'เบิกพัสดุ', ita: 'ครุภัณฑ์ IT',
+    cnr: 'กลุ่มเสี่ยง', oss: 'อสส.', eld: 'ผู้สูงอายุ', lvs: 'ลูกน้ำ', cdc: 'ควบคุมโรค', imc: 'IMC', scr: 'สังคมสงเคราะห์', svy: 'แบบสอบถาม',
+    task: 'งาน/แจ้งเตือน', notif: 'แจ้งเตือน', auth: 'เข้าสู่ระบบ', admin: 'จัดการระบบ', pm: 'เวชระเบียนกลาง', psn: 'บุคลากร', gw: 'ส่วนกลาง', usage: 'หน้านี้', public: 'หน้าสาธารณะ', bridge: 'สะพาน Apps Script' };
+  function fmtBytes(n) {
+    n = Number(n) || 0;
+    if (n >= 1073741824) return (n / 1073741824).toFixed(2) + ' GB';
+    if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+    if (n >= 1024) return Math.round(n / 1024) + ' KB';
+    return n + ' B';
+  }
+  function meter(label, used, limit, text) {
+    var pct = limit ? Math.min(100, used / limit * 100) : 0;
+    var box = el('div', 'us-meter');
+    var head = el('div', 'us-mhead'); head.appendChild(el('b', '', label)); head.appendChild(el('span', '', text + ' · ' + pct.toFixed(1) + '%'));
+    var bar = el('div', 'us-bar'), fill = el('i', pct >= 80 ? 'bad' : pct >= 60 ? 'warn' : 'ok'); fill.style.width = pct.toFixed(1) + '%';
+    bar.appendChild(fill); box.appendChild(head); box.appendChild(bar);
+    return box;
+  }
+  function loadUsage() {
+    var body = $('usage-body'); body.textContent = ''; body.appendChild(el('p', 'muted', 'กำลังโหลด...'));
+    call('usage.report', {}).then(function (res) {
+      body.textContent = '';
+      if (!res.ok) { body.appendChild(el('p', 'alert err', res.message || 'โหลดไม่สำเร็จ (ติดตั้ง SQL 26 + Edge 2.6.0 แล้วหรือยัง)')); return; }
+      var rep = res.report || {}, lim = rep.limits || {}, tot = rep.total || {};
+      var egLimit = (Number(lim.egressGb) || 5) * 1073741824, dbLimit = (Number(lim.dbMb) || 500) * 1048576, callLimit = Number(lim.edgeCalls) || 500000;
+      var eg = Number(tot.db || 0) + Number(tot.out || 0);
+      body.appendChild(el('p', 'muted', 'รอบบิล ' + P.fmtTime(rep.cycleStart, true) + ' – ' + P.fmtTime(rep.cycleEnd, true) + ' · นับโดยระบบของเราเอง (ใกล้เคียงหน้า Usage ของ Supabase · ไม่ต้องเปิดหน้า Logs ของ Supabase)'));
+      body.appendChild(meter('Egress (ประมาณ)', eg, egLimit, fmtBytes(eg) + ' / ' + fmtBytes(egLimit)));
+      body.appendChild(meter('ขนาดฐานข้อมูล', Number(rep.dbSize) || 0, dbLimit, fmtBytes(rep.dbSize) + ' / ' + fmtBytes(dbLimit)));
+      body.appendChild(meter('เรียก Edge', Number(tot.calls) || 0, callLimit, (Number(tot.calls) || 0).toLocaleString('th-TH') + ' / ' + callLimit.toLocaleString('th-TH') + ' ครั้ง'));
+      // แยกระบบ
+      var byApp = {}, byDay = {};
+      (rep.days || []).forEach(function (d) {
+        var b = Number(d.db) + Number(d.out);
+        var a = byApp[d.app] = byApp[d.app] || { bytes: 0, calls: 0 }; a.bytes += b; a.calls += Number(d.calls);
+        byDay[d.day] = (byDay[d.day] || 0) + b;
+      });
+      body.appendChild(el('h4', 'us-h', 'แยกตามระบบ (รอบบิลนี้)'));
+      var wrap = el('div', 'gw-table-wrap'), tb = el('table', 'gw-table'), th = el('thead'), tr = el('tr');
+      ['ระบบ', 'ข้อมูลรับส่ง', 'ครั้ง', 'เฉลี่ย/ครั้ง'].forEach(function (h) { tr.appendChild(el('th', '', h)); });
+      th.appendChild(tr); tb.appendChild(th);
+      var tbody = el('tbody');
+      Object.keys(byApp).sort(function (x, y) { return byApp[y].bytes - byApp[x].bytes; }).forEach(function (k) {
+        var r = el('tr'), a = byApp[k];
+        r.appendChild(el('td', '', APP_NAME[k] || k)); r.appendChild(el('td', '', fmtBytes(a.bytes)));
+        r.appendChild(el('td', '', a.calls.toLocaleString('th-TH'))); r.appendChild(el('td', '', fmtBytes(a.calls ? a.bytes / a.calls : 0)));
+        tbody.appendChild(r);
+      });
+      if (!tbody.children.length) { var er = el('tr'), td = el('td', 'muted', 'ยังไม่มีข้อมูล (เริ่มนับหลังติดตั้ง Edge 2.6.0)'); td.colSpan = 4; er.appendChild(td); tbody.appendChild(er); }
+      tb.appendChild(tbody); wrap.appendChild(tb); body.appendChild(wrap);
+      // รายวัน
+      var days = Object.keys(byDay).sort(), mx = Math.max.apply(null, days.map(function (d) { return byDay[d]; }).concat([1]));
+      if (days.length) {
+        body.appendChild(el('h4', 'us-h', 'รายวัน (เป้าหมาย < 150 MB/วัน)'));
+        var list = el('div', 'us-days');
+        days.forEach(function (d) {
+          var row = el('div', 'us-day'), bar = el('div', 'us-bar'), fill = el('i', byDay[d] > 157286400 ? 'bad' : 'ok');
+          fill.style.width = (byDay[d] / mx * 100).toFixed(1) + '%'; bar.appendChild(fill);
+          row.appendChild(el('span', 'us-dlabel', P.fmtTime(d, true))); row.appendChild(bar); row.appendChild(el('span', 'us-dval', fmtBytes(byDay[d])));
+          list.appendChild(row);
+        });
+        body.appendChild(list);
+      }
+      // ตารางใหญ่สุด + ประวัติ
+      body.appendChild(el('h4', 'us-h', 'ตารางที่ใหญ่ที่สุด'));
+      var ul = el('ul', 'us-tables');
+      (rep.tables || []).forEach(function (t) { ul.appendChild(el('li', '', t.name + ' — ' + fmtBytes(t.bytes))); });
+      body.appendChild(ul);
+      var au = rep.audit || {};
+      body.appendChild(el('p', 'muted', 'ประวัติการแก้ไขในฐานข้อมูล ' + (Number(au.rows) || 0).toLocaleString('th-TH') + ' แถว' +
+        (au.oldest ? ' · เก่าสุด ' + P.fmtTime(au.oldest, true) : '') + ' · เก่ากว่า 1 ปีส่งออกไป Drive ทุกวันที่ 1 ของเดือน'));
+    });
+  }
 
   window.PHC37Admin = { open: open };
 })();

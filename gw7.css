@@ -339,3 +339,16 @@ body.pf-lock { overflow: hidden; }
   .lg2-utable thead { display: none; } .lg2-utable tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
   .lg2-utable td { border: 0; padding: 0; } .lg2-utable td.n { text-align: left; } .lg2-utable td.wide, .lg2-utable td.who { grid-column: 1/-1; }
 }
+
+/* 2.20.0 หน้าการใช้ทรัพยากร */
+.us-meter { margin: 10px 0 12px; }
+.us-mhead { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13.5px; margin-bottom: 5px; }
+.us-mhead span { color: #55706C; }
+.us-bar { height: 10px; background: #EEF1EF; border-radius: 999px; overflow: hidden; flex: 1; }
+.us-bar i { display: block; height: 100%; border-radius: 999px; background: #22a06b; }
+.us-bar i.warn { background: #e9a23b; } .us-bar i.bad { background: #d64545; }
+.us-h { margin: 18px 0 8px; font-size: 15px; color: var(--gw-slate); }
+.us-days { display: grid; gap: 5px; }
+.us-day { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.us-dlabel { width: 88px; color: #55706C; } .us-dval { width: 70px; text-align: right; }
+.us-tables { margin: 0; padding-left: 18px; font-size: 13px; color: #334; }

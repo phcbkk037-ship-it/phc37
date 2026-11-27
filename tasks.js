@@ -1,4 +1,5 @@
-/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.3.0) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน
+/* PHC37 PWA — tasks.js (PHC37-PWA-TASKS-1.3.1) : งานบุคคล — กล่องงาน · รายละเอียด · มอบหมาย · ตรวจรับ · แจ้งเตือน
+ * 1.3.1: ปุ่มงานเตือนการใช้ทรัพยากร → หน้าการใช้ทรัพยากร (#app:usage)
  * 1.3.0: งานจากระบบ (แบบสอบถามกลาง / ระบบเบิก–จ่ายวัสดุ) — สถานะตามระบบนั้น · ปุ่มเปิดระบบในแอพ */
 (function () {
   'use strict';
@@ -35,7 +36,7 @@
   var NF_ICON = { start: '📣', assigned: '📝', accepted: '✋', rejected: '🚫', submitted: '📤', approved: '✅', returned: '↩️', cancelled: '🛑', due_soon: '⏰', overdue: '⚠️' };
   var ASSIGNEE_BOX = { todo: 1, sent: 1, done: 1 };
   // งานจากระบบ: ชื่อระบบ + ป้ายสถานะตามกล่อง (ต้องทำ / รอตรวจรับ / ดำเนินการเรียบร้อย)
-  var SYS_SRC = { survey: '📝 แบบสอบถาม', mr2: '📦 เบิก–จ่ายวัสดุ' };
+  var SYS_SRC = { survey: '📝 แบบสอบถาม', mr2: '📦 เบิก–จ่ายวัสดุ', usage: '📊 การใช้ทรัพยากร' };
   var SYS_ST = { assigned: ['ต้องทำ', 'info'], submitted: ['รอตรวจรับ', 'warn'], approved: ['ดำเนินการเรียบร้อย', 'ok'], cancelled: ['ปิดแล้ว', ''] };
   function srcLabel(app) { return SYS_SRC[app] || app; }
 
@@ -364,6 +365,10 @@
     if (m[1] === 'survey') {
       if (!window.PHC37Survey) { P.toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err'); return; }
       $('dlg-task').close(); window.PHC37Survey.open(m[2] || 'inbox'); return;
+    }
+    if (m[1] === 'usage') {
+      if (!window.PHC37Admin) { P.toast('โหลดหน้าไม่สำเร็จ กรุณารีเฟรช', 'err'); return; }
+      $('dlg-task').close(); window.PHC37Admin.open('usage'); return;
     }
     if (m[1] === 'material') {
       var mm = menus.filter(function (x) { return String(x.key || '').toLowerCase() === 'material_requisition'; })[0];
